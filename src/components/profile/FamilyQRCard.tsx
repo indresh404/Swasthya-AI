@@ -1,73 +1,47 @@
-'use client';
+'use client'
 
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { 
-  QrCode, 
-  Share2, 
-  Download, 
-  Users,
-  Copy
-} from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ShieldAlert, Download } from 'lucide-react';
+import { patient } from '@/data/mockPatient';
 
 export default function FamilyQRCard() {
-  const familyGroupId = "MEHTA-FAM-2026-X92";
+  const qrData = JSON.stringify({
+    name: patient.name,
+    blood: patient.bloodGroup,
+    emergencyContact: '+91 98765 43210',
+    conditions: patient.conditions
+  });
 
   return (
-    <div className="glass-card p-8 flex flex-col items-center">
-      <div className="flex items-center space-x-3 mb-8 w-full">
-         <div className="bg-blue-900 p-2 rounded-lg">
-           <Users className="w-5 h-5 text-blue-300" />
-         </div>
-         <div>
-            <h3 className="text-blue-900 font-bold leading-none">Family Sync QR</h3>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Mehta Family Group</p>
-         </div>
+    <div className="bg-gradient-to-br from-blue-900 to-[#0f2b5b] rounded-2xl p-6 shadow-card text-white flex flex-col items-center justify-between h-full relative overflow-hidden group">
+      {/* Decorative */}
+      <div className="absolute -top-12 -right-12 w-32 h-32 bg-blue-500/20 rounded-full blur-2xl group-hover:bg-blue-400/30 transition-all duration-700 pointer-events-none" />
+      
+      <div className="w-full flex items-center justify-between mb-4 z-10">
+        <h3 className="font-sora text-sm font-bold flex items-center gap-2">
+          <ShieldAlert size={16} className="text-risk-red animate-pulse" />
+          Emergency QR
+        </h3>
+        <button className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors text-white hover:text-white border border-white/10 backdrop-blur-sm shadow-sm ring-1 ring-white/10">
+          <Download size={14} />
+        </button>
       </div>
 
-      <div className="bg-white p-6 rounded-3xl shadow-xl ring-1 ring-blue-50 relative group">
-        {/* Decorative corner accents */}
-        <div className="absolute -top-2 -left-2 w-6 h-6 border-t-4 border-l-4 border-blue-600 rounded-tl-lg" />
-        <div className="absolute -top-2 -right-2 w-6 h-6 border-t-4 border-r-4 border-blue-600 rounded-tr-lg" />
-        <div className="absolute -bottom-2 -left-2 w-6 h-6 border-b-4 border-l-4 border-blue-600 rounded-bl-lg" />
-        <div className="absolute -bottom-2 -right-2 w-6 h-6 border-b-4 border-r-4 border-blue-600 rounded-br-lg" />
-        
+      <div className="p-4 bg-white rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.3)] z-10 mt-2 mb-6 ring-4 ring-white/20">
         <QRCodeSVG 
-          value={familyGroupId} 
-          size={180} 
-          bgColor={"#ffffff"}
-          fgColor={"#0F2B5B"}
-          level={"H"}
+          value={qrData}
+          size={140}
+          bgColor="#ffffff"
+          fgColor="#0f172a"
+          level="M"
           includeMargin={false}
-          imageSettings={{
-            src: "",
-            x: undefined,
-            y: undefined,
-            height: 24,
-            width: 24,
-            excavate: true,
-          }}
         />
       </div>
 
-      <div className="mt-8 text-center px-4">
-        <p className="text-sm font-bold text-blue-900">Share with family or doctor</p>
-        <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-           Grant view-only access to your health metrics and medication history.
-        </p>
-      </div>
-
-      <div className="w-full mt-8 flex space-x-3">
-        <button className="flex-1 flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl shadow-lg transition-all">
-           <Download className="w-4 h-4" />
-           <span className="text-xs font-bold uppercase tracking-wide">Download</span>
-        </button>
-        <button className="flex-1 flex items-center justify-center space-x-2 bg-white border border-blue-100 text-blue-900 py-3 rounded-xl hover:bg-blue-50 transition-all">
-           <Share2 className="w-4 h-4" />
-           <span className="text-xs font-bold uppercase tracking-wide">Share</span>
-        </button>
-      </div>
+      <p className="text-[11px] text-blue-100 text-center font-semibold leading-relaxed max-w-[200px] z-10 bg-black/20 px-4 py-2.5 rounded-xl backdrop-blur-sm border border-white/5 shadow-inner">
+        Scan to access critical medical records instantly in an emergency.
+      </p>
     </div>
   );
 }

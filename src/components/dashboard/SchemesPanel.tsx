@@ -11,7 +11,7 @@ interface Props {
 }
 
 export default function SchemesPanel({ open, onClose }: Props) {
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   return (
     <AnimatePresence>
@@ -102,7 +102,7 @@ export default function SchemesPanel({ open, onClose }: Props) {
                                 Covers
                               </span>
                               <div className="flex flex-wrap gap-2 mt-1.5">
-                                {scheme.category.map((cat) => (
+                                {scheme.covers.map((cat) => (
                                   <span
                                     key={cat}
                                     className="text-[11px] bg-green-50 text-green-700 px-2.5 py-1 rounded-full font-medium"

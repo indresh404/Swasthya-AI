@@ -1,148 +1,77 @@
-'use client';
+'use client'
 
 import React from 'react';
-import { 
-  Activity, 
-  AlertCircle, 
-  CheckCircle2, 
-  Info,
-  Calendar,
-  Sparkles,
-  ChevronRight
-} from 'lucide-react';
-import { HEAT_ZONES, HeatZoneData } from '@/data/heatZones';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { X, Activity } from 'lucide-react';
 
-interface Props {
-  selectedZone?: HeatZoneData;
-  onZoneSelect: (id: string) => void;
+interface ZoneInfoPanelProps {
+  zoneId: string;
+  data: {
+    level: 'green' | 'yellow' | 'orange' | 'red';
+    symptoms: string[];
+    lastLogged: string;
+    aiRec: string;
+  };
+  onClose: () => void;
 }
 
-export default function ZoneInfoPanel({ selectedZone, onZoneSelect }: Props) {
-  const getRiskIcon = (level: string) => {
-    switch (level) {
-      case 'Critical': return <AlertCircle className="w-4 h-4 text-red-500" />;
-      case 'High': return <AlertCircle className="w-4 h-4 text-orange-500" />;
-      case 'Moderate': return <Info className="w-4 h-4 text-yellow-500" />;
-      case 'Low': return <CheckCircle2 className="w-4 h-4 text-green-500" />;
-      default: return <Info className="w-4 h-4 text-blue-500" />;
-    }
-  };
-
-  const getRiskColor = (level: string) => {
-    switch (level) {
-      case 'Critical': return 'bg-red-50 text-red-600 border-red-100';
-      case 'High': return 'bg-orange-50 text-orange-600 border-orange-100';
-      case 'Moderate': return 'bg-yellow-50 text-yellow-600 border-yellow-100';
-      case 'Low': return 'bg-green-50 text-green-600 border-green-100';
-      default: return 'bg-blue-50 text-blue-600 border-blue-100';
+export default function ZoneInfoPanel({ zoneId, data, onClose }: ZoneInfoPanelProps) {
+  const getLevelColor = (level: string) => {
+    switch(level) {
+      case 'red': return 'bg-risk-red text-white';
+      case 'orange': return 'bg-orange-500 text-white';
+      case 'yellow': return 'bg-yellow-400 text-slate-900';
+      case 'green': return 'bg-green-500 text-white';
+      default: return 'bg-slate-500 text-white';
     }
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <AnimatePresence mode="wait">
-        {selectedZone ? (
-          <motion.div 
-            key={selectedZone.id}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="space-y-6"
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="text-2xl font-bold text-blue-900 font-display">{selectedZone.name}</h3>
-              <div className={`px-3 py-1 rounded-full border text-xs font-black uppercase tracking-wider flex items-center space-x-1.5 ${getRiskColor(selectedZone.riskLevel)}`}>
-                 {getRiskIcon(selectedZone.riskLevel)}
-                 <span>{selectedZone.riskLevel}</span>
-              </div>
-            </div>
+    <div className="bg-black/80 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-2xl flex flex-col pointer-events-auto h-full max-h-[500px]">
+      <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-4">
+        <h3 className="font-sora text-lg font-bold text-white capitalize flex items-center gap-2">
+          {zoneId.replace(/([A-Z])/g, ' $1').trim()}
+          <span className={`w-2.5 h-2.5 rounded-full ${getLevelColor(data.level).split(' ')[0]} animate-pulse`} />
+        </h3>
+        <button onClick={onClose} className="p-1 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors">
+          <X size={18} />
+        </button>
+      </div>
 
-            <div className="grid grid-cols-2 gap-4">
-               <div className="bg-white p-4 rounded-2xl border border-blue-50">
-                  <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 block mb-2">Last Assessment</span>
-                  <div className="flex items-center text-sm font-bold text-blue-900">
-                     <Calendar className="w-4 h-4 mr-2 text-blue-400" />
-                     {selectedZone.lastLogged}
-                  </div>
-               </div>
-               <div className="bg-white p-4 rounded-2xl border border-blue-50">
-                  <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 block mb-2">Contribution</span>
-                  <div className="flex items-center text-sm font-bold text-blue-900">
-                     <Activity className="w-4 h-4 mr-2 text-blue-400" />
-                     {selectedZone.riskLevel === 'Low' ? 'Minimal' : 'Moderate'}
-                  </div>
-               </div>
-            </div>
+      <div className="flex-1 overflow-y-auto no-scrollbar space-y-5">
+        <div>
+          <h4 className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2 flex items-center gap-2">
+             <span className="w-1 h-3 bg-white/20 rounded-full" />
+             Reported Symptoms
+          </h4>
+          <ul className="space-y-2">
+            {data.symptoms.map((symp, i) => (
+              <li key={i} className="text-xs text-white/90 bg-white/5 p-2.5 rounded-xl border border-white/5 font-medium leading-relaxed shadow-sm">
+                {symp}
+              </li>
+            ))}
+          </ul>
+        </div>
 
-            <div>
-              <label className="text-[10px] uppercase font-bold tracking-widest text-slate-400 block mb-3">Detected Symptoms</label>
-              <div className="flex flex-wrap gap-2">
-                {selectedZone.symptoms.map(s => (
-                  <span key={s} className="px-3 py-1.5 bg-white border border-blue-50 rounded-lg text-xs font-bold text-slate-700 shadow-sm">
-                    {s}
-                  </span>
-                ))}
-              </div>
-            </div>
+        <div>
+          <h4 className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2 flex items-center gap-2">
+             <span className="w-1 h-3 bg-white/20 rounded-full" />
+             Last Logged
+          </h4>
+          <p className="text-xs font-bold text-white/80 bg-white/5 px-3 py-1.5 rounded-lg w-fit border border-white/5">{data.lastLogged}</p>
+        </div>
 
-            <div className="bg-blue-900 text-white p-6 rounded-[24px] shadow-xl relative overflow-hidden">
-               <div className="relative z-10">
-                 <div className="flex items-center space-x-2 mb-3">
-                    <Sparkles className="w-4 h-4 text-blue-300" />
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-blue-300">AI Recommendation</span>
-                 </div>
-                 <p className="text-sm leading-relaxed font-medium">
-                    {selectedZone.aiRecommendation}
-                 </p>
-               </div>
-               <div className="absolute top-[-10%] right-[-10%] w-20 h-20 bg-blue-400/20 blur-2xl rounded-full" />
+        <div className="mt-auto pt-2">
+          <div className="bg-blue-900/40 border border-blue-500/30 rounded-xl p-4 relative overflow-hidden group shadow-lg">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/20 blur-xl rounded-full pointer-events-none" />
+            <div className="flex items-center gap-2 mb-2 relative z-10">
+              <Activity size={14} className="text-blue-400" />
+              <span className="text-[10px] font-bold text-blue-300 uppercase tracking-widest">AI Recommendation</span>
             </div>
-          </motion.div>
-        ) : (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex-1 flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-slate-200 rounded-3xl"
-          >
-             <div className="w-16 h-16 bg-blue-50 text-blue-200 rounded-full flex items-center justify-center mb-4">
-                <Info className="w-8 h-8" />
-             </div>
-             <h4 className="text-lg font-bold text-slate-400">Select a Body Zone</h4>
-             <p className="text-sm text-slate-300 mt-2 max-w-[200px]">
-                Click on the 3D model zones to view detailed diagnostic analysis.
-             </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="mt-auto pt-8">
-        <h4 className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-4">Detected Hotspots</h4>
-        <div className="space-y-3">
-          {HEAT_ZONES.map(zone => (
-            <button
-              key={zone.id}
-              onClick={() => onZoneSelect(zone.id)}
-              className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between group ${
-                selectedZone?.id === zone.id 
-                  ? 'bg-white border-blue-600 shadow-lg' 
-                  : 'bg-white border-blue-50 hover:bg-white hover:shadow-md'
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getRiskColor(zone.riskLevel)}`}>
-                    <Activity className="w-4 h-4" />
-                 </div>
-                 <div>
-                    <h5 className="text-xs font-bold text-blue-900">{zone.name}</h5>
-                    <p className="text-[10px] text-slate-400 font-medium">Status: {zone.riskLevel}</p>
-                 </div>
-              </div>
-              <ChevronRight className={`w-4 h-4 transition-all ${
-                selectedZone?.id === zone.id ? 'text-blue-600 translate-x-1' : 'text-slate-200 group-hover:text-blue-300'
-              }`} />
-            </button>
-          ))}
+            <p className="text-[11px] text-blue-100/90 leading-relaxed font-semibold relative z-10 bg-black/20 p-2.5 rounded-lg border border-white/5 backdrop-blur-sm">
+              {data.aiRec}
+            </p>
+          </div>
         </div>
       </div>
     </div>

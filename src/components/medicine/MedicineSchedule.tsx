@@ -1,149 +1,144 @@
-'use client';
+'use client'
 
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { Clock } from 'lucide-react';
+import { medicines } from '@/data/mockMedicines';
+import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
-import { 
-  Sun, 
-  CloudSun, 
-  Moon, 
-  CheckCircle2, 
-  Clock,
-  Pill as PillIcon
-} from 'lucide-react';
-import { mockMedicines } from '@/data/mockMedicines';
-
-const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 import checkmarkAnim from '../../../public/animations/checkmark.json';
 
-const timeSlots = [
-  { id: 'morning', name: 'Morning', icon: Sun, color: 'text-orange-400', bg: 'bg-orange-50' },
-  { id: 'afternoon', name: 'Afternoon', icon: CloudSun, color: 'text-blue-400', bg: 'bg-blue-50' },
-  { id: 'evening', name: 'Evening', icon: CloudSun, color: 'text-indigo-400', bg: 'bg-indigo-50' },
-  { id: 'night', name: 'Night', icon: Moon, color: 'text-slate-600', bg: 'bg-slate-50' },
+const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
+
+// Group medicines by time slots roughly based on the mock data string match
+const BLOCKS = [
+  { id: 'morning', label: 'Morning 8AM', filterTime: '08:00' },
+  { id: 'afternoon', label: 'Afternoon 1PM', filterTime: '13:00' },
+  { id: 'evening', label: 'Evening 6PM', filterTime: '20:00' }, // mock data uses 20:00 for Metformin
+  { id: 'night', label: 'Night 9PM', filterTime: '21:00' },
 ];
 
 export default function MedicineSchedule() {
-  const [medicines, setMedicines] = useState(mockMedicines);
-  const [triggeredId, setTriggeredId] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState('');
+  
+  const [takenMap, setTakenMap] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    medicines.forEach(m => {
+      m.times.forEach((t, i) => {
+        initial[`${m.id}-${t}`] = m.takenToday[i] || false;
+      });
+    });
+    return initial;
+  });
 
-  const handleToggleTaken = (id: string, currentlyTaken: boolean) => {
-    if (!currentlyTaken) {
-      setTriggeredId(id);
-      setTimeout(() => setTriggeredId(null), 2000);
-    }
-    
-    setMedicines(prev => prev.map((m: any) => 
-      m.id === id ? { ...m, takenToday: !currentlyTaken } : m
-    ));
-  };
+  useEffect(() => {
+    const updateTime = () => setCurrentTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    updateTime();
+    const interval = setInterval(updateTime, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const getMedicinesForSlot = (slot: string) => {
-    // Basic mapping for mock purposes
-    if (slot === 'morning') return medicines.filter((m: any) => m.times.some((t: string) => t.includes('AM')));
-    if (slot === 'night') return medicines.filter((m: any) => m.times.some((t: string) => t.includes('PM')));
-    // Others map based on mock frequencies if relevant
-    return [];
+  const handleMarkTaken = (medId: string, medName: string, dosage: string, time: string) => {
+    setTakenMap(prev => ({ ...prev, [`${medId}-${time}`]: true }));
+    toast.success(`${medName} ${dosage} marked as taken`, {
+      icon: '✅',
+      style: { fontWeight: 600, fontSize: '14px', borderRadius: '12px' },
+    });
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h3 className="text-blue-900 font-bold">Today's Schedule</h3>
-        <div className="flex items-center space-x-2 text-xs font-bold text-slate-400">
-          <Clock className="w-3.5 h-3.5" />
-          <span>Next dose: 8:00 PM</span>
+    <div className="bg-white rounded-2xl shadow-card border border-card-border overflow-hidden">
+      <header className="p-6 border-b border-card-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h3 className="font-sora text-lg font-bold text-blue-900">Today's Schedule</h3>
+        <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200 shadow-sm w-fit">
+          <Clock size={14} className="text-blue-500" />
+          <span className="font-mono text-sm font-bold text-slate-700">{currentTime || '--:--'}</span>
         </div>
-      </div>
+      </header>
 
-      <div className="relative space-y-12">
-        {/* Vertical Timeline Line */}
-        <div className="absolute left-6 top-2 bottom-2 w-0.5 bg-blue-100/50" />
-
-        {timeSlots.map((slot) => {
-          const slotMeds = getMedicinesForSlot(slot.id);
+      <div className="p-6 space-y-8">
+        {BLOCKS.map(block => {
+          const blockMeds = medicines.filter(m => m.times.includes(block.filterTime));
           
+          if (blockMeds.length === 0) return null;
+
           return (
-            <div key={slot.id} className="relative pl-14">
-              {/* Slot Indicator */}
-              <div className={`absolute left-0 top-0 w-12 h-12 rounded-full ${slot.bg} border-4 border-white shadow-sm flex items-center justify-center z-10`}>
-                <slot.icon className={`w-5 h-5 ${slot.color}`} />
+            <div key={block.id} className="space-y-4">
+              <div className="flex items-center gap-3">
+                <h4 className="font-sora text-sm font-bold text-text-primary">{block.label}</h4>
+                <span className="px-2 py-0.5 rounded-full bg-blue-50 text-[10px] font-bold text-blue-600 uppercase">
+                  {blockMeds.length} medicine{blockMeds.length > 1 ? 's' : ''}
+                </span>
+                <div className="flex-1 h-[1px] bg-card-border" />
               </div>
 
-              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                <div className="shrink-0 w-32 mt-2">
-                  <h4 className="font-bold text-blue-900 text-sm uppercase tracking-widest">{slot.name}</h4>
-                  <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-                    {slot.id === 'morning' ? '8:00 AM - 10:00 AM' : slot.id === 'night' ? '8:00 PM - 10:00 PM' : ''}
-                  </p>
-                </div>
-
-                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {slotMeds.length > 0 ? (
-                    slotMeds.map((med) => (
-                      <motion.div
-                        key={med.id}
-                        layout
-                        className={`glass-card p-4 flex items-center justify-between relative overflow-hidden transition-all duration-300 ${
-                          med.takenToday ? 'opacity-60 grayscale-[0.5]' : 'opacity-100'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-4">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                            med.takenToday ? 'bg-green-50 text-green-500' : 'bg-blue-50 text-blue-500'
-                          }`}>
-                            <PillIcon className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <h5 className="font-bold text-blue-900 text-sm">{med.name}</h5>
-                            <p className="text-xs text-slate-500">{med.dosage} · {med.frequency}</p>
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={() => handleToggleTaken(med.id, med.takenToday)}
-                          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${
-                            med.takenToday 
-                              ? 'bg-green-500 text-white' 
-                              : 'bg-white border border-blue-200 text-blue-600 hover:bg-blue-50'
-                          }`}
-                        >
-                          {med.takenToday ? (
-                            <>
-                              <CheckCircle2 className="w-3 h-3" />
-                              <span>Taken</span>
-                            </>
-                          ) : (
-                            <span>Mark Taken</span>
-                          )}
-                        </button>
-
-                        {/* Success Animation */}
-                        <AnimatePresence>
-                          {triggeredId === med.id && (
-                            <motion.div 
-                              initial={{ opacity: 0, scale: 0.5 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              exit={{ opacity: 0 }}
-                              className="absolute inset-0 z-20 flex items-center justify-center bg-white/80 backdrop-blur-sm"
-                            >
-                              <div className="w-16 h-16">
-                                <Lottie animationData={checkmarkAnim} loop={false} />
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </motion.div>
-                    ))
-                  ) : (
-                    <div className="text-xs text-slate-400 italic py-4">No medications scheduled</div>
-                  )}
-                </div>
+              <div className="space-y-3">
+                {blockMeds.map(med => {
+                  const isTaken = takenMap[`${med.id}-${block.filterTime}`];
+                  
+                  return (
+                    <MedicineCard 
+                      key={`${med.id}-${block.filterTime}`}
+                      med={med}
+                      time={block.filterTime}
+                      isTaken={isTaken}
+                      onMarkTaken={() => handleMarkTaken(med.id, med.name, med.dosage, block.filterTime)}
+                    />
+                  );
+                })}
               </div>
             </div>
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function MedicineCard({ med, time, isTaken, onMarkTaken }: { med: any, time: string, isTaken: boolean, onMarkTaken: () => void }) {
+  const [played, setPlayed] = useState(false);
+
+  return (
+    <div className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 ${isTaken ? 'bg-green-50/30 border-green-100' : 'bg-white border-card-border shadow-sm hover:border-blue-200'}`}>
+      
+      <div className="flex items-center gap-3 w-full sm:w-[40%]">
+        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: med.color }} />
+        <div>
+          <h5 className="font-sora text-sm font-bold text-blue-900 leading-tight">{med.name}</h5>
+          <span className="inline-block mt-1 font-mono text-[10px] font-semibold bg-surface-2 text-text-secondary px-1.5 py-0.5 rounded">
+            {med.dosage}
+          </span>
+        </div>
+      </div>
+
+      <div className="w-full sm:w-[30%]">
+        <span className="text-[11px] font-medium text-text-secondary bg-surface px-2 py-1 rounded-md border border-card-border">
+          {med.condition}
+        </span>
+      </div>
+
+      <div className="w-full sm:w-[30%] flex justify-end">
+        {isTaken ? (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 border border-green-200 rounded-full w-fit">
+            <div className="w-5 h-5 flex items-center justify-center -ml-1">
+              <Lottie 
+                animationData={checkmarkAnim} 
+                loop={false} 
+                autoplay={true}
+                onComplete={() => setPlayed(true)}
+              />
+            </div>
+            <span className="text-[11px] font-bold text-green-700 uppercase tracking-widest leading-none">Taken</span>
+          </div>
+        ) : (
+          <button
+            onClick={onMarkTaken}
+            className="px-5 py-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors rounded-full text-xs font-bold w-full sm:w-auto text-center"
+          >
+            Mark Taken
+          </button>
+        )}
+      </div>
+
     </div>
   );
 }

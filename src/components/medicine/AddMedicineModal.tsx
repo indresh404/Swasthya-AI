@@ -1,203 +1,180 @@
-'use client';
+'use client'
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  X, 
-  AlertTriangle, 
-  ShieldAlert, 
-  Pill,
-  Clock,
-  Calendar,
-  ChevronDown
-} from 'lucide-react';
+import { X, Search, PlusCircle, Clock } from 'lucide-react';
 import { useConflictCheck } from '@/hooks/useConflictCheck';
 import ConflictWarning from './ConflictWarning';
+import { medicines } from '@/data/mockMedicines';
 
-interface Props {
+interface AddMedicineModalProps {
+  isOpen: boolean;
   onClose: () => void;
+  onAdd: (med: any) => void;
 }
 
-export default function AddMedicineModal({ onClose }: Props) {
-  const [name, setName] = useState('');
-  const [dosage, setDosage] = useState('');
-  const [frequency, setFrequency] = useState('once');
-  const [timeSlots, setTimeSlots] = useState(['morning']);
-  const [showConfirmation, setShowConfirmation] = useState(false);
+const COMMON_DRUGS = [
+  "Aspirin", "Ibuprofen", "Omeprazole", "Lisinopril", "Amlodipine", "Levothyroxine", "Atorvastatin"
+];
+
+export default function AddMedicineModal({ isOpen, onClose, onAdd }: AddMedicineModalProps) {
+  const [step, setStep] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedMeds, setSelectedMeds] = useState<string[]>([]);
   
-  const { checkConflict, isChecking, conflict, clearConflict } = useConflictCheck();
+  const { checkConflict } = useConflictCheck();
 
-  const handleSlotToggle = (slot: string) => {
-    setTimeSlots(prev => 
-      prev.includes(slot) ? prev.filter(s => s !== slot) : [...prev, slot]
-    );
+  const handleSelect = (drug: string) => {
+    setSelectedMeds(prev => prev.includes(drug) ? prev.filter(d => d !== drug) : [...prev, drug]);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name || !dosage) return;
-
-    const foundConflict = await checkConflict(name);
-    if (!foundConflict) {
-      setShowConfirmation(true);
-      setTimeout(onClose, 2000);
-    }
+  const handleNext = () => {
+    setStep(2);
   };
+
+  const conflicts = selectedMeds
+    .map(med => checkConflict(med, medicines.map(m => m.name)))
+    .filter(Boolean);
+
+  const hasHighRisk = conflicts.some(c => c?.severity === 'danger');
+
+  const filteredDrugs = COMMON_DRUGS.filter(d => d.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-      />
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-blue-950/40 backdrop-blur-sm"
+          />
+          
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+            className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+          >
+            <header className="p-4 border-b border-card-border flex items-center justify-between bg-surface">
+              <h2 className="font-sora text-sm font-bold text-blue-900">Add New Medicine</h2>
+              <button onClick={onClose} className="p-2 rounded-full hover:bg-surface-2 text-text-muted transition-colors">
+                <X size={18} />
+              </button>
+            </header>
 
-      {/* Modal */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden"
-      >
-        <div className="p-6 border-b border-blue-50 flex items-center justify-between">
-          <h3 className="text-xl font-bold text-blue-900">Add New Medication</h3>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-all">
-             <X className="w-5 h-5 text-slate-400" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {conflict ? (
-            <ConflictWarning 
-              conflict={conflict} 
-              onCancel={clearConflict} 
-              onOverride={() => {
-                setShowConfirmation(true);
-                setTimeout(onClose, 2000);
-              }}
-            />
-          ) : showConfirmation ? (
-            <motion.div 
-               initial={{ opacity: 0 }}
-               animate={{ opacity: 1 }}
-               className="py-12 flex flex-col items-center justify-center text-center"
-            >
-               <div className="w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-4">
-                 <CheckCircle2 className="w-8 h-8" />
-               </div>
-               <h4 className="text-lg font-bold text-blue-900">Medicine Added Successfully!</h4>
-               <p className="text-sm text-slate-500">Updated today's schedule.</p>
-            </motion.div>
-          ) : (
-            <>
-              {/* Form Fields */}
-              <div className="space-y-4">
-                <div>
-                   <label className="block text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-1.5">Medicine Name</label>
-                   <div className="relative">
-                      <Pill className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                      <input 
-                        required
-                        type="text" 
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g. Ibuprofen, Metformin" 
-                        className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-blue-50 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-300 transition-all"
-                      />
-                   </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-1.5">Dosage</label>
-                    <input 
-                      required
-                      type="text" 
-                      value={dosage}
-                      onChange={(e) => setDosage(e.target.value)}
-                      placeholder="e.g. 500mg" 
-                      className="w-full px-4 py-3 bg-slate-50 border border-blue-50 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-300 transition-all"
+            <div className="p-6 overflow-y-auto no-scrollbar min-h-[350px]">
+              {step === 1 ? (
+                <div className="space-y-6">
+                  <div className="relative">
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                    <input
+                      type="text"
+                      placeholder="Search medicine name..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full bg-white border border-card-border rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-text-muted"
                     />
                   </div>
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-1.5">Frequency</label>
-                    <div className="relative">
-                       <select 
-                         value={frequency}
-                         onChange={(e) => setFrequency(e.target.value)}
-                         className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-blue-50 rounded-xl text-sm outline-none appearance-none focus:ring-2 focus:ring-blue-300 transition-all"
-                       >
-                         <option value="once">Once Daily</option>
-                         <option value="twice">Twice Daily</option>
-                         <option value="thrice">Thrice Daily</option>
-                       </select>
-                       <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+
+                  <div className="space-y-3">
+                    <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest pl-1">Common Medicines</p>
+                    <div className="flex flex-wrap gap-2">
+                      {filteredDrugs.map(drug => {
+                        const isSelected = selectedMeds.includes(drug);
+                        return (
+                          <button
+                            key={drug}
+                            onClick={() => handleSelect(drug)}
+                            className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+                              isSelected 
+                                ? 'bg-blue-600 border-blue-600 text-white' 
+                                : 'bg-surface border-card-border text-text-secondary hover:border-blue-300'
+                            }`}
+                          >
+                            {drug}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <AnimatePresence>
+                    {conflicts.map((conflict, i) => (
+                      conflict && <ConflictWarning key={i} conflict={conflict as any} />
+                    ))}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <p className="text-sm text-text-secondary font-medium pb-4 border-b border-card-border">
+                    Configure schedule for <span className="font-bold text-blue-900">{selectedMeds.join(', ')}</span>
+                  </p>
+                  
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-text-muted uppercase tracking-widest pl-1">Dosage</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 500mg, 1 tablet"
+                      className="w-full bg-surface border border-card-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium text-text-primary placeholder:text-text-muted/70"
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="text-[11px] font-bold text-text-muted uppercase tracking-widest pl-1">Time & Frequency</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button className="flex items-center justify-center gap-2 p-3 rounded-xl border border-blue-500 bg-blue-50 text-blue-700 text-xs font-bold transition-all shadow-sm">
+                        <Clock size={14} /> Morning
+                      </button>
+                      <button className="flex items-center justify-center gap-2 p-3 rounded-xl border border-card-border bg-surface text-text-secondary hover:border-blue-200 text-xs font-bold transition-all">
+                        <Clock size={14} /> Afternoon
+                      </button>
+                      <button className="flex items-center justify-center gap-2 p-3 rounded-xl border border-card-border bg-surface text-text-secondary hover:border-blue-200 text-xs font-bold transition-all">
+                        <Clock size={14} /> Evening
+                      </button>
+                      <button className="flex items-center justify-center gap-2 p-3 rounded-xl border border-card-border bg-surface text-text-secondary hover:border-blue-200 text-xs font-bold transition-all">
+                        <Clock size={14} /> Night
+                      </button>
                     </div>
                   </div>
                 </div>
+              )}
+            </div>
 
-                <div>
-                   <label className="block text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-3">Time Slots</label>
-                   <div className="flex flex-wrap gap-2">
-                      {['morning', 'afternoon', 'evening', 'night'].map(slot => (
-                        <button
-                          key={slot}
-                          type="button"
-                          onClick={() => handleSlotToggle(slot)}
-                          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                            timeSlots.includes(slot) 
-                              ? 'bg-blue-600 text-white shadow-md' 
-                              : 'bg-slate-50 text-slate-400 hover:bg-blue-50 hover:text-blue-500'
-                          }`}
-                        >
-                          {slot.charAt(0).toUpperCase() + slot.slice(1)}
-                        </button>
-                      ))}
-                   </div>
-                </div>
-              </div>
-
+            <footer className="p-4 border-t border-card-border bg-surface flex items-center justify-end gap-3">
               <button 
-                type="submit"
-                disabled={isChecking}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center"
+                onClick={onClose}
+                className="px-4 py-2 text-xs font-bold text-text-muted hover:text-text-primary transition-colors"
               >
-                {isChecking ? (
-                   <>
-                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                     <span>Checking Conflicts...</span>
-                   </>
-                ) : (
-                  <span>Check & Add Medication</span>
-                )}
+                Cancel
               </button>
-            </>
-          )}
-        </form>
-      </motion.div>
-    </div>
-  );
-}
-
-// CheckCircle2 icon needed for confirmation state
-function CheckCircle2(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg 
-      {...props}
-      xmlns="http://www.w3.org/2000/svg" 
-      width="24" 
-      height="24" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-    >
-      <circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" />
-    </svg>
+              
+              {step === 1 ? (
+                <button
+                  onClick={handleNext}
+                  disabled={selectedMeds.length === 0 || hasHighRisk}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed flex items-center gap-2 shadow-md"
+                >
+                  Continue
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    onAdd({ name: selectedMeds[0] });
+                    onClose();
+                  }}
+                  className="px-6 py-2 bg-green-600 text-white rounded-xl text-xs font-bold hover:bg-green-700 transition-colors flex items-center gap-2 shadow-md"
+                >
+                  <PlusCircle size={14} />
+                  Add to Schedule
+                </button>
+              )}
+            </footer>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 }

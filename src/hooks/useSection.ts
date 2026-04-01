@@ -1,17 +1,15 @@
-import { create } from 'zustand';
+import { useState } from 'react';
 
-type Section = 'dashboard' | 'checkin' | 'medicine' | 'profile';
+export type Section = 'dashboard' | 'checkin' | 'medicine' | 'profile';
 
-interface SectionStore {
-  activeSection: Section;
-  isBodyMapOpen: boolean;
-  setActiveSection: (section: Section) => void;
-  setBodyMapOpen: (isOpen: boolean) => void;
+export function useSection() {
+  const [activeSection, setActiveSection] = useState<Section>('dashboard');
+  const [bodyMapOpen, setBodyMapOpen] = useState(false);
+
+  return { 
+    activeSection, 
+    setActiveSection, 
+    bodyMapOpen, 
+    setBodyMapOpen 
+  };
 }
-
-export const useSection = create<SectionStore>((set) => ({
-  activeSection: 'dashboard',
-  isBodyMapOpen: false,
-  setActiveSection: (section) => set({ activeSection: section }),
-  setBodyMapOpen: (isOpen) => set({ isBodyMapOpen: isOpen }),
-}));

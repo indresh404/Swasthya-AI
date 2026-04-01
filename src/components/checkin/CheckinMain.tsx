@@ -1,47 +1,29 @@
-'use client';
+'use client'
 
 import React from 'react';
+import { motion } from 'framer-motion';
 import WeeklySummaryCard from './WeeklySummaryCard';
 import AIChatBot from './AIChatBot';
 import CheckinHistory from './CheckinHistory';
-import { motion } from 'framer-motion';
 
 export default function CheckinMain() {
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
-  };
-
   return (
-    <motion.div 
-      variants={container}
-      initial="hidden"
-      animate="show"
-      className="space-y-8"
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -16 }}
+      transition={{ duration: 0.25, ease: 'easeOut' }}
+      className="h-full flex flex-col pb-12"
     >
-      {/* Top: Weekly Summary */}
-      <motion.div variants={item}>
-        <WeeklySummaryCard />
-      </motion.div>
-
-      {/* Main: Chat + History */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <motion.div variants={item} className="lg:col-span-2">
+      <WeeklySummaryCard />
+      
+      <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
+        <div className="w-full lg:w-[60%] flex flex-col">
           <AIChatBot />
-        </motion.div>
-        <motion.div variants={item} className="lg:col-span-1">
+        </div>
+        <div className="w-full lg:w-[40%] flex flex-col">
           <CheckinHistory />
-        </motion.div>
+        </div>
       </div>
     </motion.div>
   );

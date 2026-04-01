@@ -1,35 +1,23 @@
-export interface Patient {
-  name: string;
-  age: number;
-  gender: string;
-  city: string;
-  riskScore: number;
-  conditions: string[];
-  allergies: string[];
-  medications: string[];
-  incomeCategory: "low" | "middle" | "high";
-  healthIndices: {
-    brain: number;
-    heart: number;
-    lungs: number;
-    digestive: number;
-  };
-}
-
-export const mockPatient: Patient = {
-  name: "Arjun Mehta",
+export const patient = {
+  name: 'Arjun Mehta',
   age: 34,
-  gender: "Male",
-  city: "Mumbai",
+  gender: 'Male',
+  city: 'Mumbai',
+  phone: '+91 98765 43210',
+  bloodGroup: 'B+',
   riskScore: 67,
-  conditions: ["Hypertension", "Pre-diabetes"],
-  allergies: ["Penicillin"],
-  medications: ["Metformin 500mg", "Amlodipine 5mg"],
-  incomeCategory: "middle",
+  riskLevel: 'Moderate' as const,
+  conditions: ['Hypertension', 'Pre-diabetes'],
+  allergies: ['Penicillin', 'Sulfa drugs'],
+  medications: ['Metformin 500mg', 'Amlodipine 5mg', 'Aspirin 75mg', 'Atorvastatin 10mg'],
+  incomeCategory: 'middle',
+  familyGroupId: 'FAM-MH-2847',
   healthIndices: {
-    brain: 82,
-    heart: 74,
-    lungs: 88,
-    digestive: 65,
+    brain: { score: 82, label: 'Brain & Neurological', icon: '🧠', status: 'Good' },
+    heart: { score: 71, label: 'Heart & Cardiac', icon: '❤️', status: 'Monitor' },
+    lungs: { score: 88, label: 'Pulmonary Health', icon: '🫁', status: 'Good' },
+    digestive: { score: 63, label: 'Digestive System', icon: '🫃', status: 'Watch' },
   },
-};
+  aiSummary: 'Your cardiovascular markers remain within borderline range this week. Lower back discomfort was flagged across 3 consecutive check-ins — continued monitoring advised. Medicine adherence at 85% — consider enabling reminders for evening doses of Metformin.',
+  adherenceRate: 85,
+}

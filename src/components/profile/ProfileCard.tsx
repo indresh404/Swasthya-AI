@@ -1,92 +1,61 @@
-'use client';
+'use client'
 
 import React from 'react';
-import { 
-  MapPin, 
-  Dna, 
-  ShieldAlert, 
-  Droplets,
-  Cake,
-  TrendingUp
-} from 'lucide-react';
-import { mockPatient, Patient } from '@/data/mockPatient';
-import { motion } from 'framer-motion';
+import { patient } from '@/data/mockPatient';
+import { MapPin, Phone, Activity, ShieldCheck } from 'lucide-react';
 
 export default function ProfileCard() {
-  const patient = mockPatient;
-
   return (
-    <div className="glass-card p-8 flex flex-col items-center relative overflow-hidden">
-      {/* Background patterns */}
-      <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 rounded-bl-full pointer-events-none" />
-
-      {/* Profile Image / Initials */}
-      <motion.div 
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 p-1 shadow-2xl relative mb-6"
-      >
-        <div className="w-full h-full rounded-full border-4 border-white flex items-center justify-center text-white text-4xl font-black">
-          AM
-        </div>
-        <div className="absolute bottom-1 right-1 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md animate-pulse">
-          <TrendingUp className="w-4 h-4 text-orange-500" />
-        </div>
-      </motion.div>
-
-      <h3 className="text-2xl font-bold text-blue-900 font-display">Arjun Mehta</h3>
-      <div className="flex items-center text-slate-400 text-xs mt-1 space-x-3 mb-6">
-        <span className="flex items-center"><Cake className="w-3 h-3 mr-1" /> 34 Yrs</span>
-        <span className="flex items-center"><MapPin className="w-3 h-3 mr-1" /> Mumbai, MH</span>
-      </div>
-
-      {/* Main Info Blocks */}
-      <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-50 flex flex-col items-center">
-           <span className="text-[10px] uppercase tracking-widest font-bold text-blue-400 mb-2">Health Risk</span>
-           <span className="text-sm font-extrabold text-orange-600 uppercase tracking-wide">Moderate Risk</span>
-           <div className="mt-2 w-full h-1 bg-white rounded-full overflow-hidden">
-             <motion.div initial={{ width: 0 }} animate={{ width: '67%' }} className="h-full bg-orange-500" />
-           </div>
-        </div>
-
-        <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-50 flex flex-col items-center">
-           <span className="text-[10px] uppercase tracking-widest font-bold text-blue-400 mb-2">Blood Group</span>
-           <span className="text-sm font-extrabold text-red-600 uppercase tracking-wide">B+ Positive</span>
-           <div className="mt-2 flex items-center space-x-1">
-              {[1,2,3,4,5].map(i => <div key={i} className="w-1 h-1 bg-red-400 rounded-full" />)}
-           </div>
-        </div>
-      </div>
-
-      {/* Tags Section */}
-      <div className="w-full mt-6 space-y-4">
-        <div>
-          <label className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-2 block">Chronic Conditions</label>
-          <div className="flex flex-wrap gap-2">
-            {patient.conditions.map(c => (
-              <span key={c} className="text-[11px] font-bold bg-blue-100 text-blue-700 px-3 py-1 rounded-full">{c}</span>
-            ))}
+    <div className="bg-white rounded-2xl p-6 shadow-card border border-card-border h-full flex flex-col justify-center">
+      <div className="flex flex-col md:flex-row gap-6 items-center md:items-start text-center md:text-left">
+        {/* Avatar Area */}
+        <div className="flex-shrink-0 relative">
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center border-4 border-white shadow-md">
+            <span className="font-sora text-3xl font-bold text-blue-700">
+              {patient.name.split(' ').map(n => n[0]).join('')}
+            </span>
+          </div>
+          <div className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-green-500 border-2 border-white flex items-center justify-center text-white shadow-sm ring-1 ring-green-600/20">
+            <ShieldCheck size={14} />
           </div>
         </div>
 
-        <div>
-          <label className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-2 block">Allergies</label>
-          <div className="flex flex-wrap gap-2">
-            {patient.allergies.map(a => (
-              <span key={a} className="text-[11px] font-bold bg-red-50 text-red-600 px-3 py-1 rounded-full border border-red-100 flex items-center">
-                <ShieldAlert className="w-3 h-3 mr-1.5" />
-                {a}
+        {/* Info Area */}
+        <div className="flex-1 space-y-3">
+          <div>
+            <h2 className="font-sora text-2xl font-bold text-blue-900">{patient.name}</h2>
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-3 gap-y-2 mt-2">
+              <span className="text-sm font-semibold text-text-secondary bg-surface px-2 py-0.5 rounded-md border border-card-border">{patient.age} yrs</span>
+              <span className="text-sm font-semibold text-text-secondary bg-surface px-2 py-0.5 rounded-md border border-card-border">{patient.gender}</span>
+              <span className="text-sm font-semibold text-text-secondary flex items-center gap-1.5 bg-red-50 text-red-700 px-2 py-0.5 rounded-md border border-red-100">
+                <Activity size={14} className="text-risk-red" />
+                <span className="font-bold">{patient.bloodGroup}</span>
               </span>
-            ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4 pt-2">
+            <div className="flex items-center gap-1.5 text-xs text-text-muted font-bold tracking-wide">
+              <MapPin size={14} className="text-blue-400" /> {patient.city}
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-text-muted font-bold tracking-wide">
+              <Phone size={14} className="text-blue-400" /> +91 98765 43210
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Area */}
+        <div className="grid grid-cols-2 gap-3 w-full md:w-auto mt-4 md:mt-0 max-w-[240px] md:max-w-none mx-auto">
+          <div className="bg-surface p-4 rounded-xl border border-card-border text-center flex flex-col justify-center min-w-[90px] shadow-sm">
+            <p className="text-[10px] uppercase font-bold text-text-muted tracking-widest mb-1">Height</p>
+            <p className="font-mono text-xl font-bold text-blue-900">178 cm</p>
+          </div>
+          <div className="bg-surface p-4 rounded-xl border border-card-border text-center flex flex-col justify-center min-w-[90px] shadow-sm">
+            <p className="text-[10px] uppercase font-bold text-text-muted tracking-widest mb-1">Weight</p>
+            <p className="font-mono text-xl font-bold text-blue-900">76 kg</p>
           </div>
         </div>
       </div>
-
-      {/* Quick Action */}
-      <button className="w-full mt-8 py-3 bg-white border border-blue-100 text-blue-600 font-bold rounded-xl text-xs uppercase tracking-widest hover:bg-blue-50 transition-all">
-         Update Medical Profile
-      </button>
     </div>
   );
 }

@@ -1,48 +1,12 @@
-export interface Medicine {
-  id: string;
-  name: string;
-  dosage: string;
-  frequency: string; // once, twice, thrice
-  times: string[]; // e.g. ["8:00 AM", "8:00 PM"]
-  active: boolean;
-  takenToday: boolean;
-}
+export const medicines = [
+  { id: '1', name: 'Metformin', dosage: '500mg', times: ['08:00', '20:00'], takenToday: [true, false], color: '#2563eb', condition: 'Pre-diabetes' },
+  { id: '2', name: 'Amlodipine', dosage: '5mg', times: ['08:00'], takenToday: [true], color: '#10b981', condition: 'Hypertension' },
+  { id: '3', name: 'Aspirin', dosage: '75mg', times: ['13:00'], takenToday: [true], color: '#f97316', condition: 'Cardiac prevention' },
+  { id: '4', name: 'Atorvastatin', dosage: '10mg', times: ['21:00'], takenToday: [false], color: '#8b5cf6', condition: 'Cholesterol' },
+]
 
-export const mockMedicines: Medicine[] = [
-  {
-    id: "1",
-    name: "Metformin",
-    dosage: "500mg",
-    frequency: "twice",
-    times: ["8:00 AM", "8:00 PM"],
-    active: true,
-    takenToday: true,
-  },
-  {
-    id: "2",
-    name: "Amlodipine",
-    dosage: "5mg",
-    frequency: "once",
-    times: ["9:00 AM"],
-    active: true,
-    takenToday: true,
-  },
-  {
-    id: "3",
-    name: "Aspirin",
-    dosage: "75mg",
-    frequency: "once",
-    times: ["9:00 AM"],
-    active: true,
-    takenToday: false,
-  },
-  {
-    id: "4",
-    name: "Atorvastatin",
-    dosage: "10mg",
-    frequency: "once",
-    times: ["9:00 PM"],
-    active: true,
-    takenToday: false,
-  },
-];
+export const conflictPairs: Record<string, { severity: 'caution'|'warning'|'danger', description: string }> = {
+  'aspirin-ibuprofen': { severity: 'caution', description: 'Ibuprofen may reduce the antiplatelet effect of Aspirin, increasing cardiovascular risk. Avoid concurrent use if possible.' },
+  'metformin-ibuprofen': { severity: 'warning', description: 'NSAIDs like Ibuprofen can impair renal function in diabetic patients on Metformin, increasing lactic acidosis risk.' },
+  'amlodipine-grapefruit': { severity: 'caution', description: 'Grapefruit can increase Amlodipine plasma levels, intensifying side effects like dizziness and hypotension.' },
+}

@@ -1,98 +1,89 @@
-'use client';
+'use client'
 
 import React from 'react';
-import {
+import { 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
   ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ReferenceDot,
+  ReferenceLine,
+  Dot
 } from 'recharts';
-import { mockVitals } from '@/data/mockVitals';
+import { vitals30Days } from '@/data/mockVitals';
 
 export default function RiskTrendChart() {
-  const data = mockVitals.map((v, i) => ({
-    date: v.date,
-    risk: Math.round(40 + Math.sin(i * 0.5) * 10 + (v.heartRate - 70) * 1.5),
-  }));
-
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      const level = payload[0].value > 70 ? 'High' : payload[0].value > 40 ? 'Moderate' : 'Low';
       return (
-        <div className="bg-white/95 backdrop-blur-md p-3 border border-blue-100 rounded-xl shadow-xl">
-          <p className="text-[10px] text-slate-400 mb-1">{label}</p>
-          <p className="text-sm font-bold text-blue-900">
-            Risk Score: {payload[0].value}
-          </p>
+        <div className="bg-white p-3 border border-card-border rounded-xl shadow-card">
+          <p className="text-[10px] text-text-muted font-bold uppercase mb-1">{label}</p>
+          <p className="font-mono text-sm font-bold text-blue-900">Risk: {payload[0].value}</p>
+          <p className="text-[10px] font-semibold text-blue-500 mt-1">Level: {level}</p>
         </div>
       );
     }
     return null;
   };
 
-  return (
-    <div className="glass-card p-6 h-[400px] flex flex-col">
-      <div className="mb-4">
-        <h3 className="text-blue-900 font-bold">Risk Trend</h3>
-        <p className="text-xs text-slate-400 mt-1">30-day health risk assessment</p>
-      </div>
+  const CustomizedDot = (props: any) => {
+    const { cx, cy, payload } = props;
+    if (payload.label === 'Symptom spike') {
+      return (
+        <g>
+          <Dot cx={cx} cy={cy} r={6} fill="#ef4444" stroke="#fff" strokeWidth={2} />
+          <text x={cx} y={cy - 12} textAnchor="middle" fill="#ef4444" fontSize="10" fontWeight="bold">
+            Symptom spike
+          </text>
+        </g>
+      );
+    }
+    return null;
+  };
 
-      <div className="flex-1 w-full relative">
+  return (
+    <div className="bg-white rounded-2xl p-6 shadow-card border border-card-border h-full flex flex-col">
+      <header className="mb-6">
+        <h3 className="font-sora text-sm font-semibold text-text-secondary">30-Day Risk Trend</h3>
+        <p className="text-[10px] text-text-muted mt-1 uppercase tracking-widest font-bold">Health Variance Monitor</p>
+      </header>
+
+      <div className="flex-1 w-full min-h-[200px]">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data}>
+          <AreaChart data={vitals30Days}>
             <defs>
-              <linearGradient id="riskGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#2563EB" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#10B981" stopOpacity={0.05} />
+              <linearGradient id="colorRisk" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#2563eb" stopOpacity={0.2}/>
+                <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
-            <XAxis dataKey="date" hide />
-            <YAxis hide domain={[0, 100]} />
-            <Tooltip content={<CustomTooltip />} />
-            <Area
-              type="monotone"
-              dataKey="risk"
-              stroke="#2563EB"
-              strokeWidth={2}
-              fillOpacity={1}
-              fill="url(#riskGrad)"
-              animationDuration={2500}
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+            <XAxis 
+              dataKey="date" 
+              hide 
             />
-            {data.length > 18 && (
-              <ReferenceDot
-                x={data[18].date}
-                y={data[18].risk}
-                r={5}
-                fill="#EF4444"
-                stroke="white"
-                strokeWidth={2}
-              />
-            )}
+            <YAxis 
+              hide 
+              domain={[0, 100]} 
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <ReferenceLine y={70} stroke="#f97316" strokeDasharray="3 3" label={{ position: 'right', value: 'High', fill: '#f97316', fontSize: 10 }} />
+            <ReferenceLine y={40} stroke="#10b981" strokeDasharray="3 3" label={{ position: 'right', value: 'Low', fill: '#10b981', fontSize: 10 }} />
+            <Area 
+              type="monotone" 
+              dataKey="riskScore" 
+              stroke="#2563eb" 
+              strokeWidth={2}
+              fillOpacity={1} 
+              fill="url(#colorRisk)" 
+              dot={<CustomizedDot />}
+              animationDuration={2000}
+            />
           </AreaChart>
         </ResponsiveContainer>
-
-        <div className="absolute top-2 right-2 flex flex-col items-end pointer-events-none">
-          <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">
-            Monthly Avg
-          </span>
-          <span className="text-xl font-bold text-blue-900 font-mono">62.4</span>
-          <span className="text-[10px] text-green-500 font-bold mt-1">
-            ↓ 4.2% from last month
-          </span>
-        </div>
-      </div>
-
-      <div className="mt-4 pt-4 border-t border-blue-50 flex items-center justify-between">
-        <span className="text-[10px] text-slate-400">AI Confidence: 94%</span>
-        <div className="flex space-x-1">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="w-1 h-3 bg-blue-200 rounded-full" />
-          ))}
-        </div>
       </div>
     </div>
   );

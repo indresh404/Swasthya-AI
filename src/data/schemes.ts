@@ -1,60 +1,54 @@
-export interface Scheme {
-  id: string;
-  name: string;
-  category: string[];
-  coverage: string;
-  eligibility: string;
-  documents: string[];
-  hospitals: { name: string; distance: string }[];
-}
-
-export const schemes: Scheme[] = [
+export const schemes = [
   {
-    id: "s1",
-    name: "Ayushman Bharat PM-JAY",
-    category: ["Cardiac", "Cancer", "Renal"],
-    coverage: "₹5 Lakh/year",
-    eligibility: "BPL / Low Income Families",
-    documents: ["Aadhar", "Ration Card", "Income Certificate"],
-    hospitals: [
-      { name: "Surya Multispeciality", distance: "2.4 km" },
-      { name: "City General Hospital", distance: "4.1 km" },
-      { name: "Hinduja Memorial", distance: "5.8 km" }
-    ]
+    id: 1,
+    name: 'Ayushman Bharat PM-JAY',
+    shortName: 'PM-JAY',
+    covers: ['Cardiac procedures', 'Cancer treatment', 'Renal diseases', 'Orthopaedic', 'Neurological'],
+    coverage: '₹5 Lakh per family per year',
+    ageRange: 'All ages',
+    eligibility: 'BPL families listed in SECC 2011 database',
+    documents: ['Aadhar card', 'PM-JAY e-card or ration card', 'SECC listing confirmation'],
+    hospitals: [{ name: 'KEM Hospital', distance: '3.2 km' }, { name: 'Nair Hospital', distance: '5.1 km' }, { name: 'Sion Hospital', distance: '6.8 km' }],
+    badgeColor: '#2563eb',
+    matchReason: 'Cardiac risk flag in your profile',
   },
   {
-    id: "s2",
-    name: "Rashtriya Arogya Nidhi (RAN)",
-    category: ["Cardiac", "Cancer", "Life-threatening"],
-    coverage: "Up to ₹15 Lakh",
-    eligibility: "BPL patients in Government Hospitals",
-    documents: ["BPL Certificate", "Hospital Referral Letter"],
-    hospitals: [
-      { name: "KEM Hospital", distance: "3.2 km" },
-      { name: "JJ Hospital", distance: "6.5 km" }
-    ]
+    id: 2,
+    name: 'Rashtriya Arogya Nidhi',
+    shortName: 'RAN',
+    covers: ['Life-threatening cardiac conditions', 'Cancer', 'Organ transplant'],
+    coverage: 'Up to ₹15 Lakh (case-based approval)',
+    ageRange: 'All ages',
+    eligibility: 'BPL patients receiving treatment at government hospitals',
+    documents: ['BPL certificate', 'Hospital referral letter', 'Medical case summary', 'Aadhar card'],
+    hospitals: [{ name: 'AIIMS Mumbai (proposed)', distance: '8.4 km' }, { name: 'JJ Hospital', distance: '4.7 km' }],
+    badgeColor: '#059669',
+    matchReason: 'Elevated cardiac risk score (71/100)',
   },
   {
-    id: "s3",
-    name: "Pradhan Mantri Jan Arogya Yojana",
-    category: ["1,393+ Treatment Packages"],
-    coverage: "₹5 Lakh/family/year",
-    eligibility: "SECC Listed Families",
-    documents: ["Aadhar Card", "PMJAY e-Card"],
-    hospitals: [
-      { name: "All Empaneled Hospitals", distance: "Various" }
-    ]
+    id: 3,
+    name: 'Pradhan Mantri Jan Arogya Yojana',
+    shortName: 'PMJAY',
+    covers: ['1,393 treatment packages', 'Pre & post hospitalisation', 'Day-care procedures'],
+    coverage: '₹5 Lakh per family per year',
+    ageRange: 'All ages',
+    eligibility: 'SECC 2011 listed families, no cap on family size',
+    documents: ['Aadhar', 'PMJAY e-card (generate at CSC centre)', 'Ration card'],
+    hospitals: [{ name: 'Lilavati Hospital (empanelled)', distance: '7.2 km' }, { name: 'Hinduja Hospital', distance: '9.1 km' }],
+    badgeColor: '#f97316',
+    matchReason: 'Pre-diabetes + Hypertension both covered',
   },
   {
-    id: "s4",
-    name: "Maharashtra MJPJAY",
-    category: ["996 Procedures including Cardiac"],
-    coverage: "₹1.5 Lakh - ₹2.5 Lakh",
-    eligibility: "Maharashtra Residents",
-    documents: ["Aadhar", "Domicile Certificate"],
-    hospitals: [
-      { name: "Lilavati Hospital", distance: "7.1 km" },
-      { name: "Fortis Mulund", distance: "12.3 km" }
-    ]
-  }
-];
+    id: 4,
+    name: 'Mahatma Jyotirao Phule Jan Arogya Yojana',
+    shortName: 'MJPJAY',
+    covers: ['996 medical procedures', 'Cardiac surgery', 'Cancer', 'Renal transplant', 'Burns'],
+    coverage: '₹1.5 Lakh/year (extendable to ₹2.5L for critical conditions)',
+    ageRange: 'All ages',
+    eligibility: 'Maharashtra residents, all income groups (yellow/orange/white ration card holders)',
+    documents: ['Aadhar card', 'Maharashtra domicile certificate', 'Ration card (any colour)'],
+    hospitals: [{ name: 'Bombay Hospital', distance: '2.8 km' }, { name: 'Bhatia General Hospital', distance: '4.3 km' }, { name: 'Wockhardt Hospital', distance: '6.0 km' }],
+    badgeColor: '#8b5cf6',
+    matchReason: 'Maharashtra resident · Hypertension qualifies',
+  },
+]

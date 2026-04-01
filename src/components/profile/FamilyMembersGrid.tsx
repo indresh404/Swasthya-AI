@@ -1,79 +1,80 @@
-'use client';
+'use client'
 
 import React from 'react';
-import { 
-  Heart, 
-  ChevronRight, 
-  ShieldAlert,
-  User as UserIcon
-} from 'lucide-react';
-import { mockFamily } from '@/data/mockFamily';
-import { motion } from 'framer-motion';
+import { familyMembers } from '@/data/mockFamily';
+import { AlertCircle, Plus, Users, ShieldCheck } from 'lucide-react';
 
 export default function FamilyMembersGrid() {
-  const getRiskColor = (level: string) => {
-    switch (level) {
-      case 'High': return 'text-red-500 bg-red-50 border-red-100';
-      case 'Moderate': return 'text-orange-500 bg-orange-50 border-orange-100';
-      case 'Low': return 'text-green-500 bg-green-50 border-green-100';
-      default: return 'text-slate-500 bg-slate-50 border-slate-100';
-    }
-  };
-
-  const getRiskIcon = (level: string) => {
-    switch (level) {
-      case 'High': return '🔴';
-      case 'Moderate': return '🟡';
-      case 'Low': return '🟢';
-      default: return '⚪';
-    }
-  };
-
   return (
-    <div className="grid grid-cols-1 gap-4">
-      {mockFamily.map((member) => (
-        <motion.div
-          key={member.id}
-          whileHover={{ x: 4, transition: { duration: 0.2 } }}
-          className="glass-card p-4 flex items-center justify-between group cursor-pointer"
-        >
-          <div className="flex items-center space-x-4">
-            {/* Avatar */}
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-sm ${
-              member.riskLevel === 'High' ? 'bg-gradient-to-br from-red-500 to-red-600' : 
-              member.riskLevel === 'Moderate' ? 'bg-gradient-to-br from-orange-400 to-orange-500' : 
-              'bg-gradient-to-br from-green-400 to-green-500'
-            }`}>
-              {member.name.charAt(0)}
+    <div className="bg-white rounded-2xl shadow-card border border-card-border p-6 h-full flex flex-col">
+      <header className="flex items-center justify-between mb-6">
+        <h3 className="font-sora text-base font-bold text-blue-900 flex items-center gap-2">
+          <Users size={18} className="text-blue-500" />
+          Linked Family
+        </h3>
+        <button className="text-[11px] font-bold text-blue-600 uppercase tracking-widest hover:text-blue-800 transition-colors flex items-center gap-1.5 bg-blue-50 px-3 py-1.5 rounded-full ring-1 ring-blue-500/20 shadow-sm">
+          <Plus size={14} />
+          Add Member
+        </button>
+      </header>
+
+      <div className="flex-1 flex flex-col gap-4 overflow-y-auto no-scrollbar">
+        {familyMembers.map((member) => (
+          <div key={member.id} className="p-4 rounded-xl border border-card-border bg-surface flex flex-col hover:border-blue-200 hover:shadow-sm transition-all group">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-sora font-bold text-blue-700 text-sm shadow-sm ring-2 ring-white">
+                {member.avatar}
+              </div>
+              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                member.riskLevel === 'Elevated' 
+                  ? 'bg-red-100 text-red-700 border border-red-200' 
+                  : member.riskLevel === 'Moderate'
+                    ? 'bg-orange-100 text-orange-700 border border-orange-200'
+                    : 'bg-green-100 text-green-700 border border-green-200'
+              }`}>
+                Score: {member.riskScore}
+              </span>
             </div>
-            
-            <div>
-              <h4 className="font-bold text-blue-900 text-sm flex items-center">
-                {member.name}
-                <span className="ml-2 text-[10px] text-slate-400 font-medium">({member.relation})</span>
-              </h4>
-              <div className="flex items-center space-x-2 mt-1">
-                 <span className="text-[10px] text-slate-500 font-bold">{member.age} Yrs</span>
-                 <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full border ${getRiskColor(member.riskLevel)}`}>
-                   {getRiskIcon(member.riskLevel)} {member.riskLevel.toUpperCase()}
-                 </span>
+
+            <div className="flex-1">
+              <h4 className="font-sora text-sm font-bold text-blue-900 group-hover:text-blue-600 transition-colors">{member.name}</h4>
+              <p className="text-[11px] text-text-secondary font-bold mt-0.5 uppercase tracking-wide">{member.relation} · {member.age} yrs</p>
+              
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {member.conditions.map((c, i) => (
+                  <span key={i} className="px-1.5 py-0.5 rounded-md bg-white border border-card-border text-[10px] text-text-muted font-bold truncate max-w-full shadow-sm">
+                    {c}
+                  </span>
+                ))}
               </div>
             </div>
-          </div>
 
-          <div className="flex items-center space-x-4">
-             <div className="text-right hidden md:block">
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Risk Score</p>
-                <p className="text-sm font-bold text-blue-900">{member.riskScore}</p>
-             </div>
-             <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+            {member.riskLevel === 'Elevated' ? (
+              <div className="mt-4 pt-3 border-t border-card-border flex items-center justify-between gap-1.5 text-risk-red text-[11px] font-bold">
+                <span className="flex items-center gap-1.5">
+                  <AlertCircle size={14} />
+                  Action Required
+                </span>
+                <span className="px-2 py-0.5 bg-red-50 rounded text-[9px] uppercase tracking-widest text-red-600 font-bold border border-red-100 cursor-pointer hover:bg-red-100 transition-colors shadow-sm">Review</span>
+              </div>
+            ) : member.riskLevel === 'Moderate' ? (
+              <div className="mt-4 pt-3 border-t border-card-border flex items-center justify-between gap-1.5 text-risk-orange text-[11px] font-bold">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-risk-orange" />
+                  Monitor
+                </span>
+              </div>
+            ) : (
+               <div className="mt-4 pt-3 border-t border-card-border flex items-center justify-between gap-1.5 text-green-600 text-[11px] font-bold">
+                <span className="flex items-center gap-1.5">
+                  <ShieldCheck size={14} />
+                  Stable
+                </span>
+              </div>
+            )}
           </div>
-        </motion.div>
-      ))}
-
-      <button className="w-full py-4 rounded-2xl border-2 border-dashed border-blue-100 text-blue-400 font-bold text-xs uppercase tracking-widest hover:bg-blue-50 hover:border-blue-300 transition-all">
-         + Add Family Member
-      </button>
+        ))}
+      </div>
     </div>
   );
 }

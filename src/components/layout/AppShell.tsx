@@ -1,48 +1,55 @@
-'use client';
+'use client'
 
 import React from 'react';
-import Sidebar from './Sidebar';
 import TopBar from './TopBar';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useSection } from '@/hooks/useSection';
+import BottomBar from './BottomBar';
+import { Section } from '@/hooks/useSection';
+import { Toaster } from 'react-hot-toast';
 
 interface AppShellProps {
   children: React.ReactNode;
+  activeSection: Section;
+  setActiveSection: (section: Section) => void;
+  setBodyMapOpen: (open: boolean) => void;
 }
 
-export default function AppShell({ children }: AppShellProps) {
-  const { activeSection } = useSection();
-
+export default function AppShell({ 
+  children, 
+  activeSection, 
+  setActiveSection, 
+  setBodyMapOpen 
+}: AppShellProps) {
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans selection:bg-blue-100 selection:text-blue-900">
-      {/* Fixed Sidebar */}
-      <Sidebar />
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col transition-all duration-300 ml-[80px]">
-        <TopBar />
-        
-        <main className="flex-1 p-8 overflow-y-auto">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeSection}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="max-w-7xl mx-auto"
-            >
-              {children}
-            </motion.div>
-          </AnimatePresence>
-        </main>
-      </div>
+    <div className="flex flex-col h-screen w-full bg-surface overflow-hidden">
+      <TopBar 
+        activeSection={activeSection} 
+        setActiveSection={setActiveSection}
+        setBodyMapOpen={setBodyMapOpen}
+      />
       
-      {/* Background patterns */}
-      <div className="fixed inset-0 pointer-events-none z-[-1] overflow-hidden">
-        <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-400 opacity-5 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600 opacity-5 blur-[120px] rounded-full" />
-      </div>
+      <main className="flex-1 overflow-y-auto no-scrollbar pb-28 md:pb-8 pt-6 w-full relative">
+        <div className="mx-auto max-w-[1400px] px-4 md:px-6 h-full flex flex-col">
+          {children}
+        </div>
+      </main>
+
+      <BottomBar 
+        activeSection={activeSection} 
+        setActiveSection={setActiveSection} 
+      />
+
+      <Toaster 
+        position="bottom-right"
+        toastOptions={{
+          style: {
+            background: '#ffffff',
+            color: '#0f172a',
+            borderRadius: '16px',
+            border: '1px solid #dbeafe',
+            boxShadow: '0 4px 24px rgba(37,99,235,0.07)',
+          }
+        }}
+      />
     </div>
   );
 }

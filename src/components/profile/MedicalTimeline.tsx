@@ -1,93 +1,69 @@
-'use client';
+'use client'
 
 import React from 'react';
-import { 
-  Stethoscope, 
-  Pill, 
-  Beaker, 
-  FileText, 
-  Activity, 
-  Calendar,
-  ChevronRight,
-  Download
-} from 'lucide-react';
-import { mockRecords } from '@/data/mockRecords';
-import { motion } from 'framer-motion';
-
-const getIcon = (type: string) => {
-  switch (type) {
-    case 'checkup': return <Stethoscope className="w-4 h-4" />;
-    case 'lab': return <Beaker className="w-4 h-4" />;
-    case 'prescription': return <Pill className="w-4 h-4" />;
-    case 'cardiology': return <Activity className="w-4 h-4" />;
-    case 'uploaded': return <FileText className="w-4 h-4" />;
-    default: return <FileText className="w-4 h-4" />;
-  }
-};
-
-const getColor = (type: string) => {
-  switch (type) {
-    case 'checkup': return 'text-blue-600 bg-blue-100';
-    case 'lab': return 'text-indigo-600 bg-indigo-100';
-    case 'prescription': return 'text-green-600 bg-green-100';
-    case 'cardiology': return 'text-red-600 bg-red-100';
-    case 'uploaded': return 'text-slate-600 bg-slate-100';
-    default: return 'text-slate-600 bg-slate-100';
-  }
-};
+import { records } from '@/data/mockRecords';
+import { Activity, Clock } from 'lucide-react';
 
 export default function MedicalTimeline() {
   return (
-    <div className="relative space-y-6">
-      {/* Vertical Line */}
-      <div className="absolute left-6 top-2 bottom-2 w-0.5 bg-blue-50/50" />
+    <div className="bg-white rounded-2xl shadow-card border border-card-border h-full flex flex-col overflow-hidden">
+      <header className="p-6 border-b border-card-border flex items-center justify-between bg-surface">
+        <h3 className="font-sora text-sm font-bold text-blue-900 flex items-center gap-2">
+          <Activity size={18} className="text-blue-500" />
+          Medical History
+        </h3>
+        <button className="text-[10px] font-bold text-text-muted hover:text-blue-600 transition-colors uppercase tracking-widest bg-white px-3 py-1.5 rounded-full border border-card-border shadow-sm">
+          View All
+        </button>
+      </header>
 
-      {mockRecords.map((record, index) => (
-        <motion.div
-          key={index}
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: index * 0.1 }}
-          className="relative pl-14 group"
-        >
-          {/* Dot Indicator */}
-          <div className="absolute left-0 top-0 w-12 h-12 rounded-full bg-white border-4 border-slate-50 shadow-sm flex items-center justify-center z-10 transition-transform group-hover:scale-110">
-            <div className={`p-1.5 rounded-lg ${getColor(record.type)}`}>
-               {getIcon(record.type)}
-            </div>
-          </div>
-
-          <div className="glass-card p-5 group-hover:shadow-md transition-all">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-2">
-              <div className="flex items-center space-x-2">
-                <span className="text-[10px] uppercase tracking-widest font-bold text-blue-400 bg-blue-50 px-2 py-0.5 rounded-full">
-                  {new Date(record.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </span>
-                <span className="text-xs font-bold text-blue-900">{record.doctor}</span>
+      <div className="p-6 overflow-y-auto w-full no-scrollbar relative flex-1 min-h-[400px]">
+        {/* Timeline line */}
+        <div className="absolute left-6 md:left-10 top-6 bottom-6 w-0.5 bg-card-border flex flex-col justify-between hidden md:flex">
+            <div className="w-full h-12 bg-gradient-to-b from-white to-transparent absolute top-0" />
+            <div className="w-full h-12 bg-gradient-to-t from-white to-transparent absolute bottom-0" />
+        </div>
+        
+        <div className="space-y-6 relative md:pl-12">
+          {records.map((record) => (
+            <div key={record.id} className="relative group">
+              <div className="absolute -left-12 top-0 mt-1 hidden md:block z-10">
+                <div className="w-8 h-8 rounded-full bg-surface border border-card-border shadow-sm flex items-center justify-center text-sm ring-4 ring-white group-hover:border-blue-300 group-hover:bg-blue-50 transition-colors">
+                  {record.icon}
+                </div>
               </div>
-              <button className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors md:opacity-0 group-hover:opacity-100">
-                <Download className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-            </div>
-            
-            <p className="text-sm text-slate-600 font-medium leading-relaxed">
-               {record.description}
-            </p>
+              
+              <div className="bg-surface rounded-xl p-4 md:p-5 border border-card-border group-hover:border-blue-200 group-hover:shadow-sm transition-all md:mr-4 relative">
+                 {/* Arrow pointer for desktop */}
+                 <div className="hidden md:block absolute -left-[7px] top-4 w-3 h-3 bg-surface border-l border-t border-card-border transform -rotate-45 group-hover:border-blue-200 transition-colors" />
 
-            <div className="mt-3 pt-3 border-t border-blue-50 flex items-center justify-between">
-               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none">Record Attached</span>
-               <div className="flex items-center space-x-1 cursor-pointer">
-                  <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest leading-none">View File</span>
-                  <ChevronRight className="w-3 h-3 text-blue-600" />
-               </div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                  <h4 className="font-sora text-sm font-bold text-blue-900 leading-tight flex items-center gap-2">
+                    <span className="md:hidden text-lg">{record.icon}</span> {record.title}
+                  </h4>
+                  <span className="flex items-center gap-1.5 text-[10px] font-bold text-text-muted uppercase tracking-widest bg-white px-2 py-0.5 rounded-md border border-card-border w-fit shadow-sm">
+                    <Clock size={10} />
+                    {record.date}
+                  </span>
+                </div>
+                
+                <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2 text-blue-600">
+                  {record.doctor}
+                </p>
+                <div className="mt-3 text-[11px] font-medium text-text-primary leading-relaxed bg-white p-3 rounded-xl border border-card-border shadow-sm">
+                  {record.detail}
+                </div>
+                
+                <div className="mt-3 flex justify-end">
+                  <button className="text-[10px] font-bold text-blue-500 uppercase tracking-widest hover:text-blue-700 transition-colors bg-blue-50 px-3 py-1.5 rounded-full">
+                    View Details →
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </motion.div>
-      ))}
-
-      <button className="w-full mt-4 py-4 rounded-2xl bg-blue-50 text-blue-600 font-bold text-xs uppercase tracking-widest hover:bg-blue-100 transition-all">
-         Load Older Records
-      </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
