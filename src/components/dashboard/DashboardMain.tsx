@@ -65,7 +65,7 @@ export default function DashboardMain({ onBodyMapOpen }: DashboardMainProps) {
       <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150 fill-mode-both">
         <div className="flex items-center justify-between mb-4">
            <h3 className="text-[10px] font-extrabold text-outline uppercase tracking-[0.3em]">Matched Health Schemes</h3>
-           <div className="h-[1px] flex-1 mx-6 bg-surface-container" />
+           <div className="h-[1px] flex-1 mx-2 md:mx-6 bg-surface-container" />
         </div>
         <SchemesBanner />
       </section>
@@ -76,26 +76,27 @@ export default function DashboardMain({ onBodyMapOpen }: DashboardMainProps) {
           onClick={onBodyMapOpen}
           whileHover={{ scale: 1.01, y: -2 }}
           whileTap={{ scale: 0.99 }}
-          className="w-full flex items-center justify-between gap-10 px-10 py-10 bg-black text-white rounded-[2.5rem] shadow-2xl border border-white/10 group overflow-hidden relative"
+          className="w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-6 md:gap-10 px-6 py-8 md:px-10 md:py-10 bg-black text-white rounded-[2rem] md:rounded-[2.5rem] shadow-2xl border border-white/10 group overflow-hidden relative"
         >
           {/* Abstract background pulse */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-primary/30 transition-all duration-700" />
           
-          <div className="flex items-center gap-8 relative z-10">
-            <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center border border-white/20 shadow-inner group-hover:bg-primary/20 group-hover:border-primary/40 transition-all duration-500">
-              <Activity size={40} className="text-secondary animate-pulse" />
+          <div className="flex items-center gap-5 md:gap-8 relative z-10">
+            <div className="w-14 h-14 md:w-20 md:h-20 shrink-0 rounded-full bg-white/10 flex items-center justify-center border border-white/20 shadow-inner group-hover:bg-primary/20 group-hover:border-primary/40 transition-all duration-500">
+              <Activity size={28} className="text-secondary animate-pulse md:hidden" />
+              <Activity size={40} className="text-secondary animate-pulse hidden md:block" />
             </div>
             <div className="text-left">
-              <div className="flex items-center gap-2 mb-2">
-                 <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
-                 <span className="text-[11px] font-bold text-outline uppercase tracking-[0.3em]">Real-time Visualization Active</span>
+              <div className="flex items-center gap-2 mb-1 md:mb-2">
+                 <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-secondary animate-pulse" />
+                 <span className="text-[10px] md:text-[11px] font-bold text-outline uppercase tracking-[0.2em] md:tracking-[0.3em]">AI Visualization</span>
               </div>
-              <h3 className="font-headline font-extrabold text-3xl md:text-4xl tracking-tight leading-none mb-2">3D Diagnostic Body Map</h3>
-              <p className="text-white/60 font-medium max-w-md hidden md:block">Rotate and inspect your physiological hotspots identified by AI analysis.</p>
+              <h3 className="font-headline font-extrabold text-xl md:text-4xl tracking-tight leading-tight mb-1 md:mb-2 break-words">3D Diagnostic Body Map</h3>
+              <p className="text-white/60 font-medium max-w-sm text-xs hidden md:block">Rotate and inspect your physiological hotspots identified by AI analysis.</p>
             </div>
           </div>
-          <div className="flex flex-col items-center md:items-end relative z-10 shrink-0">
-             <div className="text-[10px] md:text-[11px] font-extrabold text-outline uppercase tracking-widest mb-3 whitespace-nowrap">Click here to view</div>
+          <div className="w-full md:w-auto flex flex-row md:flex-col items-center justify-between md:items-end relative z-10 shrink-0 border-t border-white/10 md:border-t-0 pt-4 md:pt-0">
+             <div className="text-[10px] md:text-[11px] font-extrabold text-outline uppercase tracking-widest whitespace-nowrap">Click here to view</div>
              <div className="w-10 h-10 md:w-12 md:h-12 bg-white/10 rounded-full flex items-center justify-center border border-white/20 group-hover:translate-x-2 transition-all">
                 <span className="text-lg md:text-xl">→</span>
              </div>
@@ -115,7 +116,7 @@ export default function DashboardMain({ onBodyMapOpen }: DashboardMainProps) {
                <Zap size={14} className="text-secondary" />
                Smart Watch Intelligence
             </h3>
-            <div className="h-[1px] flex-1 mx-6 bg-surface-container" />
+            <div className="h-[1px] flex-1 mx-2 md:mx-6 bg-surface-container" />
          </div>
          <WatchAnalyticsRow />
       </section>

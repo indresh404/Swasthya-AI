@@ -27,7 +27,7 @@ export default function AppShell({
         setBodyMapOpen={setBodyMapOpen}
       />
       
-      <main className="flex-1 overflow-y-auto no-scrollbar pb-28 md:pb-8 pt-6 w-full relative">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar pb-28 md:pb-8 pt-6 w-full relative">
         <div className="mx-auto max-w-[1400px] px-4 md:px-6 h-full flex flex-col">
           {children}
         </div>

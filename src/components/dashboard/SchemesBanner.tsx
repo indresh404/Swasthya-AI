@@ -13,17 +13,17 @@ export default function SchemesBanner() {
       <motion.div 
         whileHover={{ scale: 1.005 }}
         onClick={() => setIsPanelOpen(true)}
-        className="relative overflow-hidden rounded-3xl bg-secondary p-6 md:p-8 flex items-center justify-between shadow-xl ring-1 ring-white/20 cursor-pointer group"
+        className="relative overflow-hidden rounded-3xl bg-secondary p-5 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 shadow-xl ring-1 ring-white/20 cursor-pointer group"
       >
-        <div className="flex items-center gap-6">
-          <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl shadow-inner">
+        <div className="flex items-center gap-4 md:gap-6">
+          <div className="w-12 h-12 md:w-14 md:h-14 shrink-0 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl md:text-3xl shadow-inner">
             🏥
           </div>
           <div>
-            <h3 className="font-sora text-lg md:text-xl font-bold text-white mb-1">
+            <h3 className="font-sora text-base md:text-xl font-bold text-white mb-1">
               You may qualify for free government healthcare
             </h3>
-            <p className="text-sm text-green-50 font-dm-sans opacity-95">
+            <p className="text-xs md:text-sm text-green-50 font-dm-sans opacity-95">
               3 schemes match your cardiac risk profile and location in Mumbai
             </p>
           </div>
@@ -34,7 +34,7 @@ export default function SchemesBanner() {
             e.stopPropagation();
             setIsPanelOpen(true);
           }}
-          className="flex items-center gap-2 px-5 py-2.5 bg-white text-primary font-headline font-bold text-xs rounded-2xl shadow-lg hover:bg-surface transition-all group active:scale-95 whitespace-nowrap"
+          className="w-full md:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-white text-primary font-headline font-bold text-xs rounded-2xl shadow-lg hover:bg-surface transition-all group active:scale-95 whitespace-nowrap"
         >
           Click here to view
           <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
