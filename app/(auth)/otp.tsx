@@ -95,7 +95,7 @@ export default function OTPVerifyScreen() {
     if (hasProfile) {
       router.replace('/(tabs)/home');
     } else {
-      router.replace('/(onboarding)/chat');
+      router.replace('/(onboarding)/user-details');
     }
   };
 

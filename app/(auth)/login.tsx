@@ -80,7 +80,6 @@ export default function LoginScreen() {
   const inputBorderAnim = useRef(new Animated.Value(0)).current;
   const buttonPopAnim = useRef(new Animated.Value(1)).current;
   const googleButtonPopAnim = useRef(new Animated.Value(1)).current;
-  const signupPopAnim = useRef(new Animated.Value(1)).current;
   const backButtonPopAnim = useRef(new Animated.Value(1)).current;
 
   // Background animation values
@@ -186,12 +185,6 @@ export default function LoginScreen() {
   const handleGoogleSignIn = () => {
     animatePop(googleButtonPopAnim, () => {
       Alert.alert('Google Sign In', 'Google authentication would be integrated here');
-    });
-  };
-
-  const handleSignUp = () => {
-    animatePop(signupPopAnim, () => {
-      router.push('/(auth)/signup');
     });
   };
 
@@ -418,26 +411,6 @@ export default function LoginScreen() {
               <Text style={styles.googleButtonText}>Continue with Google</Text>
             </Animated.View>
           </TouchableOpacity>
-
-          {/* Sign Up Link */}
-          <TouchableOpacity
-            onPress={handleSignUp}
-            activeOpacity={0.7}
-          >
-            <Animated.View
-              style={[
-                styles.signupLink,
-                {
-                  transform: [{ scale: signupPopAnim }],
-                },
-              ]}
-            >
-              <Text style={styles.signupText}>
-                Don't have an account?{' '}
-                <Text style={styles.signupLinkText}>Sign Up</Text>
-              </Text>
-            </Animated.View>
-          </TouchableOpacity>
         </Animated.View>
       </KeyboardAvoidingView>
     </View>
@@ -615,20 +588,6 @@ const styles = StyleSheet.create({
     fontFamily: TYPOGRAPHY.fonts.medium,
     fontSize: TYPOGRAPHY.sizes.md,
     color: COLORS.text.secondary,
-  },
-  signupLink: {
-    marginTop: SPACING.xl,
-    alignItems: 'center',
-    paddingVertical: SPACING.md,
-  },
-  signupText: {
-    fontFamily: TYPOGRAPHY.fonts.regular,
-    fontSize: TYPOGRAPHY.sizes.md,
-    color: COLORS.text.secondary,
-  },
-  signupLinkText: {
-    color: COLORS.blue[500],
-    fontFamily: TYPOGRAPHY.fonts.semibold,
   },
   // Animated gradient orbs
   orb: {
