@@ -1,4 +1,5 @@
 // app/(tabs)/meds/index.tsx
+import { ScreenIntroGate } from '@/components/ui/ScreenIntroGate';
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, StatusBar, Platform, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -77,10 +78,16 @@ export default function MedsScreen() {
         userName="Rahul"
         activeScreen={currentRoute}
       />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>Medications Screen</Text>
-        <Text style={styles.subtitle}>Your medications will appear here</Text>
-      </ScrollView>
+      <ScreenIntroGate
+        loaderText="Loading medication details..."
+        loaderDuration={3000}
+        backgroundColor="#F9FAFB"
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <Text style={styles.title}>Medications Screen</Text>
+          <Text style={styles.subtitle}>Your medications will appear here</Text>
+        </ScrollView>
+      </ScreenIntroGate>
     </SafeAreaView>
   );
 }

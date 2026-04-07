@@ -4,8 +4,13 @@ import { router, useSegments, Slot } from 'expo-router';
 import { Dimensions, StyleSheet, TouchableOpacity, View, Text, Animated } from 'react-native';
 import { useRef, useEffect } from 'react';
 
-const { width } = Dimensions.get('window');
 const FAB_SIZE = 62;
+const TAB_CONFIG = [
+  { name: 'Home', icon: 'home-outline', activeIcon: 'home', route: '/(tabs)/home' },
+  { name: 'Check-in', icon: 'checkmark-circle-outline', activeIcon: 'checkmark-circle', route: '/(tabs)/checkin' },
+  { name: 'Meds', icon: 'medkit-outline', activeIcon: 'medkit', route: '/(tabs)/meds' },
+  { name: 'Profile', icon: 'person-outline', activeIcon: 'person', route: '/(tabs)/profile' },
+] as const;
 
 // Primary Color
 const PRIMARY_COLOR = '#0474FC';
@@ -13,47 +18,47 @@ const PRIMARY_COLOR = '#0474FC';
 export default function TabLayout() {
   const segments = useSegments();
   
-  // Animation values for each tab
-  const tabScaleAnimations = useRef([
-    new Animated.Value(1), // Home
-    new Animated.Value(1), // Check-in
-    new Animated.Value(1), // Meds
-    new Animated.Value(1), // Profile
-  ]).current;
-  
-  const tabGlowAnimations = useRef([
-    new Animated.Value(0), // Home glow
-    new Animated.Value(0), // Check-in glow
-    new Animated.Value(0), // Meds glow
-    new Animated.Value(0), // Profile glow
-  ]).current;
+  // Smooth animation values
+  const navbarGlow = useRef(new Animated.Value(0)).current;
+  const navbarBounce = useRef(new Animated.Value(1)).current;
+  const fabPulseRing = useRef(new Animated.Value(0)).current;
+  const fabShadowAnim = useRef(new Animated.Value(1)).current;
+  const tabScaleAnims = useRef(TAB_CONFIG.map(() => new Animated.Value(1))).current;
+  const tabTextAnims = useRef(TAB_CONFIG.map(() => new Animated.Value(0))).current;
 
   // Continuous subtle pulse for active tab
   useEffect(() => {
-    const animations = tabs.map((_, index) => {
-      if (getActiveTab() === index) {
-        return Animated.loop(
-          Animated.sequence([
-            Animated.timing(tabGlowAnimations[index], {
-              toValue: 0.5,
-              duration: 1500,
-              useNativeDriver: true,
-            }),
-            Animated.timing(tabGlowAnimations[index], {
-              toValue: 0,
-              duration: 1500,
-              useNativeDriver: true,
-            }),
-          ])
-        ).start();
-      }
-      return null;
-    });
-    
-    return () => {
-      animations.forEach(anim => anim && anim.stop());
-    };
-  }, [segments]);
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(fabPulseRing, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fabPulseRing, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // Smooth floating animation for FAB
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(fabShadowAnim, {
+          toValue: 1.1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fabShadowAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [fabPulseRing, fabShadowAnim]);
 
   const getActiveTab = () => {
     const currentRoute = segments[segments.length - 1];
@@ -105,19 +110,30 @@ export default function TabLayout() {
   };
 
   const activeTab = getActiveTab();
-  
-  const tabs = [
-    { name: 'Home', icon: 'home-outline', activeIcon: 'home', route: '/(tabs)/home' },
-    { name: 'Check-in', icon: 'checkmark-circle-outline', activeIcon: 'checkmark-circle', route: '/(tabs)/checkin' },
-    { name: 'Meds', icon: 'medkit-outline', activeIcon: 'medkit', route: '/(tabs)/meds' },
-    { name: 'Profile', icon: 'person-outline', activeIcon: 'person', route: '/(tabs)/profile' },
-  ];
+  const leftTabs = TAB_CONFIG.slice(0, 2);
+  const rightTabs = TAB_CONFIG.slice(2, 4);
 
-  const leftTabs = tabs.slice(0, 2);
-  const rightTabs = tabs.slice(2, 4);
+  const animateTabState = (tabIndex: number, isPressed: boolean) => {
+    Animated.parallel([
+      Animated.spring(tabScaleAnims[tabIndex], {
+        toValue: isPressed ? 0.92 : 1,
+        friction: 5,
+        tension: 60,
+        useNativeDriver: true,
+      }),
+      Animated.timing(tabTextAnims[tabIndex], {
+        toValue: isPressed ? 1 : 0,
+        duration: 150,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
 
-  // Import Easing
-  const Easing = require('react-native').Easing;
+  const getTextScale = (tabIndex: number) =>
+    tabTextAnims[tabIndex].interpolate({
+      inputRange: [0, 1],
+      outputRange: [1, 1.05],
+    });
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
@@ -129,19 +145,16 @@ export default function TabLayout() {
           <View style={styles.navContent}>
             {leftTabs.map((tab, idx) => {
               const isActive = activeTab === idx;
-              const glowIntensity = tabGlowAnimations[idx].interpolate({
-                inputRange: [0, 0.5, 0.8, 1],
-                outputRange: [0, 0.15, 0.25, 0],
-              });
-              
               return (
                 <Animated.View
                   key={tab.name}
-                  style={{ transform: [{ scale: tabScaleAnimations[idx] }] }}
+                  style={{ transform: [{ scale: tabScaleAnims[idx] }] }}
                 >
                   <TouchableOpacity
-                    onPress={() => handleTabPress(tab.route, idx)}
-                    activeOpacity={0.9}
+                    onPress={() => router.push(tab.route as any)}
+                    onPressIn={() => animateTabState(idx, true)}
+                    onPressOut={() => animateTabState(idx, false)}
+                    activeOpacity={0.7}
                     style={styles.navItem}
                   >
                     <Animated.View style={[
@@ -160,7 +173,11 @@ export default function TabLayout() {
                         color="#FFFFFF" 
                       />
                     </Animated.View>
-                    <Text style={[styles.navLabel, isActive && styles.activeNavLabel]}>
+                    <Animated.Text style={[
+                      styles.navLabel, 
+                      isActive && styles.activeNavLabel,
+                      { transform: [{ scale: getTextScale(idx) }] }
+                    ]}>
                       {tab.name}
                     </Text>
                   </TouchableOpacity>
@@ -173,19 +190,16 @@ export default function TabLayout() {
             {rightTabs.map((tab, idx) => {
               const isActive = activeTab === idx + 2;
               const tabIndex = idx + 2;
-              const glowIntensity = tabGlowAnimations[tabIndex].interpolate({
-                inputRange: [0, 0.5, 0.8, 1],
-                outputRange: [0, 0.15, 0.25, 0],
-              });
-              
               return (
                 <Animated.View
                   key={tab.name}
-                  style={{ transform: [{ scale: tabScaleAnimations[tabIndex] }] }}
+                  style={{ transform: [{ scale: tabScaleAnims[tabIndex] }] }}
                 >
                   <TouchableOpacity
-                    onPress={() => handleTabPress(tab.route, tabIndex)}
-                    activeOpacity={0.9}
+                    onPress={() => router.push(tab.route as any)}
+                    onPressIn={() => animateTabState(tabIndex, true)}
+                    onPressOut={() => animateTabState(tabIndex, false)}
+                    activeOpacity={0.7}
                     style={styles.navItem}
                   >
                     <Animated.View style={[
@@ -204,7 +218,11 @@ export default function TabLayout() {
                         color="#FFFFFF" 
                       />
                     </Animated.View>
-                    <Text style={[styles.navLabel, isActive && styles.activeNavLabel]}>
+                    <Animated.Text style={[
+                      styles.navLabel, 
+                      isActive && styles.activeNavLabel,
+                      { transform: [{ scale: getTextScale(tabIndex) }] }
+                    ]}>
                       {tab.name}
                     </Text>
                   </TouchableOpacity>
@@ -302,5 +320,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 10,
+  },
+  fabRipple: {
+    position: 'absolute',
+    width: FAB_SIZE,
+    height: FAB_SIZE,
+    borderRadius: FAB_SIZE / 2,
+    backgroundColor: PRIMARY_COLOR,
+    opacity: 0.08,
+  },
+  fabPulseRing: {
+    position: 'absolute',
+    width: FAB_SIZE,
+    height: FAB_SIZE,
+    borderRadius: FAB_SIZE / 2,
+    backgroundColor: PRIMARY_COLOR,
+    top: 0,
+    left: 0,
   },
 });

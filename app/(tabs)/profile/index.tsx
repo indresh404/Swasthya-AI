@@ -1,4 +1,5 @@
 // app/(tabs)/profile/index.tsx
+import { ScreenIntroGate } from '@/components/ui/ScreenIntroGate';
 import React from 'react';
 import {
   ScrollView,
@@ -115,7 +116,7 @@ export default function ProfileScreen() {
         message: 'Check out my Health ID QR Code',
         title: 'Share Health ID',
       });
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Could not share QR code');
     }
   };
@@ -160,11 +161,16 @@ export default function ProfileScreen() {
         activeScreen={currentRoute}
       />
       
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <ScreenIntroGate
+        loaderText="Loading your profile..."
+        loaderDuration={3000}
+        backgroundColor={COLORS.background}
       >
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
         {/* A. Identity + QR Card */}
         <View style={styles.identityCard}>
           <View style={styles.profileHeader}>
@@ -382,8 +388,9 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.bottomPadding} />
-      </ScrollView>
+          <View style={styles.bottomPadding} />
+        </ScrollView>
+      </ScreenIntroGate>
     </SafeAreaView>
   );
 }

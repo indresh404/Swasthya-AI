@@ -1,6 +1,5 @@
 // app/(onboarding)/family-setup.tsx
 import { TYPOGRAPHY } from '@/theme';
-import { Caveat_400Regular, Caveat_500Medium, Caveat_600SemiBold, Caveat_700Bold, useFonts } from '@expo-google-fonts/caveat';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,7 +7,6 @@ import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import {
   Alert,
-  Dimensions,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -29,22 +27,14 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
-const { width } = Dimensions.get('window');
 const CODE_LENGTH = 6;
 
 export default function FamilySetupScreen() {
   const router = useRouter();
   const [codeDigits, setCodeDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''));
   const [showQRScanner, setShowQRScanner] = useState(false);
-  const [permission, requestPermission] = useCameraPermissions();
+  const [, requestPermission] = useCameraPermissions();
   const inputRefs = useRef<(TextInput | null)[]>([]);
-
-  const [fontsLoaded] = useFonts({
-    Caveat_400Regular,
-    Caveat_500Medium,
-    Caveat_600SemiBold,
-    Caveat_700Bold,
-  });
 
   const scaleCreate = useSharedValue(1);
   const scaleJoin = useSharedValue(1);
@@ -143,10 +133,6 @@ export default function FamilySetupScreen() {
 
   const isCodeComplete = codeDigits.every((d) => d !== '');
 
-  if (!fontsLoaded) {
-    return null;
-  }
-
   return (
     <GestureHandlerRootView style={styles.container}>
       <LinearGradient
@@ -215,7 +201,7 @@ export default function FamilySetupScreen() {
                   <View style={styles.cardTextSection}>
                     <Text style={styles.cardTitle}>Create your Wonder Family</Text>
                     <Text style={styles.cardDescription}>
-                      Start a new private hub for your family's health data and goal tracking.
+                      Start a new private hub for your family&apos;s health data and goal tracking.
                     </Text>
                   </View>
                   <View style={styles.cardIconBox}>
@@ -460,7 +446,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   cursiveText: {
-    fontFamily: 'Caveat_500Medium',
+    fontFamily: TYPOGRAPHY.fonts.accent,
     fontSize: 20,
     color: 'rgba(255,255,255,0.9)',
   },
