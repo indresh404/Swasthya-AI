@@ -1,4 +1,5 @@
 // app/(tabs)/checkin/index.tsx
+import { ScreenIntroGate } from '@/components/ui/ScreenIntroGate';
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, StatusBar, Platform, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -87,10 +88,16 @@ export default function CheckinScreen() {
         userName="Rahul"
         activeScreen={currentRoute}
       />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>Check-in Screen</Text>
-        <Text style={styles.subtitle}>Your health check-in will appear here</Text>
-      </ScrollView>
+      <ScreenIntroGate
+        loaderText="Preparing your check-in experience..."
+        loaderDuration={3000}
+        backgroundColor="#F9FAFB"
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <Text style={styles.title}>Check-in Screen</Text>
+          <Text style={styles.subtitle}>Your health check-in will appear here</Text>
+        </ScrollView>
+      </ScreenIntroGate>
     </SafeAreaView>
   );
 }

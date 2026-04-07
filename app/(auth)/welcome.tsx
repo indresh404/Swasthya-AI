@@ -1,6 +1,5 @@
 // app/(auth)/welcome.tsx
 import { COLORS, SPACING, TYPOGRAPHY } from '@/theme';
-import { Caveat_400Regular, Caveat_500Medium, Caveat_600SemiBold, Caveat_700Bold, useFonts } from '@expo-google-fonts/caveat';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -129,13 +128,6 @@ export default function WelcomeScreen() {
   const [showContinue, setShowContinue] = useState(false);
   const flatListRef = useRef<Animated.FlatList<any>>(null);
   
-  const [fontsLoaded] = useFonts({
-    Caveat_400Regular,
-    Caveat_500Medium,
-    Caveat_600SemiBold,
-    Caveat_700Bold,
-  });
-
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
       scrollY.value = event.contentOffset.y;
@@ -155,10 +147,6 @@ export default function WelcomeScreen() {
     StatusBar.setBarStyle('light-content');
     StatusBar.setBackgroundColor('transparent');
   }, []);
-
-  if (!fontsLoaded) {
-    return null;
-  }
 
   const goToNext = () => {
     if (currentIndex < slides.length - 1) {
@@ -301,7 +289,7 @@ const SlideView: React.FC<{ slide: any; index: number; isActive: boolean }> = ({
         require('@/assets/lottie_animations/login_animation_5.json'),
       ];
       return animations[index % animations.length];
-    } catch (error) {
+    } catch {
       return null;
     }
   };
@@ -315,7 +303,7 @@ const SlideView: React.FC<{ slide: any; index: number; isActive: boolean }> = ({
     } else {
       contentOpacity.value = withTiming(0, { duration: 300 });
     }
-  }, [isActive]);
+  }, [contentOpacity, isActive]);
 
   const animatedContentStyle = useAnimatedStyle(() => ({
     opacity: contentOpacity.value,
@@ -441,7 +429,7 @@ const styles = StyleSheet.create({
   tagText: {
     color: COLORS.white,
     fontSize: TYPOGRAPHY.sizes.sm,
-    fontFamily: 'Caveat_600SemiBold',
+    fontFamily: TYPOGRAPHY.fonts.accent,
     letterSpacing: 0.5,
   },
   headline: {
@@ -457,7 +445,7 @@ const styles = StyleSheet.create({
   },
   subtitleText: {
     fontSize: 18,
-    fontFamily: 'Caveat_500Medium',
+    fontFamily: TYPOGRAPHY.fonts.accent,
     color: 'rgba(255,255,255,0.95)',
     marginBottom: SPACING.sm,
     letterSpacing: 0.5,
@@ -470,7 +458,7 @@ const styles = StyleSheet.create({
   },
   bodyText: {
     fontSize: TYPOGRAPHY.sizes.md,
-    fontFamily: 'Caveat_500Medium',
+    fontFamily: TYPOGRAPHY.fonts.accent,
     color: 'rgba(255,255,255,0.85)',
     lineHeight: 24,
   },
@@ -490,7 +478,7 @@ const styles = StyleSheet.create({
   counterText: {
     color: 'rgba(255,255,255,0.7)',
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontFamily: 'Caveat_500Medium',
+    fontFamily: TYPOGRAPHY.fonts.accent,
     letterSpacing: 0.8,
   },
   lottieWrapper: {

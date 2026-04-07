@@ -1,4 +1,5 @@
 // app/(tabs)/home/index.tsx
+import { ScreenIntroGate } from '@/components/ui/ScreenIntroGate';
 import React from 'react';
 import { 
   ScrollView, 
@@ -106,17 +107,24 @@ export default function HomeScreen() {
         activeScreen={currentRoute}
       />
       
-      {/* Your existing Home Screen Content */}
-      <ScrollView 
-        style={styles.container} 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <ScreenIntroGate
+        loaderText="Loading your health dashboard..."
+        loaderDuration={3000}
+        introSource={require('../../../assets/lottie_animations/heart_animation.json')}
+        introText="Tracking your heartbeat and getting everything ready"
+        backgroundColor="#F9FAFB"
       >
-        <View style={styles.content}>
-          <Text style={styles.welcomeText}>Welcome to Your Health Dashboard</Text>
-          {/* Rest of your existing home screen components */}
-        </View>
-      </ScrollView>
+        <ScrollView 
+          style={styles.container} 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.content}>
+            <Text style={styles.welcomeText}>Welcome to Your Health Dashboard</Text>
+            {/* Rest of your existing home screen components */}
+          </View>
+        </ScrollView>
+      </ScreenIntroGate>
     </SafeAreaView>
   );
 }
