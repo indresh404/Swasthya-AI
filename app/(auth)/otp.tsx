@@ -1,13 +1,13 @@
+import { COLORS, TYPOGRAPHY } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
-import { COLORS, STYLES } from '../../constants/Colors';
+import { Alert, Keyboard, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
 
 export default function OTPVerifyScreen() {
   const router = useRouter();
-  const navigation = useNavigation();
   const params = useLocalSearchParams();
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
@@ -61,13 +61,7 @@ export default function OTPVerifyScreen() {
   };
 
   const handleBack = () => {
-    // Always try to go back, if fails then navigate to login
-    if (navigation.canGoBack()) {
-      router.back();
-    } else {
-      // Navigate directly to login screen
-      router.replace('/(auth)/login');
-    }
+    router.back();
   };
 
   const handleVerify = async () => {
@@ -117,7 +111,7 @@ export default function OTPVerifyScreen() {
           {/* Back Button */}
           <TouchableOpacity onPress={handleBack} style={styles.backButton} activeOpacity={0.7}>
             <View style={styles.backButtonBg}>
-              <Ionicons name="arrow-back" size={24} color={COLORS.primary || '#2563EB'} />
+              <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
             </View>
           </TouchableOpacity>
 
@@ -237,20 +231,20 @@ const styles = StyleSheet.create({
     marginBottom: 48,
   },
   title: {
-    fontFamily: TYPOGRAPHY?.fonts?.bold || 'System',
+    fontFamily: TYPOGRAPHY.fonts.bold,
     fontSize: 28,
     fontWeight: '700',
     color: '#1E3A8A',  // Dark blue matching login page
     marginBottom: 8,
   },
   subtitle: {
-    fontFamily: TYPOGRAPHY?.fonts?.regular || 'System',
+    fontFamily: TYPOGRAPHY.fonts.regular,
     fontSize: 14,
     color: '#64748B',  // Muted text color
     marginBottom: 4,
   },
   phoneNumber: {
-    fontFamily: TYPOGRAPHY?.fonts?.semibold || 'System',
+    fontFamily: TYPOGRAPHY.fonts.semibold,
     fontSize: 18,
     fontWeight: '600',
     color: '#1E293B',  // Dark text color
@@ -287,7 +281,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'center',
     fontSize: 22,
     fontWeight: '700',
-    fontFamily: TYPOGRAPHY?.fonts?.bold || 'System',
+    fontFamily: TYPOGRAPHY.fonts.bold,
     color: '#1E293B',
     padding: 0,
     margin: 0,
@@ -298,12 +292,12 @@ const styles = StyleSheet.create({
   },
   timerText: {
     fontSize: 14,
-    fontFamily: TYPOGRAPHY?.fonts?.regular || 'System',
+    fontFamily: TYPOGRAPHY.fonts.regular,
     color: '#64748B',
   },
   resendText: {
     fontSize: 14,
-    fontFamily: TYPOGRAPHY?.fonts?.semibold || 'System',
+    fontFamily: TYPOGRAPHY.fonts.semibold,
     fontWeight: '600',
     color: '#2563EB',  // Blue color matching login page
   },
@@ -329,7 +323,7 @@ const styles = StyleSheet.create({
   verifyButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontFamily: TYPOGRAPHY?.fonts?.semibold || 'System',
+    fontFamily: TYPOGRAPHY.fonts.semibold,
     fontWeight: '600',
   },
 });

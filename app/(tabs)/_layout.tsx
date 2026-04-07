@@ -1,8 +1,8 @@
 // app/(tabs)/_layout.tsx
-import { Tabs, useSegments, router } from 'expo-router';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRef, useEffect } from 'react';
+import { router, Tabs, useSegments } from 'expo-router';
+import { useEffect, useRef } from 'react';
+import { Animated, Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 const { width } = Dimensions.get('window');
 const FAB_SIZE = 62;
@@ -381,9 +381,9 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   navbar: {
-    width: '90%', // Changed from '100%' to '90%' - DECREASED WIDTH
+    width: '95%', // Changed from '100%' to '90%' - DECREASED WIDTH
     backgroundColor: PRIMARY_COLOR,
-    borderRadius: 28,
+    borderRadius: 35,
     shadowColor: PRIMARY_COLOR,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
@@ -393,10 +393,10 @@ const styles = StyleSheet.create({
   },
   navContent: {
     flexDirection: 'row',
-    height: 60,
+    height: 75,
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20, // Adjusted for new width
+    paddingHorizontal: 24, // Adjusted for new width
   },
   navItem: {
     flex: 1,
@@ -405,9 +405,9 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   iconWrapper: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
   },
   navLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '500',
     color: 'rgba(255,255,255,0.7)',
   },
