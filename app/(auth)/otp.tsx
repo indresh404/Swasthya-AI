@@ -1,9 +1,9 @@
-import { COLORS, TYPOGRAPHY } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Keyboard, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { COLORS, STYLES } from '../../constants/Colors';
 
 export default function OTPVerifyScreen() {
   const router = useRouter();
@@ -206,8 +206,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 20 : 40,
-    paddingBottom: 40,
+    paddingTop: 50,
+    paddingBottom: 50,
   },
   backButton: {
     marginBottom: 24,
