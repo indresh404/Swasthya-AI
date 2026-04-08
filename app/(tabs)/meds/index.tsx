@@ -1,11 +1,11 @@
 // app/(tabs)/meds/index.tsx
 import { ScreenIntroGate } from '@/components/ui/ScreenIntroGate';
 import { SkeletonMedsScreen } from '@/components/ui/SkeletonLoader';
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, StatusBar, Platform, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSegments } from 'expo-router';
+import React, { useState } from 'react';
+import { Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const TopNavBar = ({ 
   onScanPress, 
