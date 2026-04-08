@@ -1,20 +1,21 @@
 // app/(tabs)/home/index.tsx
 import { ScreenIntroGate } from '@/components/ui/ScreenIntroGate';
-import React from 'react';
-import { 
-  ScrollView, 
-  StyleSheet, 
-  Text, 
-  View, 
-  TouchableOpacity, 
-  SafeAreaView, 
-  StatusBar,
-  Platform,
-  Alert
-} from 'react-native';
+import { SkeletonHomeScreen } from '@/components/ui/SkeletonLoader';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useSegments, router } from 'expo-router';
+import { router, useSegments } from 'expo-router';
+import React, { useState } from 'react';
+import {
+  Alert,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
 // Top Navigation Bar Component (inline)
 const TopNavBar = ({ 
@@ -123,6 +124,32 @@ const AIChatButton = () => {
 export default function HomeScreen() {
   const segments = useSegments();
   const currentRoute = segments[segments.length - 1];
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+  // Skeleton loading timeout: 4 seconds fixed duration
+  const SKELETON_DURATION = 4000; // 4 seconds
+  const MAX_SKELETON_TIME = 90000; // 4 minutes max timeout
+  const skeletonStartTime = React.useRef<number>(Date.now());
+
+  const handleIntroComplete = () => {
+    // Start skeleton loading after intro animation
+    skeletonStartTime.current = Date.now();
+    
+    // Hide skeleton after fixed 4 seconds duration
+    const skeletonTimeout = setTimeout(() => {
+      setIsDataLoaded(true);
+    }, SKELETON_DURATION);
+
+    // Safety: force show content after 4 minutes max
+    const maxTimeoutTimer = setTimeout(() => {
+      setIsDataLoaded(true);
+    }, MAX_SKELETON_TIME);
+
+    return () => {
+      clearTimeout(skeletonTimeout);
+      clearTimeout(maxTimeoutTimer);
+    };
+  };
   
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -144,17 +171,22 @@ export default function HomeScreen() {
         introSource={require('../../../assets/lottie_animations/heart_animation.json')}
         introText="Tracking your heartbeat and getting everything ready"
         backgroundColor="#F9FAFB"
+        onIntroComplete={handleIntroComplete}
       >
-        <ScrollView 
-          style={styles.container} 
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.content}>
-            <Text style={styles.welcomeText}>Welcome to Your Health Dashboard</Text>
-            {/* Rest of your existing home screen components */}
-          </View>
-        </ScrollView>
+        {!isDataLoaded ? (
+          <SkeletonHomeScreen />
+        ) : (
+          <ScrollView 
+            style={styles.container} 
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.content}>
+              <Text style={styles.welcomeText}>Welcome to Your Health Dashboard</Text>
+              {/* Rest of your existing home screen components */}
+            </View>
+          </ScrollView>
+        )}
       </ScreenIntroGate>
     </SafeAreaView>
   );

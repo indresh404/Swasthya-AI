@@ -437,7 +437,7 @@ export default function UserDetailsScreen() {
                   <TextInput
                     ref={locationInputRef}
                     style={[styles.textInput, styles.locationInput]}
-                    placeholder="City, State (e.g., Mumbai, Maharashtra)"
+                    placeholder="Location"
                     placeholderTextColor={COLORS.text.muted}
                     value={location}
                     onChangeText={(text) => {
