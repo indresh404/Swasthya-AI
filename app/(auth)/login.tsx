@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useAuth } from '../../hooks/useAuth';
 
 const { width, height } = Dimensions.get('window');
 
@@ -72,6 +73,9 @@ export default function LoginScreen() {
   const [isFocused, setIsFocused] = useState(false);
 
   const inputRef = useRef<TextInput>(null);
+
+  // Google Auth Hook
+  const { signInWithGoogle, googleLoading } = useAuth();
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -175,9 +179,13 @@ export default function LoginScreen() {
     }, 1500);
   };
 
-  const handleGoogleSignIn = () => {
+  const handleGoogleSignIn = async () => {
     animatePop(googleButtonPopAnim);
-    Alert.alert('Google Sign In', 'Google authentication would be integrated here');
+    const result = await signInWithGoogle();
+    if (result.success) {
+      Alert.alert('Success', `Welcome ${result.user?.displayName || result.user?.email}!`);
+      router.replace('/(tabs)/home');
+    }
   };
 
   const handleBack = () => {
@@ -389,6 +397,7 @@ export default function LoginScreen() {
           <TouchableOpacity
             onPress={handleGoogleSignIn}
             activeOpacity={0.8}
+            disabled={googleLoading}
           >
             <Animated.View
               style={[
@@ -398,8 +407,17 @@ export default function LoginScreen() {
                 },
               ]}
             >
-              <Ionicons name="logo-google" size={22} color="#EA4335" />
-              <Text style={styles.googleButtonText}>Continue with Google</Text>
+              {googleLoading ? (
+                <>
+                  <Animated.View style={styles.loadingDot} />
+                  <Text style={styles.googleButtonText}>Connecting...</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="logo-google" size={22} color="#EA4335" />
+                  <Text style={styles.googleButtonText}>Continue with Google</Text>
+                </>
+              )}
             </Animated.View>
           </TouchableOpacity>
         </Animated.View>
