@@ -1,22 +1,45 @@
+// app/(auth)/otp.tsx
 import { COLORS, TYPOGRAPHY } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Keyboard, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-
+import {
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  ActivityIndicator,
+} from 'react-native';
+import { supabase } from '@/config/supabase';
 
 export default function OTPVerifyScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
-  const inputs = useRef<Array<TextInput | null>>([]);
   const [timer, setTimer] = useState(30);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const inputs = useRef<Array<TextInput | null>>([]);
 
-  // Get phone number from navigation params
-  const phoneNumber = params.phone as string || '+91 XXXXX XXXXX';
-  const formattedPhone = phoneNumber.startsWith('+91') ? phoneNumber : `+91 ${phoneNumber}`;
+  const phoneNumber = params.phone as string || '';
+  const testOtp = params.testOtp as string || '';
+  const formattedPhone = phoneNumber ? `+91 ${phoneNumber}` : '+91 XXXXX XXXXX';
+
+  // Auto-fill test OTP if provided
+  useEffect(() => {
+    if (testOtp && testOtp.length === 6) {
+      const otpDigits = testOtp.split('');
+      setCode(otpDigits);
+    }
+  }, [testOtp]);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
@@ -28,7 +51,6 @@ export default function OTPVerifyScreen() {
     return () => clearInterval(interval);
   }, [timer]);
 
-  // Auto-focus first input on mount
   useEffect(() => {
     setTimeout(() => {
       inputs.current[0]?.focus();
@@ -40,12 +62,10 @@ export default function OTPVerifyScreen() {
     newCode[index] = text;
     setCode(newCode);
 
-    // Auto-advance to next box on input
     if (text !== '' && index < 5) {
       inputs.current[index + 1]?.focus();
     }
 
-    // Auto-submit when all digits are filled
     if (text !== '' && index === 5 && newCode.every(digit => digit !== '')) {
       setTimeout(() => {
         handleVerify();
@@ -54,7 +74,6 @@ export default function OTPVerifyScreen() {
   };
 
   const handleKeyPress = (e: any, index: number) => {
-    // Handle backspace to go to previous box
     if (e.nativeEvent.key === 'Backspace' && index > 0 && code[index] === '') {
       inputs.current[index - 1]?.focus();
     }
@@ -68,37 +87,71 @@ export default function OTPVerifyScreen() {
     Keyboard.dismiss();
     const otpCode = code.join('');
 
-    if (otpCode.length !== 5) {
+    if (otpCode.length !== 6) {
       Alert.alert('Error', 'Please enter the complete 6-digit OTP');
       return;
     }
 
-    // Simulate OTP verification
-    // In production, verify with your backend/Supabase
+    setIsVerifying(true);
 
-    // After OTP verification, check if user has profile in Supabase
-    // const { data: profile } = await supabase
-    //   .from('profiles')
-    //   .select('*')
-    //   .eq('user_id', userId)
-    //   .single();
+    try {
+      // Check if OTP matches (always use test mode)
+      if (testOtp && otpCode !== testOtp) {
+        Alert.alert('Verification Failed', 'Invalid OTP. Please try again.');
+        setCode(['', '', '', '', '', '']);
+        inputs.current[0]?.focus();
+        setIsVerifying(false);
+        return;
+      }
 
-    // Simulate checking profile existence
-    const hasProfile = false; // Replace with actual Supabase check
+      // Check if user exists in patients table
+      const { data: existingPatient } = await supabase
+        .from('patients')
+        .select('*')
+        .eq('phone', phoneNumber)
+        .single();
 
-    if (hasProfile) {
-      router.replace('/(tabs)/home');
-    } else {
-      router.replace('/(onboarding)/user-details');
+      if (existingPatient) {
+        router.replace('/(tabs)/home');
+      } else {
+        router.replace('/(onboarding)/user-details');
+      }
+    } catch (error: any) {
+      console.error('Error verifying OTP:', error);
+      Alert.alert('Verification Failed', 'Invalid OTP. Please try again.');
+      
+      // Clear OTP on failure
+      setCode(['', '', '', '', '', '']);
+      inputs.current[0]?.focus();
+    } finally {
+      setIsVerifying(false);
     }
   };
 
-  const handleResendOTP = () => {
-    setTimer(30);
-    Alert.alert('OTP Resent', `A new OTP has been sent to ${formattedPhone}`);
-    // Clear existing OTP
-    setCode(['', '', '', '', '', '']);
-    inputs.current[0]?.focus();
+  const handleResendOTP = async () => {
+    setIsResending(true);
+    
+    try {
+      // Generate new random OTP for resend
+      const newTestOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      setTimeout(() => {
+        setTimer(30);
+        Alert.alert('OTP Resent', `A new verification code has been sent to ${formattedPhone}`);
+        setCode(['', '', '', '', '', '']);
+        // Auto-fill new test OTP
+        const otpDigits = newTestOtp.split('');
+        setCode(otpDigits);
+        inputs.current[0]?.focus();
+        setIsResending(false);
+        
+        // Update the testOtp in params (for next verification)
+        // This is handled by the new OTP being set in state
+      }, 500);
+    } catch (error: any) {
+      console.error('Error resending OTP:', error);
+      Alert.alert('Error', 'Failed to resend OTP. Please try again.');
+      setIsResending(false);
+    }
   };
 
   return (
@@ -111,7 +164,7 @@ export default function OTPVerifyScreen() {
           {/* Back Button */}
           <TouchableOpacity onPress={handleBack} style={styles.backButton} activeOpacity={0.7}>
             <View style={styles.backButtonBg}>
-              <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
+              <Ionicons name="arrow-back" size={24} color={COLORS.primary || '#2563EB'} />
             </View>
           </TouchableOpacity>
 
@@ -124,15 +177,15 @@ export default function OTPVerifyScreen() {
             <Text style={styles.phoneNumber}>{formattedPhone}</Text>
           </View>
 
-          {/* OTP Inputs - 6 Individual White Square Boxes with Blue Gradient Border */}
+          {/* OTP Inputs */}
           <View style={styles.otpContainer}>
             {code.map((digit, index) => (
               <View key={index} style={styles.otpBoxWrapper}>
                 <LinearGradient
                   colors={
                     focusedIndex === index || digit !== ''
-                      ? ['#2563EB', '#3B82F6', '#60A5FA']  // Blue gradient when focused/filled
-                      : ['#E2E8F0', '#E2E8F0', '#E2E8F0']   // Gray gradient when empty
+                      ? ['#2563EB', '#3B82F6', '#60A5FA']
+                      : ['#E2E8F0', '#E2E8F0', '#E2E8F0']
                   }
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
@@ -162,25 +215,34 @@ export default function OTPVerifyScreen() {
             {timer > 0 ? (
               <Text style={styles.timerText}>Resend code in {timer}s</Text>
             ) : (
-              <TouchableOpacity onPress={handleResendOTP} activeOpacity={0.7}>
-                <Text style={styles.resendText}>Resend OTP</Text>
+              <TouchableOpacity onPress={handleResendOTP} disabled={isResending} activeOpacity={0.7}>
+                {isResending ? (
+                  <ActivityIndicator size="small" color="#2563EB" />
+                ) : (
+                  <Text style={styles.resendText}>Resend OTP</Text>
+                )}
               </TouchableOpacity>
             )}
           </View>
 
-          {/* Spacer */}
           <View style={{ flex: 1 }} />
 
-          {/* Verify Button with Gradient */}
-          <TouchableOpacity onPress={handleVerify} activeOpacity={0.8}>
+          {/* Verify Button */}
+          <TouchableOpacity onPress={handleVerify} activeOpacity={0.8} disabled={isVerifying}>
             <LinearGradient
-              colors={['#2563EB', '#3B82F6', '#60A5FA']}  // Blue gradient matching login page
+              colors={['#2563EB', '#3B82F6', '#60A5FA']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.verifyButton}
             >
-              <Text style={styles.verifyButtonText}>Verify</Text>
-              <Ionicons name="checkmark-circle" size={22} color="#fff" />
+              {isVerifying ? (
+                <ActivityIndicator color="#ffffff" size="small" />
+              ) : (
+                <>
+                  <Text style={styles.verifyButtonText}>Verify</Text>
+                  <Ionicons name="checkmark-circle" size={22} color="#fff" />
+                </>
+              )}
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -192,7 +254,7 @@ export default function OTPVerifyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',  // Light background matching login page
+    backgroundColor: '#F8FAFC',
   },
   keyboardView: {
     flex: 1,
@@ -234,20 +296,20 @@ const styles = StyleSheet.create({
     fontFamily: TYPOGRAPHY.fonts.bold,
     fontSize: 28,
     fontWeight: '700',
-    color: '#1E3A8A',  // Dark blue matching login page
+    color: '#1E3A8A',
     marginBottom: 8,
   },
   subtitle: {
     fontFamily: TYPOGRAPHY.fonts.regular,
     fontSize: 14,
-    color: '#64748B',  // Muted text color
+    color: '#64748B',
     marginBottom: 4,
   },
   phoneNumber: {
     fontFamily: TYPOGRAPHY.fonts.semibold,
     fontSize: 18,
     fontWeight: '600',
-    color: '#1E293B',  // Dark text color
+    color: '#1E293B',
     marginTop: 4,
   },
   otpContainer: {
@@ -299,7 +361,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: TYPOGRAPHY.fonts.semibold,
     fontWeight: '600',
-    color: '#2563EB',  // Blue color matching login page
+    color: '#2563EB',
   },
   verifyButton: {
     flexDirection: 'row',

@@ -14,11 +14,12 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from 'react-native';
+import { supabase } from '@/config/supabase';
 
 const { width, height } = Dimensions.get('window');
 
-// Define colors directly (no external imports)
 const COLORS = {
   surface: '#F8FAFC',
   white: '#FFFFFF',
@@ -88,7 +89,6 @@ export default function LoginScreen() {
   const orb3Anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Entrance animation
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -103,7 +103,6 @@ export default function LoginScreen() {
       }),
     ]).start();
 
-    // Floating orb animations
     const createFloatAnimation = (animValue: Animated.Value, delay: number) => {
       setTimeout(() => {
         Animated.loop(
@@ -128,7 +127,6 @@ export default function LoginScreen() {
     createFloatAnimation(orb3Anim, 2000);
   }, []);
 
-  // Handle input focus animation
   useEffect(() => {
     Animated.spring(inputBorderAnim, {
       toValue: isFocused ? 1 : 0,
@@ -138,7 +136,6 @@ export default function LoginScreen() {
     }).start();
   }, [isFocused]);
 
-  // INSTANT POP EFFECT - NO DELAY
   const animatePop = (animValue: Animated.Value) => {
     Animated.spring(animValue, {
       toValue: 0.92,
@@ -155,29 +152,38 @@ export default function LoginScreen() {
     });
   };
 
+  // Generate a random 6-digit OTP for test mode
+  const generateTestOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
+
   const handleContinue = async () => {
-    // TRIGGER POP EFFECT IMMEDIATELY - FIRST THING
     animatePop(buttonPopAnim);
 
     if (phoneNumber.length < 10) {
-      Alert.alert('Error', 'Please enter a valid phone number');
+      Alert.alert('Error', 'Please enter a valid 10-digit phone number');
       return;
     }
 
     setLoading(true);
 
+    // Always use test mode - generate random OTP
+    const testOtp = generateTestOTP();
     setTimeout(() => {
       setLoading(false);
       router.push({
         pathname: '/(auth)/otp',
-        params: { phone: phoneNumber },
+        params: { 
+          phone: phoneNumber,
+          testOtp: testOtp
+        }
       });
-    }, 1500);
+    }, 500);
   };
 
   const handleGoogleSignIn = () => {
     animatePop(googleButtonPopAnim);
-    Alert.alert('Google Sign In', 'Google authentication would be integrated here');
+    Alert.alert('Google Sign In', 'Google authentication coming soon!');
   };
 
   const handleBack = () => {
@@ -195,7 +201,6 @@ export default function LoginScreen() {
     outputRange: [0, 0.15],
   });
 
-  // Orb position interpolation
   const orb1Translate = orb1Anim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, -40],
@@ -228,10 +233,8 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Clean White Background */}
       <View style={styles.background} />
 
-      {/* Floating Gradient Orbs */}
       <Animated.View
         style={[
           styles.orb,
@@ -282,7 +285,6 @@ export default function LoginScreen() {
             },
           ]}
         >
-          {/* Back Button */}
           <TouchableOpacity
             onPress={handleBack}
             style={styles.backButton}
@@ -300,13 +302,11 @@ export default function LoginScreen() {
             </Animated.View>
           </TouchableOpacity>
 
-          {/* Header Section */}
           <View style={styles.headerSection}>
             <Text style={[styles.title, { fontWeight: 'bold' }]}>Welcome Back</Text>
             <Text style={styles.subtitle}>Sign in to continue</Text>
           </View>
 
-          {/* Form Section */}
           <View style={styles.form}>
             <View style={styles.inputWrapper}>
               <Text style={styles.inputLabel}>Phone Number</Text>
@@ -342,7 +342,6 @@ export default function LoginScreen() {
               </Animated.View>
             </View>
 
-            {/* Continue Button with Gradient - INSTANT POP */}
             <TouchableOpacity
               activeOpacity={0.9}
               onPress={handleContinue}
@@ -363,10 +362,7 @@ export default function LoginScreen() {
                   style={styles.continueButton}
                 >
                   {loading ? (
-                    <View style={styles.loadingContainer}>
-                      <Animated.View style={styles.loadingDot} />
-                      <Text style={styles.continueButtonText}>Processing...</Text>
-                    </View>
+                    <ActivityIndicator color="#ffffff" size="small" />
                   ) : (
                     <>
                       <Text style={styles.continueButtonText}>Continue</Text>
@@ -378,14 +374,12 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Divider */}
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
             <Text style={styles.dividerText}>or continue with</Text>
             <View style={styles.dividerLine} />
           </View>
 
-          {/* Google Sign In Button */}
           <TouchableOpacity
             onPress={handleGoogleSignIn}
             activeOpacity={0.8}
@@ -532,17 +526,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.white,
   },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-  },
-  loadingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.white,
-  },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -580,7 +563,6 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.sizes.md,
     color: COLORS.text.secondary,
   },
-  // Animated gradient orbs
   orb: {
     position: 'absolute',
     borderRadius: 200,
