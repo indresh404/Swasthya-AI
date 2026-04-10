@@ -263,32 +263,92 @@ export default function UserDetailsScreen() {
 
 
   const saveProfile = async () => {
-    const { user } = useAuthStore.getState();
-    if (!user) {
-      Alert.alert('Error', 'No authenticated user found');
+    const authStore = useAuthStore.getState();
+    const { patientId: storePatientId, phoneNumber: storePhone } = authStore;
+    
+    // Use phone number as the source of truth for new users
+    const userPhone = normalizePhone(phoneNumber);
+    if (!userPhone) {
+      Alert.alert('Error', 'Invalid phone number');
       return;
     }
 
+    setIsSaving(true);
     try {
-      const { error } = await supabase.from('users').upsert({
-        id: user.id,
-        name: name.trim(),
-        age: parseInt(age),
-        phone: phoneNumber.trim(),
-        gender: gender,
-        state: location.trim(),
-        updated_at: new Date().toISOString(),
-      });
+      console.log('=== Saving User Profile ===');
+      console.log('Phone:', userPhone, 'Name:', name, 'Age:', age, 'Gender:', gender);
 
-      if (error) {
-        Alert.alert('Error Saving Profile', error.message);
-        return;
+      // Check if user already exists by phone
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('phone', userPhone)
+        .maybeSingle();
+
+      console.log('Existing user:', existingUser?.id);
+
+      let userId = existingUser?.id;
+
+      // If user doesn't exist, insert new record
+      if (!userId) {
+        console.log('Creating new user record');
+        const { data: newUser, error: insertError } = await supabase
+          .from('users')
+          .insert({
+            name: name.trim(),
+            age: parseInt(age),
+            phone: userPhone,
+            gender: gender,
+          })
+          .select('id')
+          .maybeSingle();
+
+        if (insertError) {
+          console.error('Insert error:', insertError);
+          Alert.alert('Error Saving Profile', 'Failed to create user: ' + insertError.message);
+          setIsSaving(false);
+          return;
+        }
+
+        userId = newUser?.id;
+        console.log('New user created with ID:', userId);
+      } else {
+        // Update existing user
+        console.log('Updating existing user:', userId);
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({
+            name: name.trim(),
+            age: parseInt(age),
+            gender: gender,
+          })
+          .eq('id', userId);
+
+        if (updateError) {
+          console.error('Update error:', updateError);
+          Alert.alert('Error Saving Profile', updateError.message);
+          setIsSaving(false);
+          return;
+        }
       }
 
-      useAuthStore.getState().setHasProfile(true);
+      // Update auth store with real user ID
+      authStore.setSessionState({
+        userId: userId,
+        patientId: userId,
+        phoneNumber: userPhone,
+        isLoggedIn: true,
+        hasProfile: true,
+        hasFamilyGroup: false,
+      });
+
+      console.log('Profile saved successfully, user ID:', userId);
+      setIsSaving(false);
       router.push('/(onboarding)/family-setup');
-    } catch (error) {
-      Alert.alert('Error', 'An unexpected error occurred while saving your profile');
+    } catch (error: any) {
+      console.error('Save profile error:', error);
+      Alert.alert('Error', error.message || 'An unexpected error occurred while saving your profile');
+      setIsSaving(false);
     }
   };
 

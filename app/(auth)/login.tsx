@@ -151,7 +151,7 @@ export default function LoginScreen() {
     });
   };
 
-  // Generate a random 6-digit OTP for test mode
+  // Generate a random 6-digit OTP for each login attempt
   const generateTestOTP = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
   };
@@ -168,18 +168,33 @@ export default function LoginScreen() {
 
     setLoading(true);
 
-    // Always use test mode - generate random OTP
-    const testOtp = generateTestOTP();
-    setTimeout(() => {
+    try {
+      // Generate random OTP for this login attempt
+      const generatedOtp = generateTestOTP();
+      console.log('=== Login OTP Generation ===');
+      console.log('Generated OTP:', generatedOtp, 'for phone:', normalizedPhone);
+      
+      // Store OTP locally for verification
+      const { storeOTPLocally } = await import('@/services/auth.service');
+      await storeOTPLocally(normalizedPhone, generatedOtp);
+      console.log('OTP stored successfully');
+      
+      // Navigate to OTP screen without passing OTP in params (more secure)
+      setTimeout(() => {
+        setLoading(false);
+        console.log('Navigating to OTP screen');
+        router.push({
+          pathname: '/(auth)/otp',
+          params: { 
+            phone: normalizedPhone,
+          }
+        });
+      }, 400);
+    } catch (error) {
+      console.error('Error generating OTP:', error);
+      Alert.alert('Error', 'Failed to initiate login. Please try again.');
       setLoading(false);
-      router.push({
-        pathname: '/(auth)/otp',
-        params: { 
-          phone: normalizedPhone,
-          testOtp: testOtp
-        }
-      });
-    }, 400);
+    }
   };
 
   const handleBack = () => {

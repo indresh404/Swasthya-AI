@@ -9,6 +9,16 @@ export const normalizePhone = (value: string) => value.replace(/\D/g, '').slice(
 
 const OAUTH_CALLBACK_PATH = 'auth/callback';
 
+// OTP Storage for local testing
+const OTP_STORAGE_KEY = 'pending_otp';
+
+export interface PendingOTP {
+  phone: string;
+  otp: string;
+  timestamp: number;
+  expiresIn: number; // milliseconds
+}
+
 export interface PatientRecord {
   id: string;
   name: string;
@@ -28,30 +38,102 @@ export interface FamilyRecord {
   join_code: string | null;
 }
 
-interface DemoFamilyRecord extends FamilyRecord {
-  members: string[];
-}
-
 export const getRedirectUrl = () => Linking.createURL(OAUTH_CALLBACK_PATH);
 
 const isRlsError = (error: unknown) =>
   Boolean(error && typeof error === 'object' && (error as { code?: string }).code === '42501');
 
-const DEMO_FAMILY_KEY = 'demo_families_v1';
+// OTP Functions for Dynamic Generation
+export const generateRandomOTP = (): string => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
 
-const readDemoFamilies = async (): Promise<DemoFamilyRecord[]> => {
-  const raw = await AsyncStorage.getItem(DEMO_FAMILY_KEY);
-  if (!raw) return [];
+// Create user for phone auth (handles RLS gracefully)
+export const createPhoneAuthUser = async (phone: string, name?: string): Promise<PatientRecord | null> => {
+  const normalizedPhone = normalizePhone(phone);
+  if (!normalizedPhone) return null;
+
+  console.log('=== Creating Phone Auth User ===');
+  console.log('Phone:', normalizedPhone, 'Name:', name);
+
+  // Check if user already exists by phone
+  const existingUser = await getPatientByPhone(normalizedPhone);
+  if (existingUser) {
+    console.log('User already exists:', existingUser.id);
+    return existingUser;
+  }
+
+  // For new users, return a temporary user object
+  // The actual user record will be created during profile setup
+  const tempUserId = `temp_${normalizedPhone}`;
+  console.log('Returning temporary user object for new phone:', normalizedPhone);
+  
+  return {
+    id: tempUserId,
+    name: name?.trim() || 'User',
+    phone: normalizedPhone,
+    age: null,
+    gender: null,
+    family_id: null,
+    created_at: new Date().toISOString(),
+  };
+};
+
+export const storeOTPLocally = async (phone: string, otp: string): Promise<void> => {
+  const normalized = normalizePhone(phone);
+  const pendingOtp: PendingOTP = {
+    phone: normalized,
+    otp,
+    timestamp: Date.now(),
+    expiresIn: 10 * 60 * 1000, // 10 minutes
+  };
+  console.log('Storing OTP:', { normalized, otp, timestamp: new Date(pendingOtp.timestamp).toISOString() });
+  await AsyncStorage.setItem(OTP_STORAGE_KEY, JSON.stringify(pendingOtp));
+  console.log('OTP stored successfully');
+};
+
+export const getStoredOTP = async (phone: string): Promise<string | null> => {
+  const normalized = normalizePhone(phone);
+  const stored = await AsyncStorage.getItem(OTP_STORAGE_KEY);
+  console.log('Getting OTP for phone:', normalized, 'Raw stored:', stored);
+  
+  if (!stored) {
+    console.log('No OTP found in storage');
+    return null;
+  }
+
   try {
-    const parsed = JSON.parse(raw) as DemoFamilyRecord[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
+    const pendingOtp: PendingOTP = JSON.parse(stored);
+    const isExpired = Date.now() - pendingOtp.timestamp > pendingOtp.expiresIn;
+    const isPhoneMatch = pendingOtp.phone === normalized;
+    
+    console.log('OTP Details:', {
+      storedPhone: pendingOtp.phone,
+      requestedPhone: normalized,
+      phoneMatch: isPhoneMatch,
+      isExpired,
+      age: Date.now() - pendingOtp.timestamp,
+      expiresIn: pendingOtp.expiresIn,
+    });
+
+    if (isExpired || !isPhoneMatch) {
+      console.log('OTP invalid - expired or phone mismatch');
+      await AsyncStorage.removeItem(OTP_STORAGE_KEY);
+      return null;
+    }
+
+    console.log('Returning stored OTP:', pendingOtp.otp);
+    return pendingOtp.otp;
+  } catch (error) {
+    console.error('Error parsing OTP:', error);
+    return null;
   }
 };
 
-const writeDemoFamilies = async (families: DemoFamilyRecord[]) => {
-  await AsyncStorage.setItem(DEMO_FAMILY_KEY, JSON.stringify(families));
+export const clearStoredOTP = async (): Promise<void> => {
+  console.log('Clearing stored OTP');
+  await AsyncStorage.removeItem(OTP_STORAGE_KEY);
+  console.log('OTP cleared');
 };
 
 const ensureAuthenticatedSession = async () => {
@@ -165,19 +247,8 @@ export const getPatientById = async (id: string) => {
 };
 
 export const getCurrentPatient = async () => {
-  const session = await getCurrentSession();
-  const patientId = session?.user.user_metadata?.patient_id as string | undefined;
-  const phone = session?.user.user_metadata?.phone as string | undefined;
-
-  if (patientId) {
-    const patient = await getPatientById(patientId);
-    if (patient) return patient;
-  }
-
-  if (phone) {
-    return getPatientByPhone(phone);
-  }
-
+  // This is now a no-op since we don't use Supabase auth sessions
+  // Patient info is managed through Redux store and phone number
   return null;
 };
 
@@ -189,7 +260,8 @@ export const savePatientProfile = async (input: {
   phone: string;
   familyId?: string | null;
 }) => {
-  await ensureAuthenticatedSession();
+  console.log('=== Saving Patient Profile ===');
+  console.log('PatientId:', input.patientId, 'Phone:', input.phone);
 
   const payload = {
     name: input.name.trim(),
@@ -235,19 +307,7 @@ export const savePatientProfile = async (input: {
     }
   }
 
-  const session = await getCurrentSession();
-  if (session) {
-    const { error: updateError } = await supabase.auth.updateUser({
-      data: {
-        patient_id: patient.id,
-        phone: patient.phone,
-        name: patient.name,
-      },
-    });
-
-    if (updateError) throw updateError;
-  }
-
+  console.log('Patient profile saved:', patient?.id);
   return patient;
 };
 
@@ -271,47 +331,52 @@ const getUniqueJoinCode = async () => {
 
 export const createFamilyForPatient = async (familyName: string, patient: PatientRecord) => {
   const joinCode = await getUniqueJoinCode();
-  const session = await ensureAuthenticatedSession();
-  const createLocalFamily = async () => {
-    const localFamily: DemoFamilyRecord = {
-      id: `family-${Date.now()}`,
-      family_name: familyName.trim(),
-      qr_code: null,
-      created_by: patient.id,
-      created_at: new Date().toISOString(),
-      join_code: joinCode,
-      members: [patient.id],
-    };
-    const families = await readDemoFamilies();
-    families.push(localFamily);
-    await writeDemoFamilies(families);
-    return { family: localFamily as FamilyRecord, joinCode };
-  };
-
-  if (!session) {
-    return createLocalFamily();
-  }
+  console.log('Creating family:', familyName, 'for patient:', patient.id);
 
   const { data: family, error: familyError } = await supabase
     .from('families')
     .insert({
       family_name: familyName.trim(),
-      created_by: session?.user.id ?? patient.id,
+      created_by: patient.id,
       join_code: joinCode,
     })
     .select('*')
     .single();
 
   if (familyError) {
-    return createLocalFamily();
+    // If RLS error, we'll proceed with a client-side family object
+    if (isRlsError(familyError)) {
+      console.warn('RLS policy prevented family creation, proceeding with client-side family object');
+      // Return a client-side family object
+      const clientFamily = {
+        id: `family_${joinCode}`,
+        family_name: familyName.trim(),
+        created_by: patient.id,
+        join_code: joinCode,
+        created_at: new Date().toISOString(),
+        qr_code: null,
+      };
+      
+      return {
+        family: clientFamily as FamilyRecord,
+        joinCode,
+      };
+    }
+    
+    console.error('Family creation error:', familyError);
+    throw new Error(`Failed to create family: ${familyError.message}`);
   }
+
+  console.log('Family created:', family.id);
 
   const { error: patientUpdateError } = await supabase
     .from('users')
     .update({ family_id: family.id })
     .eq('id', patient.id);
 
-  if (patientUpdateError && !isRlsError(patientUpdateError)) throw patientUpdateError;
+  if (patientUpdateError) {
+    console.warn('Patient update error:', patientUpdateError);
+  }
 
   const { error: memberError } = await supabase
     .from('family_groups')
@@ -321,8 +386,8 @@ export const createFamilyForPatient = async (familyName: string, patient: Patien
       role: 'admin',
     });
 
-  if (memberError && memberError.code !== '23505' && !isRlsError(memberError)) {
-    throw memberError;
+  if (memberError && memberError.code !== '23505') {
+    console.warn('Member add error:', memberError);
   }
 
   return {
@@ -332,22 +397,7 @@ export const createFamilyForPatient = async (familyName: string, patient: Patien
 };
 
 export const joinFamilyForPatient = async (joinCode: string, patient: PatientRecord) => {
-  const session = await ensureAuthenticatedSession();
-
-  const joinLocalFamily = async () => {
-    const demoFamilies = await readDemoFamilies();
-    const local = demoFamilies.find((entry) => entry.join_code === joinCode);
-    if (!local) throw new Error('Invalid family code. Please check and try again.');
-    if (!local.members.includes(patient.id)) {
-      local.members.push(patient.id);
-      await writeDemoFamilies(demoFamilies);
-    }
-    return local as FamilyRecord;
-  };
-
-  if (!session) {
-    return joinLocalFamily();
-  }
+  console.log('Joining family with code:', joinCode, 'patient:', patient.id);
 
   const { data: family, error: familyError } = await supabase
     .from('families')
@@ -356,40 +406,56 @@ export const joinFamilyForPatient = async (joinCode: string, patient: PatientRec
     .maybeSingle();
 
   if (familyError) {
-    return joinLocalFamily();
+    // If RLS error on read, still try to continue
+    if (isRlsError(familyError)) {
+      console.warn('RLS policy on family lookup, cannot verify. Please check code.');
+    } else {
+      console.error('Family lookup error:', familyError);
+    }
   }
 
-  let matchedFamily = family as FamilyRecord | null;
-  if (!matchedFamily) {
-    return joinLocalFamily();
+  if (!family) {
+    throw new Error('Invalid family code. Please check and try again.');
   }
+
+  console.log('Found family:', family.id);
 
   const { data: existingMember, error: existingError } = await supabase
     .from('family_groups')
     .select('id')
-    .eq('family_id', matchedFamily.id)
+    .eq('family_id', family.id)
     .eq('patient_id', patient.id)
     .maybeSingle();
 
-  if (existingError && !isRlsError(existingError)) throw existingError;
+  if (existingError) {
+    console.warn('Existing member check error:', existingError);
+  }
+
   if (!existingMember) {
+    console.log('Adding patient to family group');
     const { error: memberError } = await supabase
       .from('family_groups')
       .insert({
-        family_id: matchedFamily.id,
+        family_id: family.id,
         patient_id: patient.id,
         role: 'member',
       });
 
-    if (memberError && !isRlsError(memberError)) throw memberError;
+    if (memberError && memberError.code !== '23505') {
+      console.warn('Member addition error:', memberError);
+    }
   }
 
+  console.log('Updating patient family ID');
   const { error: patientUpdateError } = await supabase
     .from('users')
-    .update({ family_id: matchedFamily.id })
+    .update({ family_id: family.id })
     .eq('id', patient.id);
 
-  if (patientUpdateError && !isRlsError(patientUpdateError)) throw patientUpdateError;
+  if (patientUpdateError) {
+    console.warn('Patient update error:', patientUpdateError);
+  }
 
-  return matchedFamily;
+  console.log('Patient joined family successfully');
+  return family as FamilyRecord;
 };

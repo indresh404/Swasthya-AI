@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Keyboard, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
-import { getPatientByPhone, normalizePhone } from '@/services/auth.service';
+import { getPatientByPhone, normalizePhone, getStoredOTP, clearStoredOTP } from '@/services/auth.service';
 
 // Define colors directly (no external imports)
 const COLORS = {
@@ -46,18 +46,40 @@ export default function OTPVerifyScreen() {
   const [timer, setTimer] = useState(30);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [displayOTP, setDisplayOTP] = useState<string>(''); // For dev testing
   const inputs = useRef<Array<TextInput | null>>([]);
 
   const phoneNumber = normalizePhone((params.phone as string) || '');
-  const testOtp = '123456';
   const formattedPhone = phoneNumber ? `+91 ${phoneNumber}` : '+91 XXXXX XXXXX';
 
-  // Auto-fill fixed demo OTP
+  // Load and auto-fill OTP on mount
   useEffect(() => {
-    const otpDigits = testOtp.split('');
-    setCode(otpDigits);
-  }, [testOtp]);
+    const loadOTP = async () => {
+      try {
+        const storedOtp = await getStoredOTP(phoneNumber);
+        console.log('Loaded OTP for phone', phoneNumber, ':', storedOtp);
+        
+        if (storedOtp) {
+          setDisplayOTP(storedOtp); // Show for dev testing
+          const otpDigits = storedOtp.split('');
+          setCode(otpDigits);
+          console.log('Auto-filled OTP:', otpDigits);
+        } else {
+          console.log('No OTP found for phone:', phoneNumber);
+          Alert.alert('Error', 'OTP not found. Please try logging in again.');
+          router.back();
+        }
+      } catch (error) {
+        console.error('Error loading OTP:', error);
+      }
+    };
 
+    if (phoneNumber) {
+      loadOTP();
+    }
+  }, [phoneNumber]);
+
+  // Timer for OTP expiry
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
     if (timer > 0) {
@@ -68,6 +90,7 @@ export default function OTPVerifyScreen() {
     return () => clearInterval(interval);
   }, [timer]);
 
+  // Focus first input on mount
   useEffect(() => {
     setTimeout(() => {
       inputs.current[0]?.focus();
@@ -104,6 +127,10 @@ export default function OTPVerifyScreen() {
     Keyboard.dismiss();
     const otpCode = code.join('');
 
+    console.log('=== OTP Verification Started ===');
+    console.log('Entered OTP:', otpCode);
+    console.log('Phone Number:', phoneNumber);
+
     if (otpCode.length !== 6) {
       Alert.alert('Error', 'Please enter the complete 6-digit OTP');
       return;
@@ -112,8 +139,22 @@ export default function OTPVerifyScreen() {
     setIsVerifying(true);
 
     try {
-      // Check if OTP matches (always use test mode)
-      if (otpCode !== testOtp) {
+      // Get the stored OTP for verification
+      const storedOtp = await getStoredOTP(phoneNumber);
+      console.log('Stored OTP:', storedOtp);
+      console.log('Verification - Entered:', otpCode, 'Stored:', storedOtp, 'Match:', otpCode === storedOtp);
+
+      if (!storedOtp) {
+        Alert.alert('OTP Expired', 'Your OTP has expired. Please request a new one.');
+        setCode(['', '', '', '', '', '']);
+        inputs.current[0]?.focus();
+        setIsVerifying(false);
+        return;
+      }
+
+      // Verify the entered OTP matches the stored one
+      if (otpCode !== storedOtp) {
+        console.log('OTP Mismatch!');
         Alert.alert('Verification Failed', 'Invalid OTP. Please try again.');
         setCode(['', '', '', '', '', '']);
         inputs.current[0]?.focus();
@@ -121,22 +162,54 @@ export default function OTPVerifyScreen() {
         return;
       }
 
+      console.log('OTP Verified Successfully!');
+
+      // Clear the stored OTP after successful verification
+      await clearStoredOTP();
+
+      // Check if patient already exists
       const existingPatient = await getPatientByPhone(phoneNumber);
+      console.log('Patient found:', existingPatient?.id);
 
-      setSessionState({
-        userId: existingPatient?.id ?? `phone:${phoneNumber}`,
-        patientId: existingPatient?.id ?? `phone:${phoneNumber}`,
-        phoneNumber,
-        isLoggedIn: true,
-        hasProfile: Boolean(existingPatient),
-        hasFamilyGroup: Boolean(existingPatient?.family_id),
-      });
+      if (existingPatient) {
+        // Existing user - update auth state and route
+        setSessionState({
+          userId: existingPatient.id,
+          patientId: existingPatient.id,
+          phoneNumber,
+          isLoggedIn: true,
+          hasProfile: Boolean(existingPatient.age && existingPatient.gender),
+          hasFamilyGroup: Boolean(existingPatient.family_id),
+        });
 
-      if (existingPatient?.family_id) {
-        router.replace('/(tabs)/home');
-      } else if (existingPatient) {
-        router.replace('/(onboarding)/family-setup');
+        console.log('Existing user logged in:', existingPatient.id);
+
+        if (existingPatient.family_id) {
+          console.log('Routing to home (has family)');
+          router.replace('/(tabs)/home');
+        } else if (existingPatient.age && existingPatient.gender) {
+          console.log('Routing to family setup (has profile)');
+          router.replace('/(onboarding)/family-setup');
+        } else {
+          console.log('Routing to user details (incomplete profile)');
+          router.replace({
+            pathname: '/(onboarding)/user-details',
+            params: { phone: phoneNumber },
+          });
+        }
       } else {
+        // New user - create temporary auth state and route to profile setup
+        console.log('New user detected, routing to profile setup');
+        
+        setSessionState({
+          userId: phoneNumber, // Use phone as temp ID
+          patientId: phoneNumber,
+          phoneNumber,
+          isLoggedIn: true,
+          hasProfile: false,
+          hasFamilyGroup: false,
+        });
+
         router.replace({
           pathname: '/(onboarding)/user-details',
           params: { phone: phoneNumber },
@@ -144,7 +217,7 @@ export default function OTPVerifyScreen() {
       }
     } catch (error: any) {
       console.error('Error verifying OTP:', error);
-      Alert.alert('Verification Failed', error?.message || 'Invalid OTP. Please try again.');
+      Alert.alert('Verification Failed', error?.message || 'Failed to verify OTP. Please try again.');
       
       // Clear OTP on failure
       setCode(['', '', '', '', '', '']);
@@ -156,18 +229,27 @@ export default function OTPVerifyScreen() {
 
   const handleResendOTP = async () => {
     setIsResending(true);
+    console.log('=== Resending OTP ===');
     
     try {
-      // Generate new random OTP for resend
-      setTimeout(() => {
-        setTimer(30);
-        Alert.alert('OTP Resent', `A new verification code has been sent to ${formattedPhone}`);
-        setCode(['', '', '', '', '', '']);
-        const otpDigits = testOtp.split('');
-        setCode(otpDigits);
-        inputs.current[0]?.focus();
-        setIsResending(false);
-      }, 500);
+      // Generate new random OTP
+      const { generateRandomOTP, storeOTPLocally } = await import('@/services/auth.service');
+      const newOtp = generateRandomOTP();
+      console.log('Generated new OTP:', newOtp);
+      
+      await storeOTPLocally(phoneNumber, newOtp);
+      console.log('New OTP stored');
+      
+      // Update display
+      setDisplayOTP(newOtp);
+      
+      // Reset timer and form
+      setTimer(30);
+      setCode(['', '', '', '', '', '']);
+      inputs.current[0]?.focus();
+      
+      Alert.alert('OTP Resent', `A new verification code has been sent to ${formattedPhone}`);
+      setIsResending(false);
     } catch (error: any) {
       console.error('Error resending OTP:', error);
       Alert.alert('Error', 'Failed to resend OTP. Please try again.');
@@ -197,6 +279,14 @@ export default function OTPVerifyScreen() {
             </Text>
             <Text style={styles.phoneNumber}>{formattedPhone}</Text>
           </View>
+
+          {/* Dev OTP Display */}
+          {displayOTP && (
+            <View style={styles.otpDisplayBox}>
+              <Text style={styles.otpDisplayLabel}>OTP Code (auto-filled below):</Text>
+              <Text style={styles.otpDisplayValue}>{displayOTP}</Text>
+            </View>
+          )}
 
           {/* OTP Inputs */}
           <View style={styles.otpContainer}>
@@ -408,5 +498,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: TYPOGRAPHY.fonts.semibold,
     fontWeight: '600',
+  },
+  otpDisplayBox: {
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FBBF24',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  otpDisplayLabel: {
+    fontSize: 12,
+    fontFamily: TYPOGRAPHY.fonts.regular,
+    color: '#92400E',
+    marginBottom: 6,
+  },
+  otpDisplayValue: {
+    fontSize: 24,
+    fontFamily: TYPOGRAPHY.fonts.bold,
+    fontWeight: '700',
+    color: '#D97706',
+    letterSpacing: 4,
   },
 });

@@ -50,27 +50,36 @@ export default function FamilySetupScreen() {
   const handleBack = () => router.back();
 
   const requirePatient = async (): Promise<PatientRecord> => {
+    console.log('=== Requiring Patient ===');
+    console.log('PatientId:', patientId, 'PhoneNumber:', phoneNumber);
+
     if (patientId) {
       const storePatient = await getPatientById(patientId);
-      if (storePatient) return storePatient;
+      if (storePatient) {
+        console.log('Found patient by ID:', storePatient.id);
+        return storePatient;
+      }
     }
-
-    const sessionPatient = await getCurrentPatient();
-    if (sessionPatient) return sessionPatient;
 
     if (phoneNumber) {
       const phonePatient = await getPatientByPhone(phoneNumber);
-      if (phonePatient) return phonePatient;
+      if (phonePatient) {
+        console.log('Found patient by phone:', phonePatient.id);
+        return phonePatient;
+      }
     }
 
-    if (patientId || phoneNumber) {
+    // If we reach here, create a temporary patient object from available data
+    if (phoneNumber) {
+      console.log('Creating temporary patient from phone:', phoneNumber);
       return {
-        id: patientId || `demo-${Date.now()}`,
-        name: 'Demo User',
+        id: patientId || `temp_${phoneNumber}`,
+        name: 'User',
+        phone: phoneNumber,
         age: null,
         gender: null,
-        phone: phoneNumber || null,
         family_id: null,
+        created_at: new Date().toISOString(),
       };
     }
 

@@ -80,32 +80,39 @@ export default function CheckinScreen() {
   const [loading, setLoading] = useState(true);
 
   const { user, patientId: storePatientId } = useAuthStore();
-  const patientId = user?.id || storePatientId || 'demo-patient';
+  const patientId = user?.id || storePatientId;
 
   useEffect(() => {
-    loadQuestions();
+    if (patientId) {
+      loadQuestions();
+    } else {
+      Alert.alert('Error', 'Unable to load patient information. Please log in again.');
+      setLoading(false);
+    }
   }, [patientId]);
+  
   const loadQuestions = async () => {
+    if (!patientId) {
+      Alert.alert('Error', 'Patient ID not found');
+      setLoading(false);
+      return;
+    }
+
     try {
       const data = await getPendingCheckins(patientId);
-      const resolved = data?.length
-        ? data
-        : [
-            { id: 'demo-q1', question_text: 'How are you feeling today?' },
-            { id: 'demo-q2', question_text: 'Did you take all medicines on time?' },
-            { id: 'demo-q3', question_text: 'Any pain, dizziness, or breathing issue?' },
-          ];
-      setQuestions(resolved);
-      setAnswers(resolved.map((q: any) => ({ question_id: q.id, answer: '' })));
+      if (!data || data.length === 0) {
+        Alert.alert('No Check-ins', 'No pending check-ins at this time.');
+        setQuestions([]);
+        setAnswers([]);
+      } else {
+        setQuestions(data);
+        setAnswers(data.map((q: any) => ({ question_id: q.id, answer: '' })));
+      }
     } catch (error) {
       console.error("Check-in error:", error);
-      const fallback = [
-        { id: 'demo-q1', question_text: 'How are you feeling today?' },
-        { id: 'demo-q2', question_text: 'Did you take all medicines on time?' },
-        { id: 'demo-q3', question_text: 'Any pain, dizziness, or breathing issue?' },
-      ];
-      setQuestions(fallback);
-      setAnswers(fallback.map((q: any) => ({ question_id: q.id, answer: '' })));
+      Alert.alert('Error', 'Failed to load check-ins. Please try again.');
+      setQuestions([]);
+      setAnswers([]);
     } finally {
       setLoading(false);
     }
@@ -116,13 +123,20 @@ export default function CheckinScreen() {
   };
 
   const handleSubmit = async () => {
+    if (!patientId) {
+      Alert.alert('Error', 'Patient ID not found');
+      return;
+    }
+
     try {
       await submitCheckin(patientId, answers);
       Alert.alert("Success", "Check-in completed!");
       setQuestions([]);
+      setAnswers([]);
+      await loadQuestions();
     } catch (error) {
-      Alert.alert("Saved", "Backend unavailable. Your check-in is saved in demo mode.");
-      setQuestions([]);
+      console.error('Submit error:', error);
+      Alert.alert("Error", "Failed to submit check-in. Please try again.");
     }
   };
 
