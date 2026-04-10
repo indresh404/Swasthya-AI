@@ -130,12 +130,12 @@ const AIChatButton = () => {
 };
 
 // Watch Simulator Card Component
-const WatchSimulatorCard = ({ isAbnormal, setIsAbnormal }: any) => {
+const WatchSimulatorCard = ({ isAbnormal, setIsAbnormal }: { isAbnormal: boolean, setIsAbnormal: React.Dispatch<React.SetStateAction<boolean>> }) => {
   const [vitals, setVitals] = useState({ hr: 72, spo2: 98, sys: 120, dia: 80 });
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setIsAbnormal(prev => {
+      setIsAbnormal((prev: boolean) => {
         const next = !prev;
         if (next) {
           // Abnormal state
