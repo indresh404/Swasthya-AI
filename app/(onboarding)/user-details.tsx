@@ -18,8 +18,9 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { getCurrentPatient, normalizePhone, savePatientProfile } from '@/services/auth.service';
 import { useAuthStore } from '@/store/auth.store';
 
-// Make sure this path matches your project structure
 import { COLORS, STYLES } from '../../constants/Colors';
+import { supabase } from '@/services/supabaseClient';
+import { useAuthStore } from '@/store/auth.store';
 
 export default function UserDetailsScreen() {
   const router = useRouter();
@@ -258,29 +259,38 @@ export default function UserDetailsScreen() {
     });
 
     if (validateForm()) {
-      setIsSaving(true);
-      try {
-        const patient = await savePatientProfile({
-          patientId,
-          name: name.trim(),
-          age: parseInt(age, 10),
-          phone: phoneNumber.trim(),
-          gender: gender || 'Other',
-        });
+      saveProfile();
+    }
+  };
 
-        setSessionState({
-          patientId: patient.id,
-          phoneNumber: patient.phone,
-          hasProfile: true,
-          hasFamilyGroup: Boolean(patient.family_id),
-        });
 
-        router.push('/(onboarding)/family-setup');
-      } catch (error: any) {
-        Alert.alert('Save failed', error?.message || 'Unable to save your profile right now.');
-      } finally {
-        setIsSaving(false);
+  const saveProfile = async () => {
+    const { user } = useAuthStore.getState();
+    if (!user) {
+      Alert.alert('Error', 'No authenticated user found');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from('users').upsert({
+        id: user.id,
+        name: name.trim(),
+        age: parseInt(age),
+        phone: phoneNumber.trim(),
+        gender: gender,
+        state: location.trim(),
+        updated_at: new Date().toISOString(),
+      });
+
+      if (error) {
+        Alert.alert('Error Saving Profile', error.message);
+        return;
       }
+
+      useAuthStore.getState().setHasProfile(true);
+      router.push('/(onboarding)/family-setup');
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred while saving your profile');
     }
   };
 

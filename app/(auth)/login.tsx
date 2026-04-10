@@ -16,8 +16,8 @@ import {
   View,
   ActivityIndicator,
 } from 'react-native';
-import { getCurrentPatient, normalizePhone, signInWithGoogle } from '@/services/auth.service';
 import { useAuthStore } from '@/store/auth.store';
+import { supabase } from '@/services/supabaseClient';
 
 const { width, height } = Dimensions.get('window');
 
@@ -182,36 +182,9 @@ export default function LoginScreen() {
           testOtp: testOtp
         }
       });
-    }, 500);
-  };
-
-  const handleGoogleSignIn = async () => {
-    animatePop(googleButtonPopAnim);
-    setLoading(true);
-
-    try {
-      const session = await signInWithGoogle();
-      const patient = await getCurrentPatient();
-
-      setSessionState({
-        userId: session?.user.id ?? null,
-        patientId: patient?.id ?? (session?.user.user_metadata?.patient_id as string | null) ?? null,
-        phoneNumber: (patient?.phone ?? session?.user.user_metadata?.phone ?? null) as string | null,
-        hasProfile: Boolean(patient),
-        hasFamilyGroup: Boolean(patient?.family_id),
-      });
-
-      if (patient?.family_id) {
-        router.replace('/(tabs)/home');
-      } else if (patient) {
-        router.replace('/(onboarding)/family-setup');
-      } else {
-        router.replace('/(onboarding)/user-details');
-      }
-    } catch (error: any) {
-      Alert.alert('Google Sign In', error?.message || 'Unable to sign in with Google right now.');
-    } finally {
+    } catch (error) {
       setLoading(false);
+      Alert.alert('Connection Error', 'Could not reach Supabase');
     }
   };
 
@@ -409,22 +382,7 @@ export default function LoginScreen() {
             <View style={styles.dividerLine} />
           </View>
 
-          <TouchableOpacity
-            onPress={handleGoogleSignIn}
-            activeOpacity={0.8}
-          >
-            <Animated.View
-              style={[
-                styles.googleButton,
-                {
-                  transform: [{ scale: googleButtonPopAnim }],
-                },
-              ]}
-            >
-              <Ionicons name="logo-google" size={22} color="#EA4335" />
-              <Text style={styles.googleButtonText}>Continue with Google</Text>
-            </Animated.View>
-          </TouchableOpacity>
+          {/* Google Sign In Button removed as it was Firebase-based */}
         </Animated.View>
       </KeyboardAvoidingView>
     </View>

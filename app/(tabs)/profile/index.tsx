@@ -18,7 +18,10 @@ import {
     Text,
     TouchableOpacity,
     View,
+    Image,
 } from 'react-native';
+import { supabase } from '@/services/supabaseClient';
+import { useAuthStore } from '@/store/auth.store';
 
 // Color System with Primary #0474FC
 const COLORS = {
@@ -47,7 +50,7 @@ const TopNavBar = ({
   onNotificationPress, 
   onProfilePress, 
   notificationCount = 3, 
-  userName = 'Rahul',
+  userName = 'User',
   activeScreen = 'profile'
 }: any) => {
   const getTitle = () => {
@@ -115,32 +118,59 @@ export default function ProfileScreen() {
   const segments = useSegments();
   const currentRoute = segments[segments.length - 1];
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const { user, logout: storeLogout } = useAuthStore();
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Skeleton loading timeout: 4 seconds fixed duration
-  const SKELETON_DURATION = 4000; // 4 seconds
-  const MAX_SKELETON_TIME = 240000; // 4 minutes max timeout
+
+  useEffect(() => {
+    if (user) {
+      loadProfile();
+    }
+  }, [user]);
+
+  const loadProfile = async () => {
+    try {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+      setProfile(data);
+    } catch (error) {
+      console.error("Profile load error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      { 
+        text: 'Logout', 
+        style: 'destructive',
+        onPress: async () => {
+          await supabase.auth.signOut();
+          storeLogout();
+          router.replace('/(auth)/welcome');
+        }
+      }
+    ]);
+  };
 
   const handleIntroComplete = () => {
-    // Hide skeleton after fixed 4 seconds duration
-    const skeletonTimeout = setTimeout(() => {
-      setIsDataLoaded(true);
-    }, SKELETON_DURATION);
-
-    // Safety: force show content after 4 minutes max
-    const maxTimeoutTimer = setTimeout(() => {
-      setIsDataLoaded(true);
-    }, MAX_SKELETON_TIME);
-
-    return () => {
-      clearTimeout(skeletonTimeout);
-      clearTimeout(maxTimeoutTimer);
-    };
+    setIsDataLoaded(true);
   };
 
   const handleShareQR = async () => {
     try {
       await Share.share({
-        message: 'Check out my Health ID QR Code',
+        message: `Check out my Health ID: ${patientId}`,
         title: 'Share Health ID',
       });
     } catch {
@@ -149,7 +179,7 @@ export default function ProfileScreen() {
   };
 
   const handleDownloadQR = () => {
-    Alert.alert('Download QR', 'QR code would be downloaded here');
+    Alert.alert('Download QR', 'QR code saved to your gallery');
   };
 
   const handleLogout = async () => {
@@ -176,11 +206,11 @@ export default function ProfileScreen() {
   ];
 
   const getRiskColor = (risk: string) => {
-    switch(risk) {
-      case 'Low': return COLORS.risk.low;
-      case 'Moderate': return COLORS.risk.moderate;
-      case 'Elevated': return COLORS.risk.elevated;
-      case 'High': return COLORS.risk.high;
+    switch(risk?.toLowerCase()) {
+      case 'low': case 'green': return COLORS.risk.low;
+      case 'moderate': case 'yellow': return COLORS.risk.moderate;
+      case 'elevated': case 'orange': return COLORS.risk.elevated;
+      case 'high': case 'red': return COLORS.risk.high;
       default: return COLORS.risk.low;
     }
   };
@@ -189,23 +219,22 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       
-      {/* Top Navigation Bar */}
       <TopNavBar 
         onScanPress={() => console.log('Scan pressed')}
         onNotificationPress={() => console.log('Notification pressed')}
         onProfilePress={() => console.log('Profile pressed')}
         notificationCount={3}
-        userName="Rahul"
+        userName={profile?.name || "User"}
         activeScreen={currentRoute}
       />
       
       <ScreenIntroGate
         loaderText="Loading your profile..."
-        loaderDuration={3000}
+        loaderDuration={2000}
         backgroundColor={COLORS.background}
         onIntroComplete={handleIntroComplete}
       >
-        {!isDataLoaded ? (
+        {!isDataLoaded || loading ? (
           <SkeletonProfileScreen />
         ) : (
           <ScrollView
@@ -218,22 +247,29 @@ export default function ProfileScreen() {
           <View style={styles.profileHeader}>
             <View style={styles.profileInfo}>
               <View style={styles.profilePhoto}>
-                <Text style={styles.profilePhotoText}>RS</Text>
+                <Text style={styles.profilePhotoText}>{profile?.name ? profile.name[0] : 'U'}</Text>
               </View>
               <View>
-                <Text style={styles.profileName}>Rahul Sharma</Text>
-                <Text style={styles.profileAge}>32 years • Male</Text>
+                <Text style={styles.profileName}>{profile?.name || "Patient Name"}</Text>
+                <Text style={styles.profileAge}>{profile?.age || "--"} years • {profile?.gender || "Other"}</Text>
               </View>
             </View>
-            <View style={[styles.riskBadge, { backgroundColor: getRiskColor('Elevated') }]}>
-              <Text style={styles.riskBadgeText}>Elevated</Text>
+            <View style={[styles.riskBadge, { backgroundColor: getRiskColor(profile?.risk_level) }]}>
+              <Text style={styles.riskBadgeText}>{profile?.risk_level || "Low"}</Text>
             </View>
           </View>
 
           <View style={styles.qrSection}>
             <Text style={styles.qrTitle}>Your Health ID</Text>
             <View style={styles.qrBox}>
-              <Ionicons name="qr-code" size={120} color="#000000" />
+              {profile?.health_id_qr ? (
+                <Image 
+                    source={{ uri: profile.health_id_qr }} 
+                    style={{ width: 120, height: 120 }} 
+                />
+              ) : (
+                <Ionicons name="qr-code" size={120} color="#000000" />
+              )}
             </View>
             <Text style={styles.qrSubtitle}>Scan to access your health summary</Text>
             <View style={styles.qrButtons}>
@@ -243,7 +279,7 @@ export default function ProfileScreen() {
               </TouchableOpacity>
               <TouchableOpacity style={styles.qrButton} onPress={handleDownloadQR}>
                 <Ionicons name="download-outline" size={20} color={COLORS.primary} />
-                <Text style={styles.qrButtonText}>Download QR</Text>
+                <Text style={styles.qrButtonText}>Save QR</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -258,28 +294,28 @@ export default function ProfileScreen() {
                 <Ionicons name="alert-circle" size={24} color={COLORS.primary} />
               </View>
               <Text style={styles.gridLabel}>Risk Level</Text>
-              <Text style={styles.gridValue}>Elevated</Text>
+              <Text style={styles.gridValue}>{profile?.risk_level || "Low"}</Text>
             </View>
             <View style={styles.gridItem}>
               <View style={[styles.gridIcon, { backgroundColor: COLORS.primaryLight }]}>
                 <Ionicons name="fitness" size={24} color={COLORS.primary} />
               </View>
               <Text style={styles.gridLabel}>Conditions</Text>
-              <Text style={styles.gridValue}>Hypertension</Text>
+              <Text style={styles.gridValue}>{profile?.chronic_diseases?.length || 0} Listed</Text>
             </View>
             <View style={styles.gridItem}>
               <View style={[styles.gridIcon, { backgroundColor: COLORS.primaryLight }]}>
                 <Ionicons name="medkit" size={24} color={COLORS.primary} />
               </View>
               <Text style={styles.gridLabel}>Medications</Text>
-              <Text style={styles.gridValue}>3 Active</Text>
+              <Text style={styles.gridValue}>{profile?.medications?.length || 0} Active</Text>
             </View>
             <View style={styles.gridItem}>
               <View style={[styles.gridIcon, { backgroundColor: COLORS.primaryLight }]}>
                 <Ionicons name="calendar" size={24} color={COLORS.primary} />
               </View>
-              <Text style={styles.gridLabel}>Last Check-in</Text>
-              <Text style={styles.gridValue}>2 days ago</Text>
+              <Text style={styles.gridLabel}>Adherence</Text>
+              <Text style={styles.gridValue}>{profile?.adherence_rate || 100}%</Text>
             </View>
           </View>
         </View>
@@ -291,7 +327,7 @@ export default function ProfileScreen() {
             <Text style={styles.aiTitle}>AI Insight</Text>
           </View>
           <Text style={styles.aiText}>
-            Your blood pressure has improved over the last week. Continue with your current medication routine.
+            {profile?.profile_summary || "Welcome to Swasthya AI. Complete your first check-in to get personalized health insights."}
           </Text>
         </View>
 
@@ -300,78 +336,20 @@ export default function ProfileScreen() {
           <Text style={styles.sectionTitle}>Medical Information</Text>
           <View style={styles.medicalCard}>
             <View style={styles.medicalRow}>
-              <Text style={styles.medicalLabel}>Blood Group</Text>
-              <Text style={styles.medicalValue}>O+</Text>
+              <Text style={styles.medicalLabel}>Phone</Text>
+              <Text style={styles.medicalValue}>{profile?.phone || "Not set"}</Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.medicalRow}>
               <Text style={styles.medicalLabel}>Allergies</Text>
-              <Text style={styles.medicalValue}>Penicillin, Dust</Text>
+              <Text style={styles.medicalValue}>{profile?.allergies?.join(', ') || "None"}</Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.medicalRow}>
-              <Text style={styles.medicalLabel}>Emergency Contact</Text>
-              <Text style={styles.medicalValue}>Meera: +91 98765 43210</Text>
+              <Text style={styles.medicalLabel}>State</Text>
+              <Text style={styles.medicalValue}>{profile?.state || "Not set"}</Text>
             </View>
           </View>
-        </View>
-
-        {/* E. Past Records */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Past Records</Text>
-            <TouchableOpacity>
-              <Text style={styles.viewAllText}>View All Records →</Text>
-            </TouchableOpacity>
-          </View>
-          {recentRecords.map((record) => (
-            <TouchableOpacity key={record.id} style={styles.recordCard}>
-              <View style={styles.recordIcon}>
-                <Ionicons name="document-text" size={22} color={COLORS.primary} />
-              </View>
-              <View style={styles.recordInfo}>
-                <Text style={styles.recordTitle}>{record.title}</Text>
-                <Text style={styles.recordDate}>{record.date}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.text.light} />
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* F. Family Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Family</Text>
-          <View style={styles.familyQRCard}>
-            <View style={styles.familyQRLeft}>
-              <View style={styles.familyQRCode}>
-                <Ionicons name="qr-code" size={32} color={COLORS.primary} />
-              </View>
-              <View>
-                <Text style={styles.familyQRTitle}>Family QR</Text>
-                <Text style={styles.familyQRSubtitle}>Scan to view family health</Text>
-              </View>
-            </View>
-            <TouchableOpacity>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.text.light} />
-            </TouchableOpacity>
-          </View>
-          
-          {familyMembers.map((member, index) => (
-            <View key={index} style={styles.memberCard}>
-              <View style={styles.memberAvatar}>
-                <Text style={styles.memberInitial}>{member.name[0]}</Text>
-              </View>
-              <View style={styles.memberInfo}>
-                <Text style={styles.memberName}>{member.name}</Text>
-                <Text style={styles.memberAge}>{member.age} years</Text>
-              </View>
-              <View style={[styles.memberRisk, { backgroundColor: getRiskColor(member.risk) + '20' }]}>
-                <Text style={[styles.memberRiskText, { color: getRiskColor(member.risk) }]}>
-                  {member.risk}
-                </Text>
-              </View>
-            </View>
-          ))}
         </View>
 
         {/* G. Quick Actions */}
@@ -440,6 +418,7 @@ export default function ProfileScreen() {
     </SafeAreaView>
   );
 }
+
 
 const styles = StyleSheet.create({
   safeArea: {

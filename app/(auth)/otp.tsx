@@ -1,24 +1,42 @@
 // app/(auth)/otp.tsx
 import { COLORS, TYPOGRAPHY } from '@/theme';
+import { supabase } from '@/services/supabaseClient';
+import { useAuthStore } from '@/store/auth.store';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  Alert,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  ActivityIndicator,
-} from 'react-native';
-import { getPatientByPhone, normalizePhone } from '@/services/auth.service';
-import { useAuthStore } from '@/store/auth.store';
+import { Alert, Keyboard, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+// Define colors directly (no external imports)
+const COLORS = {
+  primary: '#3B82F6',
+  surface: '#F8FAFC',
+  white: '#FFFFFF',
+  blue: {
+    500: '#3B82F6',
+    900: '#1E3A8A',
+  },
+  gray: {
+    300: '#D1D5DB',
+    400: '#9CA3AF',
+    500: '#6B7280',
+  },
+  text: {
+    primary: '#1F2937',
+    secondary: '#4B5563',
+    muted: '#6B7280',
+  },
+};
+
+const TYPOGRAPHY = {
+  fonts: {
+    regular: 'System',
+    medium: 'System',
+    semibold: 'System',
+    bold: 'System',
+  },
+};
 
 export default function OTPVerifyScreen() {
   const router = useRouter();

@@ -14,14 +14,15 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import 'react-native-reanimated';
+
 import { Loader } from '@/components/ui/Loader';
-import { supabase } from '@/config/supabase';
-import { getCurrentPatient, getCurrentSession } from '@/services/auth.service';
+import { supabase } from '@/services/supabaseClient';
 import { useAuthStore } from '@/store/auth.store';
 
 export default function RootLayout() {
-  const setSessionState = useAuthStore((state) => state.setSessionState);
+  const setSession = useAuthStore((state) => state.setSession);
   const logout = useAuthStore((state) => state.logout);
+
   const [loaded] = useFonts({
     Poppins_400Regular,
     Poppins_500Medium,

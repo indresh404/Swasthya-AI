@@ -9,3 +9,4 @@ export default function Index() {
   if (!hasFamilyGroup) return <Redirect href="/(onboarding)/family-setup" />;
   return <Redirect href="/(tabs)/home" />;
 }
+

@@ -1,63 +1,42 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// store/auth.store.ts
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { User, Session } from '@supabase/supabase-js';
 
 interface AuthState {
   userId: string | null;
-  patientId: string | null;
-  phoneNumber: string | null;
   isLoggedIn: boolean;
   hasProfile: boolean;
   hasFamilyGroup: boolean;
-  setSessionState: (payload: {
-    userId?: string | null;
-    patientId?: string | null;
-    phoneNumber?: string | null;
-    hasProfile?: boolean;
-    hasFamilyGroup?: boolean;
-  }) => void;
+  user: User | null;
+  session: Session | null;
+  setSession: (session: Session | null) => void;
   setHasProfile: (value: boolean) => void;
   setHasFamilyGroup: (value: boolean) => void;
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
+export const useAuthStore = create<AuthState>((set) => ({
+  userId: null,
+  isLoggedIn: false,
+  hasProfile: false,
+  hasFamilyGroup: false,
+  user: null,
+  session: null,
+  setSession: (session) => set({
+    session,
+    user: session?.user || null,
+    userId: session?.user?.id || null,
+    isLoggedIn: Boolean(session),
+  }),
+  setHasProfile: (hasProfile) => set({ hasProfile }),
+  setHasFamilyGroup: (hasFamilyGroup) => set({ hasFamilyGroup }),
+  logout: () =>
+    set({
       userId: null,
-      patientId: null,
-      phoneNumber: null,
       isLoggedIn: false,
       hasProfile: false,
       hasFamilyGroup: false,
-      setSessionState: (payload) =>
-        set((state) => {
-          const nextUserId = payload.userId !== undefined ? payload.userId : state.userId;
-          return {
-            userId: nextUserId,
-            patientId: payload.patientId !== undefined ? payload.patientId : state.patientId,
-            phoneNumber: payload.phoneNumber !== undefined ? payload.phoneNumber : state.phoneNumber,
-            hasProfile: payload.hasProfile !== undefined ? payload.hasProfile : state.hasProfile,
-            hasFamilyGroup:
-              payload.hasFamilyGroup !== undefined ? payload.hasFamilyGroup : state.hasFamilyGroup,
-            isLoggedIn: Boolean(nextUserId),
-          };
-        }),
-      setHasProfile: (hasProfile) => set({ hasProfile }),
-      setHasFamilyGroup: (hasFamilyGroup) => set({ hasFamilyGroup }),
-      logout: () =>
-        set({
-          userId: null,
-          patientId: null,
-          phoneNumber: null,
-          isLoggedIn: false,
-          hasProfile: false,
-          hasFamilyGroup: false,
-        }),
+      user: null,
+      session: null,
     }),
-    {
-      name: 'auth-store',
-      storage: createJSONStorage(() => AsyncStorage),
-    }
-  )
-);
+}));

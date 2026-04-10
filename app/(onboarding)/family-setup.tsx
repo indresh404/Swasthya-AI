@@ -5,6 +5,9 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
+import { supabase } from '@/services/supabaseClient';
+import { useAuthStore } from '@/store/auth.store';
+
 import {
   Alert,
   KeyboardAvoidingView,
@@ -224,6 +227,7 @@ export default function FamilySetupScreen() {
       setIsJoining(false);
     }
   };
+
 
   const handleQRScan = async () => {
     if (!permission?.granted) {
