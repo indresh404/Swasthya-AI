@@ -1,6 +1,6 @@
 // store/auth.store.ts
-import { User } from 'firebase/auth';
 import { create } from 'zustand';
+import { User, Session } from '@supabase/supabase-js';
 
 interface AuthState {
   userId: string | null;
@@ -8,14 +8,11 @@ interface AuthState {
   hasProfile: boolean;
   hasFamilyGroup: boolean;
   user: User | null;
-  email: string | null;
-  displayName: string | null;
-  photoURL: string | null;
-  setUser: (userId: string | null, userData?: User | null) => void;
+  session: Session | null;
+  setSession: (session: Session | null) => void;
   setHasProfile: (value: boolean) => void;
   setHasFamilyGroup: (value: boolean) => void;
   logout: () => void;
-  updateUserData: (user: User | null) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -24,27 +21,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   hasProfile: false,
   hasFamilyGroup: false,
   user: null,
-  email: null,
-  displayName: null,
-  photoURL: null,
-  setUser: (userId, userData = null) => set({
-    userId,
-    isLoggedIn: Boolean(userId),
-    user: userData,
-    email: userData?.email || null,
-    displayName: userData?.displayName || null,
-    photoURL: userData?.photoURL || null,
+  session: null,
+  setSession: (session) => set({
+    session,
+    user: session?.user || null,
+    userId: session?.user?.id || null,
+    isLoggedIn: Boolean(session),
   }),
   setHasProfile: (hasProfile) => set({ hasProfile }),
   setHasFamilyGroup: (hasFamilyGroup) => set({ hasFamilyGroup }),
-  updateUserData: (user) => set({
-    user,
-    userId: user?.uid || null,
-    isLoggedIn: Boolean(user),
-    email: user?.email || null,
-    displayName: user?.displayName || null,
-    photoURL: user?.photoURL || null,
-  }),
   logout: () =>
     set({
       userId: null,
@@ -52,8 +37,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       hasProfile: false,
       hasFamilyGroup: false,
       user: null,
-      email: null,
-      displayName: null,
-      photoURL: null,
+      session: null,
     }),
-}));
+}));

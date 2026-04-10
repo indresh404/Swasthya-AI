@@ -1,6 +1,7 @@
 // config/firebase.ts
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getApps, initializeApp } from 'firebase/app';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAuth, getReactNativePersistence, initializeAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
@@ -13,11 +14,18 @@ export const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID ?? '',
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+const hasExistingApp = getApps().length > 0;
+
+// Reuse the Firebase app during Fast Refresh.
+const app = hasExistingApp ? getApps()[0] : initializeApp(firebaseConfig);
 
 // Export services
-export const auth = getAuth(app);
+export const auth =
+  hasExistingApp
+    ? getAuth(app)
+    : initializeAuth(app, {
+        persistence: getReactNativePersistence(AsyncStorage),
+      });
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 

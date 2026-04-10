@@ -15,7 +15,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuthStore } from '@/store/auth.store';
+import { supabase } from '@/services/supabaseClient';
 
 const { width, height } = Dimensions.get('window');
 
@@ -73,9 +74,6 @@ export default function LoginScreen() {
   const [isFocused, setIsFocused] = useState(false);
 
   const inputRef = useRef<TextInput>(null);
-
-  // Google Auth Hook
-  const { signInWithGoogle, googleLoading } = useAuth();
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -164,27 +162,22 @@ export default function LoginScreen() {
     animatePop(buttonPopAnim);
 
     if (phoneNumber.length < 10) {
-      Alert.alert('Error', 'Please enter a valid phone number');
+      Alert.alert('Error', 'Please enter a valid 10-digit phone number');
       return;
     }
 
     setLoading(true);
 
-    setTimeout(() => {
+    try {
+      // MOCK BYPASS: Skip real Supabase OTP call because of Twilio config issues
       setLoading(false);
       router.push({
         pathname: '/(auth)/otp',
         params: { phone: phoneNumber },
       });
-    }, 1500);
-  };
-
-  const handleGoogleSignIn = async () => {
-    animatePop(googleButtonPopAnim);
-    const result = await signInWithGoogle();
-    if (result.success) {
-      Alert.alert('Success', `Welcome ${result.user?.displayName || result.user?.email}!`);
-      router.replace('/(tabs)/home');
+    } catch (error) {
+      setLoading(false);
+      Alert.alert('Connection Error', 'Could not reach Supabase');
     }
   };
 
@@ -393,33 +386,7 @@ export default function LoginScreen() {
             <View style={styles.dividerLine} />
           </View>
 
-          {/* Google Sign In Button */}
-          <TouchableOpacity
-            onPress={handleGoogleSignIn}
-            activeOpacity={0.8}
-            disabled={googleLoading}
-          >
-            <Animated.View
-              style={[
-                styles.googleButton,
-                {
-                  transform: [{ scale: googleButtonPopAnim }],
-                },
-              ]}
-            >
-              {googleLoading ? (
-                <>
-                  <Animated.View style={styles.loadingDot} />
-                  <Text style={styles.googleButtonText}>Connecting...</Text>
-                </>
-              ) : (
-                <>
-                  <Ionicons name="logo-google" size={22} color="#EA4335" />
-                  <Text style={styles.googleButtonText}>Continue with Google</Text>
-                </>
-              )}
-            </Animated.View>
-          </TouchableOpacity>
+          {/* Google Sign In Button removed as it was Firebase-based */}
         </Animated.View>
       </KeyboardAvoidingView>
     </View>
