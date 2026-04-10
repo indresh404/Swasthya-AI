@@ -15,17 +15,15 @@ import {
   View
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { getCurrentPatient, normalizePhone, savePatientProfile } from '@/services/auth.service';
+import { getCurrentPatient, normalizePhone } from '@/services/auth.service';
 import { useAuthStore } from '@/store/auth.store';
 
 import { COLORS, STYLES } from '../../constants/Colors';
 import { supabase } from '@/services/supabaseClient';
-import { useAuthStore } from '@/store/auth.store';
-
 export default function UserDetailsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ phone?: string }>();
-  const { patientId, phoneNumber: storedPhone, setSessionState } = useAuthStore();
+  const { patientId, phoneNumber: storedPhone } = useAuthStore();
 
   // Form states
   const [name, setName] = useState('');

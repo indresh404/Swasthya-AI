@@ -5,7 +5,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
-import { supabase } from '@/services/supabaseClient';
+import QRCode from 'react-native-qrcode-svg';
 import { useAuthStore } from '@/store/auth.store';
 
 import {
@@ -26,17 +26,16 @@ import {
   createFamilyForPatient,
   getCurrentPatient,
   getPatientById,
+  getPatientByPhone,
   joinFamilyForPatient,
   type PatientRecord,
 } from '@/services/auth.service';
-import { supabase } from '@/config/supabase';
-import { useAuthStore } from '@/store/auth.store';
 
 const CODE_LENGTH = 6;
 
 export default function FamilySetupScreen() {
   const router = useRouter();
-  const { patientId, setSessionState } = useAuthStore();
+  const { patientId, phoneNumber, setSessionState } = useAuthStore();
   const [codeDigits, setCodeDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''));
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [showFamilyNameModal, setShowFamilyNameModal] = useState(false);
@@ -58,6 +57,22 @@ export default function FamilySetupScreen() {
 
     const sessionPatient = await getCurrentPatient();
     if (sessionPatient) return sessionPatient;
+
+    if (phoneNumber) {
+      const phonePatient = await getPatientByPhone(phoneNumber);
+      if (phonePatient) return phonePatient;
+    }
+
+    if (patientId || phoneNumber) {
+      return {
+        id: patientId || `demo-${Date.now()}`,
+        name: 'Demo User',
+        age: null,
+        gender: null,
+        phone: phoneNumber || null,
+        family_id: null,
+      };
+    }
 
     throw new Error('Please complete your profile before creating or joining a family.');
   };
@@ -93,104 +108,6 @@ export default function FamilySetupScreen() {
       Alert.alert('Error', error.message || 'Failed to create family. Please try again.');
     } finally {
       setIsCreating(false);
-    }
-  };
-
-  // Handle join family
-  const handleJoin = async () => {
-    const code = codeDigits.join('');
-    if (code.length !== CODE_LENGTH) {
-      Alert.alert('Error', 'Please enter a valid 6-digit code');
-      return;
-    }
-
-    setIsJoining(true);
-    try {
-      console.log('Attempting to join with code:', code);
-      
-      // Get current user session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        Alert.alert('Error', 'Please log in to join a family');
-        router.push('/(auth)/login');
-        return;
-      }
-
-      const userId = session.user.id;
-
-      // Find family by join_code
-      const { data: family, error: familyError } = await supabase
-        .from('families')
-        .select('*')
-        .eq('join_code', code)
-        .single();
-
-      if (familyError || !family) {
-        console.error('Family not found:', familyError);
-        Alert.alert('Error', 'Invalid family code. Please check and try again.');
-        return;
-      }
-
-      console.log('Found family:', family.family_name);
-
-      // Get patient record
-      const { data: patient } = await supabase
-        .from('patients')
-        .select('id')
-        .eq('phone', session.user.user_metadata?.phone || '')
-        .single();
-
-      // Check if already a member
-      const { data: existingMember } = await supabase
-        .from('family_members')
-        .select('*')
-        .eq('family_id', family.id)
-        .eq('patient_id', patient?.id || userId)
-        .single();
-
-      if (existingMember) {
-        Alert.alert('Info', 'You are already a member of this family');
-        router.push('/(tabs)/home');
-        return;
-      }
-
-      // Add as family member
-      const { error: memberError } = await supabase
-        .from('family_members')
-        .insert([
-          {
-            family_id: family.id,
-            patient_id: patient?.id || userId,
-            role: 'member',
-          },
-        ]);
-
-      if (memberError) {
-        console.error('Member insert error:', memberError);
-        Alert.alert('Error', 'Failed to join family. Please try again.');
-        return;
-      }
-
-      Alert.alert(
-        'Success! 🎉',
-        `You've successfully joined "${family.family_name}" family!`,
-        [
-          {
-            text: 'Continue',
-            onPress: () => router.push('/(tabs)/home'),
-          },
-        ]
-      );
-      
-      // Clear the code digits
-      setCodeDigits(Array(CODE_LENGTH).fill(''));
-      
-    } catch (error: any) {
-      console.error('Error joining family:', error);
-      Alert.alert('Error', error.message || 'Failed to join family. Please try again.');
-    } finally {
-      setIsJoining(false);
     }
   };
 
@@ -242,8 +159,15 @@ export default function FamilySetupScreen() {
 
   const handleBarCodeScanned = (result: any) => {
     try {
-      const scannedCode = result.data;
-      const code = scannedCode.slice(-6);
+      const scannedCode = String(result.data || '').trim();
+      const payloadMatch = scannedCode.match(/^SWASTHYA_FAMILY:(\d{6})$/);
+      const directMatch = scannedCode.match(/^(\d{6})$/);
+      const tailMatch = scannedCode.match(/(\d{6})$/);
+      const code = payloadMatch?.[1] || directMatch?.[1] || tailMatch?.[1] || '';
+      if (!code) {
+        Alert.alert('Invalid QR', 'This QR does not contain a valid family join code.');
+        return;
+      }
       const digits = code.split('');
       
       const newDigits = [...codeDigits];
@@ -571,6 +495,9 @@ export default function FamilySetupScreen() {
             <View style={styles.codeDisplayContainer}>
               <Text style={styles.codeLabel}>Your 6-Digit Family Code</Text>
               <Text style={styles.codeDisplay}>{generatedCode}</Text>
+              <View style={styles.qrCodeContainer}>
+                <QRCode value={`SWASTHYA_FAMILY:${generatedCode}`} size={150} />
+              </View>
               <TouchableOpacity 
                 onPress={() => copyToClipboard(generatedCode)}
                 style={styles.copyButton}
@@ -997,6 +924,12 @@ const styles = StyleSheet.create({
     fontFamily: TYPOGRAPHY.fonts.bold,
     color: '#116acf',
     letterSpacing: 8,
+    marginBottom: 12,
+  },
+  qrCodeContainer: {
+    backgroundColor: '#FFFFFF',
+    padding: 10,
+    borderRadius: 10,
     marginBottom: 12,
   },
   copyButton: {

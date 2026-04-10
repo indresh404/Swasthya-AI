@@ -16,11 +16,12 @@ import React, { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { Loader } from '@/components/ui/Loader';
+import { getCurrentPatient, getCurrentSession } from '@/services/auth.service';
 import { supabase } from '@/services/supabaseClient';
 import { useAuthStore } from '@/store/auth.store';
 
 export default function RootLayout() {
-  const setSession = useAuthStore((state) => state.setSession);
+  const setSessionState = useAuthStore((state) => state.setSessionState);
   const logout = useAuthStore((state) => state.logout);
 
   const [loaded] = useFonts({
@@ -40,7 +41,7 @@ export default function RootLayout() {
         const session = await getCurrentSession();
         if (!mounted) return;
 
-        if (!session) {
+        if (!session || session.user.is_anonymous) {
           logout();
           return;
         }
@@ -52,6 +53,7 @@ export default function RootLayout() {
           userId: session.user.id,
           patientId: patient?.id ?? (session.user.user_metadata?.patient_id as string | null) ?? null,
           phoneNumber: (patient?.phone ?? session.user.user_metadata?.phone ?? null) as string | null,
+          isLoggedIn: true,
           hasProfile: Boolean(patient),
           hasFamilyGroup: Boolean(patient?.family_id),
         });
@@ -74,8 +76,14 @@ export default function RootLayout() {
         return;
       }
 
+      if (session.user.is_anonymous) {
+        logout();
+        return;
+      }
+
       setSessionState({
         userId: session.user.id,
+        isLoggedIn: true,
       });
 
       void hydrateAuth();

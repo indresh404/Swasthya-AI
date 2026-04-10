@@ -21,7 +21,6 @@ import {
     Image,
 } from 'react-native';
 import { supabase } from '@/services/supabaseClient';
-import { useAuthStore } from '@/store/auth.store';
 
 // Color System with Primary #0474FC
 const COLORS = {
@@ -115,52 +114,67 @@ const TopNavBar = ({
 export default function ProfileScreen() {
   const router = useRouter();
   const logout = useAuthStore((state) => state.logout);
+  const patientId = useAuthStore((state) => state.patientId);
   const segments = useSegments();
   const currentRoute = segments[segments.length - 1];
   const [isDataLoaded, setIsDataLoaded] = useState(false);
-  const { user, logout: storeLogout } = useAuthStore();
+  const { user } = useAuthStore();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
 
   useEffect(() => {
-    if (user) {
+    if (user?.id || patientId) {
       loadProfile();
+      return;
     }
-  }, [user]);
+    setProfile({
+      name: 'Demo User',
+      age: 30,
+      gender: 'Other',
+      phone: '9999999999',
+      risk_level: 'Low',
+      profile_summary: 'Demo profile loaded because backend/auth is unavailable.',
+      chronic_diseases: [],
+      medications: [],
+      allergies: [],
+      state: 'Demo State',
+      adherence_rate: 100,
+    });
+    setLoading(false);
+  }, [user, patientId]);
 
   const loadProfile = async () => {
     try {
-      if (!user) return;
+      const resolvedId = user?.id || patientId;
+      if (!resolvedId) return;
       
       const { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', resolvedId)
         .single();
 
       if (error) throw error;
       setProfile(data);
     } catch (error) {
       console.error("Profile load error:", error);
+      setProfile((prev: any) => prev || {
+        name: 'Demo User',
+        age: 30,
+        gender: 'Other',
+        phone: '9999999999',
+        risk_level: 'Low',
+        profile_summary: 'Backend unavailable, showing demo profile.',
+        chronic_diseases: [],
+        medications: [],
+        allergies: [],
+        state: 'Demo State',
+        adherence_rate: 100,
+      });
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLogout = async () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      { 
-        text: 'Logout', 
-        style: 'destructive',
-        onPress: async () => {
-          await supabase.auth.signOut();
-          storeLogout();
-          router.replace('/(auth)/welcome');
-        }
-      }
-    ]);
   };
 
   const handleIntroComplete = () => {

@@ -16,8 +16,6 @@ import {
   View,
   ActivityIndicator,
 } from 'react-native';
-import { useAuthStore } from '@/store/auth.store';
-import { supabase } from '@/services/supabaseClient';
 
 const { width, height } = Dimensions.get('window');
 
@@ -69,7 +67,6 @@ const TYPOGRAPHY = {
 
 export default function LoginScreen() {
   const router = useRouter();
-  const setSessionState = useAuthStore((state) => state.setSessionState);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -162,7 +159,7 @@ export default function LoginScreen() {
   const handleContinue = async () => {
     animatePop(buttonPopAnim);
 
-    const normalizedPhone = normalizePhone(phoneNumber);
+    const normalizedPhone = phoneNumber.replace(/\D/g, '');
 
     if (normalizedPhone.length !== 10) {
       Alert.alert('Error', 'Please enter a valid 10-digit phone number');
@@ -182,10 +179,7 @@ export default function LoginScreen() {
           testOtp: testOtp
         }
       });
-    } catch (error) {
-      setLoading(false);
-      Alert.alert('Connection Error', 'Could not reach Supabase');
-    }
+    }, 400);
   };
 
   const handleBack = () => {

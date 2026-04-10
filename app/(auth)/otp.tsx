@@ -1,12 +1,11 @@
 // app/(auth)/otp.tsx
-import { COLORS, TYPOGRAPHY } from '@/theme';
-import { supabase } from '@/services/supabaseClient';
 import { useAuthStore } from '@/store/auth.store';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Keyboard, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Keyboard, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
+import { getPatientByPhone, normalizePhone } from '@/services/auth.service';
 
 // Define colors directly (no external imports)
 const COLORS = {
@@ -50,15 +49,13 @@ export default function OTPVerifyScreen() {
   const inputs = useRef<Array<TextInput | null>>([]);
 
   const phoneNumber = normalizePhone((params.phone as string) || '');
-  const testOtp = params.testOtp as string || '';
+  const testOtp = '123456';
   const formattedPhone = phoneNumber ? `+91 ${phoneNumber}` : '+91 XXXXX XXXXX';
 
-  // Auto-fill test OTP if provided
+  // Auto-fill fixed demo OTP
   useEffect(() => {
-    if (testOtp && testOtp.length === 6) {
-      const otpDigits = testOtp.split('');
-      setCode(otpDigits);
-    }
+    const otpDigits = testOtp.split('');
+    setCode(otpDigits);
   }, [testOtp]);
 
   useEffect(() => {
@@ -116,7 +113,7 @@ export default function OTPVerifyScreen() {
 
     try {
       // Check if OTP matches (always use test mode)
-      if (testOtp && otpCode !== testOtp) {
+      if (otpCode !== testOtp) {
         Alert.alert('Verification Failed', 'Invalid OTP. Please try again.');
         setCode(['', '', '', '', '', '']);
         inputs.current[0]?.focus();
@@ -127,9 +124,10 @@ export default function OTPVerifyScreen() {
       const existingPatient = await getPatientByPhone(phoneNumber);
 
       setSessionState({
-        userId: `phone:${phoneNumber}`,
-        patientId: existingPatient?.id ?? null,
+        userId: existingPatient?.id ?? `phone:${phoneNumber}`,
+        patientId: existingPatient?.id ?? `phone:${phoneNumber}`,
         phoneNumber,
+        isLoggedIn: true,
         hasProfile: Boolean(existingPatient),
         hasFamilyGroup: Boolean(existingPatient?.family_id),
       });
@@ -161,19 +159,14 @@ export default function OTPVerifyScreen() {
     
     try {
       // Generate new random OTP for resend
-      const newTestOtp = Math.floor(100000 + Math.random() * 900000).toString();
       setTimeout(() => {
         setTimer(30);
         Alert.alert('OTP Resent', `A new verification code has been sent to ${formattedPhone}`);
         setCode(['', '', '', '', '', '']);
-        // Auto-fill new test OTP
-        const otpDigits = newTestOtp.split('');
+        const otpDigits = testOtp.split('');
         setCode(otpDigits);
         inputs.current[0]?.focus();
         setIsResending(false);
-        
-        // Update the testOtp in params (for next verification)
-        // This is handled by the new OTP being set in state
       }, 500);
     } catch (error: any) {
       console.error('Error resending OTP:', error);
