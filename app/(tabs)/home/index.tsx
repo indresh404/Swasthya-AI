@@ -2,6 +2,7 @@
 import { BodyMapVisualization3D } from '@/components/bodymap/BodyMapVisualization3D';
 import { BodyMapCard } from '@/components/home/BodyMapCard';
 import { GovernmentSchemeCard } from '@/components/home/GovernmentSchemeCard';
+import { SmartwatchWidget } from '@/components/home/SmartwatchWidget';
 import { ScreenIntroGate } from '@/components/ui/ScreenIntroGate';
 import { SkeletonHomeScreen } from '@/components/ui/SkeletonLoader';
 import { Ionicons } from '@expo/vector-icons';
@@ -31,7 +32,6 @@ const TopNavBar = ({
   userName = 'Indresh',
   activeScreen = 'DASHBOARD'
 }: any) => {
-  // Get the title based on active screen
   const getTitle = () => {
     switch (activeScreen) {
       case 'home': return 'DASHBOARD';
@@ -45,7 +45,6 @@ const TopNavBar = ({
   return (
     <View style={styles.topNavContainer}>
       <View style={styles.topNavBar}>
-        {/* Left Section - Scan Button */}
         <TouchableOpacity activeOpacity={0.8} onPress={onScanPress} style={styles.leftButton}>
           <LinearGradient
             colors={['#0474FC', '#0360D0']}
@@ -57,7 +56,6 @@ const TopNavBar = ({
           </LinearGradient>
         </TouchableOpacity>
 
-        {/* Center Section - Dynamic Pill */}
         <View style={styles.centerPill}>
           <View style={styles.pillContent}>
             <View style={styles.blueDot} />
@@ -65,9 +63,7 @@ const TopNavBar = ({
           </View>
         </View>
 
-        {/* Right Section - Notification & Profile */}
         <View style={styles.rightSection}>
-          {/* Notification Icon */}
           <TouchableOpacity activeOpacity={0.8} onPress={onNotificationPress} style={styles.iconButton}>
             <View style={styles.iconContainer}>
               <Ionicons name="notifications-outline" size={22} color="#374151" />
@@ -79,7 +75,6 @@ const TopNavBar = ({
             </View>
           </TouchableOpacity>
 
-          {/* Profile Avatar */}
           <TouchableOpacity activeOpacity={0.8} onPress={onProfilePress} style={styles.avatarButton}>
             <LinearGradient
               colors={['#0474FC', '#0360D0']}
@@ -100,7 +95,6 @@ const TopNavBar = ({
 const AIChatButton = () => {
   const handlePress = () => {
     try {
-      // Navigate to AI Chat screen
       router.push('/(onboarding)/chat');
     } catch (error) {
       Alert.alert('Error', 'Unable to open chat. Please try again.');
@@ -110,10 +104,7 @@ const AIChatButton = () => {
 
   return (
     <View style={styles.aiChatButton}>
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={handlePress}
-      >
+      <TouchableOpacity activeOpacity={0.8} onPress={handlePress}>
         <LinearGradient
           colors={['#0474FC', '#0360D0']}
           start={{ x: 0, y: 0 }}
@@ -135,9 +126,8 @@ export default function HomeScreen() {
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [bodyMapVisible, setBodyMapVisible] = useState(false);
 
-  // Skeleton loading timeout: 2 seconds fixed duration
-  const SKELETON_DURATION = 2000; // 2 seconds
-  const MAX_SKELETON_TIME = 90000; // 4 minutes max timeout
+  const SKELETON_DURATION = 2000;
+  const MAX_SKELETON_TIME = 90000;
   const skeletonStartTime = React.useRef<number>(Date.now());
 
   useEffect(() => {
@@ -161,15 +151,12 @@ export default function HomeScreen() {
   };
 
   const handleIntroComplete = () => {
-    // Start skeleton loading after intro animation
     skeletonStartTime.current = Date.now();
 
-    // Hide skeleton after fixed 4 seconds duration
     const skeletonTimeout = setTimeout(() => {
       setIsDataLoaded(true);
     }, SKELETON_DURATION);
 
-    // Safety: force show content after 4 minutes max
     const maxTimeoutTimer = setTimeout(() => {
       setIsDataLoaded(true);
     }, MAX_SKELETON_TIME);
@@ -184,7 +171,6 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
 
-      {/* Top Navigation Bar with dynamic title */}
       <TopNavBar
         onScanPress={() => console.log('Scan pressed')}
         onNotificationPress={() => console.log('Notification pressed')}
@@ -220,9 +206,12 @@ export default function HomeScreen() {
                     </View>
                     <Text style={styles.welcomeSubtitle}>CLINICAL HEALTH ID: #SW-9431</Text>
                   </View>
-                  <Text style={styles.welcomeTitle}>Welcome back, Rahul</Text>
+                  <Text style={styles.welcomeTitle}>Welcome back, {profile?.name || 'Rahul'}</Text>
                   <Text style={styles.welcomeDescription}>Your individualized health intelligence hub is ready</Text>
                 </View>
+
+                {/* SMARTWATCH WIDGET */}
+                <SmartwatchWidget />
 
                 {/* Government Scheme Card */}
                 <GovernmentSchemeCard />
@@ -238,13 +227,11 @@ export default function HomeScreen() {
               </View>
             </ScrollView>
 
-            {/* Body Map Modal */}
             <BodyMapVisualization3D 
               visible={bodyMapVisible} 
               onClose={() => setBodyMapVisible(false)} 
             />
 
-            {/* AI Chat Button - Floating */}
             <AIChatButton />
           </>
         )}
@@ -323,21 +310,6 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     fontWeight: '500',
   },
-  welcomeText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    textAlign: 'center',
-    marginTop: 20,
-    marginBottom: 30,
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-    marginTop: 15,
-  },
-  // AI Chat Button Styles
   aiChatButton: {
     position: 'absolute',
     bottom: 32,
@@ -356,7 +328,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Top Navigation Bar Styles
   topNavContainer: {
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'ios' ? 50 : 40,
@@ -377,7 +348,6 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 5,
   },
-  // Left Section
   leftButton: {
     shadowColor: '#0474FC',
     shadowOffset: { width: 0, height: 2 },
@@ -392,7 +362,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Center Section
   centerPill: {
     flex: 1,
     marginHorizontal: 12,
@@ -424,7 +393,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
     color: '#1F2937',
   },
-  // Right Section
   rightSection: {
     flexDirection: 'row',
     alignItems: 'center',
