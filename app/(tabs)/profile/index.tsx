@@ -254,6 +254,10 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleSetupFamily = () => {
+    router.push('/(onboarding)/family-setup');
+  };
+
   const recentRecords = [
     { id: 1, title: 'Blood Report', date: 'Mar 15, 2026' },
     { id: 2, title: 'ECG Analysis', date: 'Mar 10, 2026' },
@@ -414,59 +418,84 @@ export default function ProfileScreen() {
         </View>
 
         {/* F. Family Information & QR */}
-        {familyData && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Your Family</Text>
-            <TouchableOpacity 
-              style={styles.familyQRCard}
-              activeOpacity={0.95}
-            >
-              <View style={styles.familyQRLeft}>
-                <View style={styles.familyQRCode}>
-                  <Ionicons name="people" size={28} color={COLORS.primary} />
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Your Family</Text>
+          {familyData ? (
+            <>
+              <TouchableOpacity 
+                style={styles.familyQRCard}
+                activeOpacity={0.95}
+              >
+                <View style={styles.familyQRLeft}>
+                  <View style={styles.familyQRCode}>
+                    <Ionicons name="people" size={28} color={COLORS.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.familyQRTitle}>{familyData.family_name || 'Your Family'}</Text>
+                    <Text style={styles.familyQRSubtitle}>Code: {familyData.join_code}</Text>
+                  </View>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.familyQRTitle}>{familyData.family_name || 'Your Family'}</Text>
-                  <Text style={styles.familyQRSubtitle}>Code: {familyData.join_code}</Text>
+                <TouchableOpacity activeOpacity={0.7}>
+                  <Ionicons name="chevron-forward" size={24} color={COLORS.text.secondary} />
+                </TouchableOpacity>
+              </TouchableOpacity>
+
+              <View style={styles.familyQRButtons}>
+                <TouchableOpacity 
+                  style={styles.familyActionButton}
+                  onPress={handleCopyFamilyCode}
+                >
+                  <Ionicons name="copy-outline" size={18} color={COLORS.primary} />
+                  <Text style={styles.familyActionText}>Copy Code</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.familyActionButton}
+                  onPress={handleShareFamilyCode}
+                >
+                  <Ionicons name="share-social-outline" size={18} color={COLORS.primary} />
+                  <Text style={styles.familyActionText}>Share</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Family QR Code Display */}
+              <View style={styles.familyQRDisplayContainer}>
+                <Text style={styles.familyQRLabel}>Share this code to invite members</Text>
+                <View style={styles.familyQRBox}>
+                  <QRCode 
+                    value={`SWASTHYA_FAMILY:${familyData.join_code}`}
+                    size={130}
+                    color="#000000"
+                    backgroundColor="#FFFFFF"
+                  />
                 </View>
               </View>
-              <TouchableOpacity activeOpacity={0.7}>
-                <Ionicons name="chevron-forward" size={24} color={COLORS.text.secondary} />
-              </TouchableOpacity>
-            </TouchableOpacity>
-
-            <View style={styles.familyQRButtons}>
+            </>
+          ) : (
+            <View style={styles.noFamilyCard}>
+              <Ionicons name="people-outline" size={48} color={COLORS.primary} />
+              <Text style={styles.noFamilyTitle}>No Family Yet</Text>
+              <Text style={styles.noFamilyText}>
+                Create a family or join an existing one to share health data with family members
+              </Text>
               <TouchableOpacity 
-                style={styles.familyActionButton}
-                onPress={handleCopyFamilyCode}
+                style={styles.joinFamilyButton}
+                activeOpacity={0.8}
+                onPress={handleSetupFamily}
               >
-                <Ionicons name="copy-outline" size={18} color={COLORS.primary} />
-                <Text style={styles.familyActionText}>Copy Code</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.familyActionButton}
-                onPress={handleShareFamilyCode}
-              >
-                <Ionicons name="share-social-outline" size={18} color={COLORS.primary} />
-                <Text style={styles.familyActionText}>Share</Text>
+                <LinearGradient
+                  colors={[COLORS.primary, COLORS.primaryDark]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.joinFamilyButtonGradient}
+                >
+                  <Ionicons name="add-circle" size={20} color="#FFFFFF" />
+                  <Text style={styles.joinFamilyButtonText}>Set Up Family</Text>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
-
-            {/* Family QR Code Display */}
-            <View style={styles.familyQRDisplayContainer}>
-              <Text style={styles.familyQRLabel}>Share this code to invite members</Text>
-              <View style={styles.familyQRBox}>
-                <QRCode 
-                  value={`SWASTHYA_FAMILY:${familyData.join_code}`}
-                  size={130}
-                  color="#000000"
-                  backgroundColor="#FFFFFF"
-                />
-              </View>
-            </View>
-          </View>
-        )}
+          )}
+        </View>
 
         {/* G. Quick Actions */}
         <View style={styles.section}>
@@ -1000,6 +1029,49 @@ const styles = StyleSheet.create({
     padding: 10,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  noFamilyCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  noFamilyTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text.primary,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  noFamilyText: {
+    fontSize: 13,
+    color: COLORS.text.secondary,
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 18,
+  },
+  joinFamilyButton: {
+    width: '100%',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  joinFamilyButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  joinFamilyButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   memberCard: {
     flexDirection: 'row',
