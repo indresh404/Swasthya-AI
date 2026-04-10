@@ -1,13 +1,53 @@
 // app/(tabs)/checkin/index.tsx
-import { ScreenIntroGate } from '@/components/ui/ScreenIntroGate';
-import { SkeletonCheckInScreen } from '@/components/ui/SkeletonLoader';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSegments } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View, Alert, TextInput } from 'react-native';
-import { getPendingCheckins, submitCheckin } from '@/services/supabase.service';
-import { useAuthStore } from '@/store/auth.store';
+
+// Static check-in questions data
+const STATIC_QUESTIONS = [
+  {
+    id: '1',
+    question_text: 'How are you feeling today overall?',
+    asked_by: 'ai',
+    created_at: '2026-04-10T08:00:00Z',
+    category: 'general',
+    options: ['Feeling Great', 'Okay', 'Not Good']
+  },
+  {
+    id: '2',
+    question_text: 'Have you taken your prescribed medications today?',
+    asked_by: 'doctor',
+    created_at: '2026-04-10T09:30:00Z',
+    category: 'medication',
+    options: ['Yes, all taken', 'Some missed', 'Not yet']
+  },
+  {
+    id: '3',
+    question_text: 'Are you experiencing any unusual symptoms?',
+    asked_by: 'ai',
+    created_at: '2026-04-10T10:15:00Z',
+    category: 'symptoms',
+    options: ['None', 'Mild', 'Moderate', 'Severe']
+  },
+  {
+    id: '4',
+    question_text: 'How would you rate your sleep quality last night?',
+    asked_by: 'doctor',
+    created_at: '2026-04-09T18:00:00Z',
+    category: 'sleep',
+    options: ['Excellent', 'Good', 'Fair', 'Poor']
+  },
+  {
+    id: '5',
+    question_text: 'Have you experienced any stress or anxiety today?',
+    asked_by: 'ai',
+    created_at: '2026-04-10T07:00:00Z',
+    category: 'mental',
+    options: ['None', 'Mild', 'Moderate', 'High']
+  }
+];
 
 const TopNavBar = ({ 
   onScanPress, 
@@ -71,79 +111,105 @@ const TopNavBar = ({
   );
 };
 
+// Component for rendering question tag with icon
+const QuestionTag = ({ askedBy, date }: { askedBy: 'ai' | 'doctor'; date: string }) => {
+  const isAI = askedBy === 'ai';
+  const formattedDate = new Date(date).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+
+  return (
+    <View style={styles.tagContainer}>
+      <View style={[styles.tag, isAI ? styles.aiTag : styles.doctorTag]}>
+        <Ionicons 
+          name={isAI ? "hardware-chip-outline" : "medkit-outline"} 
+          size={14} 
+          color={isAI ? '#8B5CF6' : '#059669'} 
+        />
+        <Text style={[styles.tagText, isAI ? styles.aiTagText : styles.doctorTagText]}>
+          {isAI ? 'AI Suggested' : 'Doctor Asked'}
+        </Text>
+      </View>
+      <View style={styles.dateTag}>
+        <Ionicons name="calendar-outline" size={12} color="#6B7280" />
+        <Text style={styles.dateText}>{formattedDate}</Text>
+      </View>
+    </View>
+  );
+};
+
 export default function CheckinScreen() {
   const segments = useSegments();
   const currentRoute = segments[segments.length - 1];
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
-  const [questions, setQuestions] = useState<any[]>([]);
-  const [answers, setAnswers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [answers, setAnswers] = useState<Record<string, { answer: string; notes: string }>>({});
+  const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
 
-  const { user, patientId: storePatientId } = useAuthStore();
-  const patientId = user?.id || storePatientId;
+  const handleAnswer = (questionId: string, answer: string) => {
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: { ...prev[questionId], answer }
+    }));
+  };
 
-  useEffect(() => {
-    if (patientId) {
-      loadQuestions();
-    } else {
-      Alert.alert('Error', 'Unable to load patient information. Please log in again.');
-      setLoading(false);
-    }
-  }, [patientId]);
-  
-  const loadQuestions = async () => {
-    if (!patientId) {
-      Alert.alert('Error', 'Patient ID not found');
-      setLoading(false);
+  const handleNotes = (questionId: string, notes: string) => {
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: { ...prev[questionId], notes }
+    }));
+  };
+
+  const toggleNotes = (questionId: string) => {
+    setExpandedNotes(prev => ({
+      ...prev,
+      [questionId]: !prev[questionId]
+    }));
+  };
+
+  const handleSubmit = () => {
+    // Check if all questions are answered
+    const unansweredQuestions = STATIC_QUESTIONS.filter(q => !answers[q.id]?.answer);
+    
+    if (unansweredQuestions.length > 0) {
+      Alert.alert(
+        'Incomplete Check-in',
+        `Please answer ${unansweredQuestions.length} more question(s) before submitting.`,
+        [{ text: 'OK' }]
+      );
       return;
     }
 
-    try {
-      const data = await getPendingCheckins(patientId);
-      if (!data || data.length === 0) {
-        Alert.alert('No Check-ins', 'No pending check-ins at this time.');
-        setQuestions([]);
-        setAnswers([]);
-      } else {
-        setQuestions(data);
-        setAnswers(data.map((q: any) => ({ question_id: q.id, answer: '' })));
-      }
-    } catch (error) {
-      console.error("Check-in error:", error);
-      Alert.alert('Error', 'Failed to load check-ins. Please try again.');
-      setQuestions([]);
-      setAnswers([]);
-    } finally {
-      setLoading(false);
-    }
+    // Prepare submission data
+    const submissionData = STATIC_QUESTIONS.map(q => ({
+      question_id: q.id,
+      question_text: q.question_text,
+      answer: answers[q.id].answer,
+      notes: answers[q.id].notes || '',
+      asked_by: q.asked_by,
+      date: q.created_at
+    }));
+
+    console.log('Submitting check-in:', submissionData);
+    
+    Alert.alert(
+      'Success', 
+      'Thank you for completing your check-in! 🎉\n\nYour responses have been recorded.',
+      [{ text: 'OK', onPress: () => {
+        // Reset answers
+        setAnswers({});
+        setExpandedNotes({});
+      }}]
+    );
   };
 
-  const handleAnswer = (questionId: string, text: string) => {
-    setAnswers(prev => prev.map(a => a.question_id === questionId ? { ...a, answer: text } : a));
+  const getProgress = () => {
+    const answered = Object.keys(answers).filter(id => answers[id]?.answer).length;
+    return { answered, total: STATIC_QUESTIONS.length };
   };
 
-  const handleSubmit = async () => {
-    if (!patientId) {
-      Alert.alert('Error', 'Patient ID not found');
-      return;
-    }
+  const progress = getProgress();
 
-    try {
-      await submitCheckin(patientId, answers);
-      Alert.alert("Success", "Check-in completed!");
-      setQuestions([]);
-      setAnswers([]);
-      await loadQuestions();
-    } catch (error) {
-      console.error('Submit error:', error);
-      Alert.alert("Error", "Failed to submit check-in. Please try again.");
-    }
-  };
-
-  const handleIntroComplete = () => {
-    setIsDataLoaded(true);
-  };
-  
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
@@ -155,68 +221,106 @@ export default function CheckinScreen() {
         userName="Rahul"
         activeScreen={currentRoute}
       />
-      <ScreenIntroGate
-        loaderText="Preparing your check-in experience..."
-        loaderDuration={2000}
-        backgroundColor="#F9FAFB"
-        onIntroComplete={handleIntroComplete}
-      >
-        {!isDataLoaded || loading ? (
-          <SkeletonCheckInScreen />
-        ) : (
-          <ScrollView contentContainerStyle={styles.scrollContent}>
-            <View style={styles.header}>
-              <Text style={styles.title}>Daily Health Check-in</Text>
-              <Text style={styles.subtitle}>Help us track your progress</Text>
+      
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Daily Health Check-in</Text>
+          <Text style={styles.subtitle}>Help us track your progress</Text>
+          
+          {/* Progress Bar */}
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View 
+                style={[
+                  styles.progressFill, 
+                  { width: `${(progress.answered / progress.total) * 100}%` }
+                ]} 
+              />
             </View>
+            <Text style={styles.progressText}>
+              {progress.answered} / {progress.total} questions answered
+            </Text>
+          </View>
+        </View>
 
-            {questions.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <Ionicons name="checkmark-done-circle-outline" size={80} color="#10B981" />
-                <Text style={styles.emptyTitle}>You&apos;re all set!</Text>
-                <Text style={styles.emptySubtitle}>No pending questions for today.</Text>
-              </View>
-            ) : (
-              <View>
-                {questions.map((q) => (
-                  <View key={q.id} style={styles.questionCard}>
-                    <Text style={styles.questionText}>{q.question_text}</Text>
-                    <View style={styles.optionsContainer}>
-                      {['Feeling Great', 'Okay', 'Not Good'].map(option => (
-                        <TouchableOpacity 
-                          key={option}
-                          style={[
-                            styles.optionButton,
-                            answers.find(a => a.question_id === q.id)?.answer === option && styles.optionButtonActive
-                          ]}
-                          onPress={() => handleAnswer(q.id, option)}
-                        >
-                          <Text style={[
-                            styles.optionText,
-                            answers.find(a => a.question_id === q.id)?.answer === option && styles.optionTextActive
-                          ]}>{option}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                    <TextInput
-                      style={styles.answerInput}
-                      placeholder="Add details (optional)"
-                      placeholderTextColor="#9CA3AF"
-                      value={answers.find(a => a.question_id === q.id)?.answer || ''}
-                      onChangeText={(text) => handleAnswer(q.id, text)}
-                      multiline
-                    />
-                  </View>
-                ))}
+        {/* Questions List */}
+        <View>
+          {STATIC_QUESTIONS.map((q) => {
+            const currentAnswer = answers[q.id]?.answer || '';
+            const currentNotes = answers[q.id]?.notes || '';
+            const isExpanded = expandedNotes[q.id] || false;
+
+            return (
+              <View key={q.id} style={styles.questionCard}>
+                <QuestionTag askedBy={q.asked_by as 'ai' | 'doctor'} date={q.created_at} />
+                <Text style={styles.questionText}>{q.question_text}</Text>
                 
-                <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                  <Text style={styles.submitButtonText}>Complete Check-in</Text>
+                {/* Options */}
+                <View style={styles.optionsContainer}>
+                  {q.options.map(option => (
+                    <TouchableOpacity 
+                      key={option}
+                      style={[
+                        styles.optionButton,
+                        currentAnswer === option && styles.optionButtonActive
+                      ]}
+                      onPress={() => handleAnswer(q.id, option)}
+                    >
+                      <Text style={[
+                        styles.optionText,
+                        currentAnswer === option && styles.optionTextActive
+                      ]}>{option}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                
+                {/* Additional Notes Toggle */}
+                <TouchableOpacity 
+                  style={styles.notesToggle}
+                  onPress={() => toggleNotes(q.id)}
+                >
+                  <Ionicons 
+                    name={isExpanded ? "chevron-up-outline" : "chevron-down-outline"} 
+                    size={18} 
+                    color="#6B7280" 
+                  />
+                  <Text style={styles.notesToggleText}>
+                    {isExpanded ? 'Hide additional details' : 'Add additional details (optional)'}
+                  </Text>
                 </TouchableOpacity>
+                
+                {/* Additional Notes Input */}
+                {isExpanded && (
+                  <TextInput
+                    style={styles.answerInput}
+                    placeholder="e.g., Started feeling this way after lunch, noticed some improvement after rest..."
+                    placeholderTextColor="#9CA3AF"
+                    value={currentNotes}
+                    onChangeText={(text) => handleNotes(q.id, text)}
+                    multiline
+                    numberOfLines={3}
+                    textAlignVertical="top"
+                  />
+                )}
               </View>
-            )}
-          </ScrollView>
-        )}
-      </ScreenIntroGate>
+            );
+          })}
+          
+          {/* Submit Button */}
+          <TouchableOpacity 
+            style={[
+              styles.submitButton,
+              progress.answered !== progress.total && styles.submitButtonDisabled
+            ]} 
+            onPress={handleSubmit}
+            disabled={progress.answered !== progress.total}
+          >
+            <Text style={styles.submitButtonText}>
+              Complete Check-in ({progress.answered}/{progress.total})
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -227,41 +331,43 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
   },
   scrollContent: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexGrow: 1,
     padding: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#111827',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
     color: '#6B7280',
+    marginBottom: 16,
   },
   header: {
-    marginBottom: 20,
+    marginBottom: 24,
     width: '100%',
   },
-  emptyContainer: {
-    padding: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+  progressContainer: {
+    marginTop: 12,
   },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginTop: 16,
+  progressBar: {
+    height: 6,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 3,
+    overflow: 'hidden',
   },
-  emptySubtitle: {
-    fontSize: 14,
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#0474FC',
+    borderRadius: 3,
+  },
+  progressText: {
+    fontSize: 12,
     color: '#6B7280',
     marginTop: 8,
-    textAlign: 'center',
+    textAlign: 'right',
   },
   questionCard: {
     backgroundColor: '#FFFFFF',
@@ -280,13 +386,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1F2937',
     marginBottom: 16,
+    lineHeight: 24,
   },
   optionsContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
+    marginBottom: 12,
   },
   optionButton: {
     flex: 1,
+    minWidth: 100,
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 10,
@@ -307,30 +417,91 @@ const styles = StyleSheet.create({
     color: '#0474FC',
     fontWeight: '600',
   },
+  notesToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingVertical: 8,
+  },
+  notesToggleText: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginLeft: 6,
+  },
   answerInput: {
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    marginTop: 12,
-    minHeight: 46,
+    marginTop: 8,
+    minHeight: 80,
     color: '#1F2937',
     backgroundColor: '#F9FAFB',
+    textAlignVertical: 'top',
   },
   submitButton: {
     backgroundColor: '#0474FC',
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 24,
     marginBottom: 40,
     width: '100%',
+  },
+  submitButtonDisabled: {
+    backgroundColor: '#9CA3AF',
+    opacity: 0.6,
   },
   submitButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  // Tag styles
+  tagContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
+  tag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    gap: 6,
+  },
+  aiTag: {
+    backgroundColor: '#F3E8FF',
+  },
+  doctorTag: {
+    backgroundColor: '#D1FAE5',
+  },
+  tagText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  aiTagText: {
+    color: '#8B5CF6',
+  },
+  doctorTagText: {
+    color: '#059669',
+  },
+  dateTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 20,
+    gap: 4,
+  },
+  dateText: {
+    fontSize: 11,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   // Top Navigation Bar Styles
   topNavContainer: {
