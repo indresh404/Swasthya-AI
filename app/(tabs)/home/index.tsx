@@ -23,21 +23,12 @@ import { supabase } from '@/services/supabaseClient';
 import { useAuthStore } from '@/store/auth.store';
 
 // Top Navigation Bar Component (inline)
-<<<<<<< Auth
-const TopNavBar = ({
-  onScanPress,
-  onNotificationPress,
-  onProfilePress,
-  notificationCount = 3,
-  userName = 'Rahul',
-=======
 const TopNavBar = ({ 
   onScanPress, 
   onNotificationPress, 
   onProfilePress, 
   notificationCount = 3, 
   userName = 'Indresh',
->>>>>>> main
   activeScreen = 'DASHBOARD'
 }: any) => {
   // Get the title based on active screen
@@ -214,18 +205,6 @@ export default function HomeScreen() {
         {!isDataLoaded ? (
           <SkeletonHomeScreen />
         ) : (
-<<<<<<< Auth
-          <ScrollView
-            style={styles.container}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.content}>
-              <Text style={styles.welcomeText}>Welcome to Your Health Dashboard</Text>
-              {/* Rest of your existing home screen components */}
-            </View>
-          </ScrollView>
-=======
           <>
             <ScrollView 
               style={styles.container} 
@@ -268,7 +247,6 @@ export default function HomeScreen() {
             {/* AI Chat Button - Floating */}
             <AIChatButton />
           </>
->>>>>>> main
         )}
       </ScreenIntroGate>
     </SafeAreaView>
