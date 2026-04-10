@@ -1,9 +1,11 @@
 // app/(tabs)/profile/index.tsx
 import { ScreenIntroGate } from '@/components/ui/ScreenIntroGate';
 import { SkeletonProfileScreen } from '@/components/ui/SkeletonLoader';
+import { signOut } from '@/services/auth.service';
+import { useAuthStore } from '@/store/auth.store';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useSegments } from 'expo-router';
+import { useRouter, useSegments } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import {
     Alert,
@@ -111,6 +113,8 @@ const TopNavBar = ({
 };
 
 export default function ProfileScreen() {
+  const router = useRouter();
+  const logout = useAuthStore((state) => state.logout);
   const segments = useSegments();
   const currentRoute = segments[segments.length - 1];
   const [isDataLoaded, setIsDataLoaded] = useState(false);
@@ -177,6 +181,29 @@ export default function ProfileScreen() {
   const handleDownloadQR = () => {
     Alert.alert('Download QR', 'QR code saved to your gallery');
   };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Logout error', error);
+    } finally {
+      logout();
+      router.replace('/(auth)/welcome');
+    }
+  };
+
+  const recentRecords = [
+    { id: 1, title: 'Blood Report', date: 'Mar 15, 2026' },
+    { id: 2, title: 'ECG Analysis', date: 'Mar 10, 2026' },
+    { id: 3, title: 'Prescription', date: 'Mar 5, 2026' },
+  ];
+
+  const familyMembers = [
+    { name: 'Meera Sharma', risk: 'Low', age: 34, relationship: 'Spouse' },
+    { name: 'Aarav Sharma', risk: 'Moderate', age: 12, relationship: 'Son' },
+    { name: 'Vikram Sharma', risk: 'Low', age: 65, relationship: 'Father' },
+  ];
 
   const getRiskColor = (risk: string) => {
     switch(risk?.toLowerCase()) {
@@ -325,7 +352,37 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* E. Settings */}
+        {/* G. Quick Actions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.actionsGrid}>
+            <TouchableOpacity style={styles.actionButton}>
+              <View style={[styles.actionIconBg, { backgroundColor: COLORS.primaryLight }]}>
+                <Ionicons name="speedometer-outline" size={24} color={COLORS.primary} />
+              </View>
+              <Text style={styles.actionText}>Dashboard</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={() => router.push('/(tabs)/profile/schemes')}
+            >
+              <View style={[styles.actionIconBg, { backgroundColor: COLORS.primaryLight }]}>
+                <Ionicons name="medal-outline" size={24} color={COLORS.primary} />
+              </View>
+              <Text style={styles.actionText}>Check Schemes</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.actionButton}>
+              <View style={[styles.actionIconBg, { backgroundColor: COLORS.primaryLight }]}>
+                <Ionicons name="add-circle-outline" size={24} color={COLORS.primary} />
+              </View>
+              <Text style={styles.actionText}>Add Record</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* H. Settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>
           
@@ -337,7 +394,15 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={20} color={COLORS.text.light} />
           </TouchableOpacity>
           
-          <TouchableOpacity style={[styles.settingItem, styles.logoutItem]}>
+          <TouchableOpacity style={styles.settingItem}>
+            <View style={styles.settingLeft}>
+              <Ionicons name="settings-outline" size={22} color={COLORS.text.secondary} />
+              <Text style={styles.settingText}>App Settings</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.text.light} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={[styles.settingItem, styles.logoutItem]} onPress={handleLogout}>
             <View style={styles.settingLeft}>
               <Ionicons name="log-out-outline" size={22} color={COLORS.risk.high} />
               <Text style={[styles.settingText, styles.logoutText]}>Logout</Text>
