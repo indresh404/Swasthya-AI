@@ -131,8 +131,8 @@ export default function HomeScreen() {
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [bodyMapVisible, setBodyMapVisible] = useState(false);
 
-  // Skeleton loading timeout: 4 seconds fixed duration
-  const SKELETON_DURATION = 4000; // 4 seconds
+  // Skeleton loading timeout: 2 seconds fixed duration
+  const SKELETON_DURATION = 2000; // 2 seconds
   const MAX_SKELETON_TIME = 90000; // 4 minutes max timeout
   const skeletonStartTime = React.useRef<number>(Date.now());
 
@@ -172,7 +172,7 @@ export default function HomeScreen() {
       
       <ScreenIntroGate
         loaderText="Loading your health dashboard..."
-        loaderDuration={3000}
+        loaderDuration={2500}
         introSource={require('../../../assets/lottie_animations/heart_animation.json')}
         introText="Tracking your heartbeat and getting everything ready"
         backgroundColor="#F9FAFB"

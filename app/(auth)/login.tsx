@@ -16,7 +16,8 @@ import {
   View,
   ActivityIndicator,
 } from 'react-native';
-import { supabase } from '@/config/supabase';
+import { getCurrentPatient, normalizePhone, signInWithGoogle } from '@/services/auth.service';
+import { useAuthStore } from '@/store/auth.store';
 
 const { width, height } = Dimensions.get('window');
 
@@ -68,6 +69,7 @@ const TYPOGRAPHY = {
 
 export default function LoginScreen() {
   const router = useRouter();
+  const setSessionState = useAuthStore((state) => state.setSessionState);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -160,7 +162,9 @@ export default function LoginScreen() {
   const handleContinue = async () => {
     animatePop(buttonPopAnim);
 
-    if (phoneNumber.length < 10) {
+    const normalizedPhone = normalizePhone(phoneNumber);
+
+    if (normalizedPhone.length !== 10) {
       Alert.alert('Error', 'Please enter a valid 10-digit phone number');
       return;
     }
@@ -174,16 +178,41 @@ export default function LoginScreen() {
       router.push({
         pathname: '/(auth)/otp',
         params: { 
-          phone: phoneNumber,
+          phone: normalizedPhone,
           testOtp: testOtp
         }
       });
     }, 500);
   };
 
-  const handleGoogleSignIn = () => {
+  const handleGoogleSignIn = async () => {
     animatePop(googleButtonPopAnim);
-    Alert.alert('Google Sign In', 'Google authentication coming soon!');
+    setLoading(true);
+
+    try {
+      const session = await signInWithGoogle();
+      const patient = await getCurrentPatient();
+
+      setSessionState({
+        userId: session?.user.id ?? null,
+        patientId: patient?.id ?? (session?.user.user_metadata?.patient_id as string | null) ?? null,
+        phoneNumber: (patient?.phone ?? session?.user.user_metadata?.phone ?? null) as string | null,
+        hasProfile: Boolean(patient),
+        hasFamilyGroup: Boolean(patient?.family_id),
+      });
+
+      if (patient?.family_id) {
+        router.replace('/(tabs)/home');
+      } else if (patient) {
+        router.replace('/(onboarding)/family-setup');
+      } else {
+        router.replace('/(onboarding)/user-details');
+      }
+    } catch (error: any) {
+      Alert.alert('Google Sign In', error?.message || 'Unable to sign in with Google right now.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleBack = () => {

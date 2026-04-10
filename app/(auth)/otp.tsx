@@ -17,10 +17,12 @@ import {
   View,
   ActivityIndicator,
 } from 'react-native';
-import { supabase } from '@/config/supabase';
+import { getPatientByPhone, normalizePhone } from '@/services/auth.service';
+import { useAuthStore } from '@/store/auth.store';
 
 export default function OTPVerifyScreen() {
   const router = useRouter();
+  const setSessionState = useAuthStore((state) => state.setSessionState);
   const params = useLocalSearchParams();
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
@@ -29,7 +31,7 @@ export default function OTPVerifyScreen() {
   const [isResending, setIsResending] = useState(false);
   const inputs = useRef<Array<TextInput | null>>([]);
 
-  const phoneNumber = params.phone as string || '';
+  const phoneNumber = normalizePhone((params.phone as string) || '');
   const testOtp = params.testOtp as string || '';
   const formattedPhone = phoneNumber ? `+91 ${phoneNumber}` : '+91 XXXXX XXXXX';
 
@@ -104,21 +106,29 @@ export default function OTPVerifyScreen() {
         return;
       }
 
-      // Check if user exists in patients table
-      const { data: existingPatient } = await supabase
-        .from('patients')
-        .select('*')
-        .eq('phone', phoneNumber)
-        .single();
+      const existingPatient = await getPatientByPhone(phoneNumber);
 
-      if (existingPatient) {
+      setSessionState({
+        userId: `phone:${phoneNumber}`,
+        patientId: existingPatient?.id ?? null,
+        phoneNumber,
+        hasProfile: Boolean(existingPatient),
+        hasFamilyGroup: Boolean(existingPatient?.family_id),
+      });
+
+      if (existingPatient?.family_id) {
         router.replace('/(tabs)/home');
+      } else if (existingPatient) {
+        router.replace('/(onboarding)/family-setup');
       } else {
-        router.replace('/(onboarding)/user-details');
+        router.replace({
+          pathname: '/(onboarding)/user-details',
+          params: { phone: phoneNumber },
+        });
       }
     } catch (error: any) {
       console.error('Error verifying OTP:', error);
-      Alert.alert('Verification Failed', 'Invalid OTP. Please try again.');
+      Alert.alert('Verification Failed', error?.message || 'Invalid OTP. Please try again.');
       
       // Clear OTP on failure
       setCode(['', '', '', '', '', '']);

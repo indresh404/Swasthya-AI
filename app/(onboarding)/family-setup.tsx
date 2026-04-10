@@ -19,12 +19,21 @@ import {
   View,
   ActivityIndicator,
 } from 'react-native';
+import {
+  createFamilyForPatient,
+  getCurrentPatient,
+  getPatientById,
+  joinFamilyForPatient,
+  type PatientRecord,
+} from '@/services/auth.service';
 import { supabase } from '@/config/supabase';
+import { useAuthStore } from '@/store/auth.store';
 
 const CODE_LENGTH = 6;
 
 export default function FamilySetupScreen() {
   const router = useRouter();
+  const { patientId, setSessionState } = useAuthStore();
   const [codeDigits, setCodeDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''));
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [showFamilyNameModal, setShowFamilyNameModal] = useState(false);
@@ -38,9 +47,16 @@ export default function FamilySetupScreen() {
 
   const handleBack = () => router.back();
 
-  // Generate random 6-digit code
-  const generateFamilyCode = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+  const requirePatient = async (): Promise<PatientRecord> => {
+    if (patientId) {
+      const storePatient = await getPatientById(patientId);
+      if (storePatient) return storePatient;
+    }
+
+    const sessionPatient = await getCurrentPatient();
+    if (sessionPatient) return sessionPatient;
+
+    throw new Error('Please complete your profile before creating or joining a family.');
   };
 
   // Handle create family button click
@@ -57,82 +73,17 @@ export default function FamilySetupScreen() {
 
     setIsCreating(true);
     try {
-      const code = generateFamilyCode();
-      console.log('Generated code:', code);
-      
-      // Get current user from session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        Alert.alert('Error', 'Please log in to create a family');
-        router.push('/(auth)/login');
-        return;
-      }
+      const patient = await requirePatient();
+      const { joinCode } = await createFamilyForPatient(familyName.trim(), patient);
 
-      const userId = session.user.id;
-      
-      // Insert family with join_code
-      const { data: family, error: familyError } = await supabase
-        .from('families')
-        .insert([
-          {
-            family_name: familyName.trim(),
-            created_by: userId,
-            join_code: code, // Store the generated code
-            created_at: new Date().toISOString(),
-          },
-        ])
-        .select()
-        .single();
-
-      if (familyError) {
-        console.error('Family insert error:', familyError);
-        
-        // If join_code column doesn't exist, show error message
-        if (familyError.message.includes('join_code')) {
-          Alert.alert(
-            'Database Update Required',
-            'Please run the SQL command to add join_code column to families table.\n\nContact the developer to fix this.',
-            [{ text: 'OK' }]
-          );
-          return;
-        }
-        
-        Alert.alert('Error', 'Failed to create family. Please try again.');
-        return;
-      }
-
-      console.log('Family created with code:', family.join_code);
-
-      // Get the patient record for this user
-      const { data: patient, error: patientError } = await supabase
-        .from('patients')
-        .select('id')
-        .eq('phone', session.user.user_metadata?.phone || '')
-        .single();
-
-      if (patientError && patientError.code !== 'PGRST116') {
-        console.error('Patient fetch error:', patientError);
-      }
-
-      // Add user as family member
-      const { error: memberError } = await supabase
-        .from('family_members')
-        .insert([
-          {
-            family_id: family.id,
-            patient_id: patient?.id || userId,
-            role: 'admin',
-          },
-        ]);
-
-      if (memberError) {
-        console.error('Member insert error:', memberError);
-      }
-
-      setGeneratedCode(code);
+      setGeneratedCode(joinCode);
       setShowFamilyNameModal(false);
       setShowGeneratedCodeModal(true);
+      setSessionState({
+        patientId: patient.id,
+        hasProfile: true,
+        hasFamilyGroup: true,
+      });
       
     } catch (error: any) {
       console.error('Error creating family:', error);
@@ -240,6 +191,40 @@ export default function FamilySetupScreen() {
     }
   };
 
+  const handleJoinFlow = async () => {
+    const code = codeDigits.join('');
+    if (code.length !== CODE_LENGTH) {
+      Alert.alert('Error', 'Please enter a valid 6-digit code');
+      return;
+    }
+
+    setIsJoining(true);
+    try {
+      const patient = await requirePatient();
+      const family = await joinFamilyForPatient(code, patient);
+
+      setSessionState({
+        patientId: patient.id,
+        hasProfile: true,
+        hasFamilyGroup: true,
+      });
+
+      Alert.alert('Success!', `You've successfully joined "${family.family_name}" family!`, [
+        {
+          text: 'Continue',
+          onPress: () => router.push('/(tabs)/home'),
+        },
+      ]);
+
+      setCodeDigits(Array(CODE_LENGTH).fill(''));
+    } catch (error: any) {
+      console.error('Error joining family:', error);
+      Alert.alert('Error', error.message || 'Failed to join family. Please try again.');
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
   const handleQRScan = async () => {
     if (!permission?.granted) {
       const { granted } = await requestPermission();
@@ -268,7 +253,7 @@ export default function FamilySetupScreen() {
       
       // Auto-join after scanning if code is complete
       if (newDigits.every(d => d !== '')) {
-        setTimeout(() => handleJoin(), 500);
+        setTimeout(() => handleJoinFlow(), 500);
       }
     } catch (error) {
       console.error('QR scan error:', error);
@@ -460,7 +445,7 @@ export default function FamilySetupScreen() {
                       styles.joinButton,
                       isCodeComplete ? styles.joinButtonActive : styles.joinButtonDisabled,
                     ]}
-                    onPress={handleJoin}
+                    onPress={handleJoinFlow}
                     activeOpacity={0.8}
                     disabled={!isCodeComplete || isJoining}
                   >

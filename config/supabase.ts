@@ -1,6 +1,7 @@
 
 // config/supabase.ts
 import { createClient } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
@@ -16,19 +17,21 @@ const universalStorage = {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       return Promise.resolve(localStorage.getItem(key));
     }
-    return Promise.resolve(null);
+    return AsyncStorage.getItem(key);
   },
   setItem: (key: string, value: string) => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       localStorage.setItem(key, value);
+      return Promise.resolve();
     }
-    return Promise.resolve();
+    return AsyncStorage.setItem(key, value);
   },
   removeItem: (key: string) => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       localStorage.removeItem(key);
+      return Promise.resolve();
     }
-    return Promise.resolve();
+    return AsyncStorage.removeItem(key);
   },
 };
 

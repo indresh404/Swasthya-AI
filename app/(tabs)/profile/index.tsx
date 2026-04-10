@@ -1,10 +1,12 @@
 // app/(tabs)/profile/index.tsx
 import { ScreenIntroGate } from '@/components/ui/ScreenIntroGate';
 import { SkeletonProfileScreen } from '@/components/ui/SkeletonLoader';
+import { signOut } from '@/services/auth.service';
+import { useAuthStore } from '@/store/auth.store';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useSegments } from 'expo-router';
-import React, { useState } from 'react';
+import { useRouter, useSegments } from 'expo-router';
+import React, { useState, useEffect } from 'react';
 import {
     Alert,
     Platform,
@@ -108,6 +110,8 @@ const TopNavBar = ({
 };
 
 export default function ProfileScreen() {
+  const router = useRouter();
+  const logout = useAuthStore((state) => state.logout);
   const segments = useSegments();
   const currentRoute = segments[segments.length - 1];
   const [isDataLoaded, setIsDataLoaded] = useState(false);
@@ -146,6 +150,17 @@ export default function ProfileScreen() {
 
   const handleDownloadQR = () => {
     Alert.alert('Download QR', 'QR code would be downloaded here');
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Logout error', error);
+    } finally {
+      logout();
+      router.replace('/(auth)/welcome');
+    }
   };
 
   const recentRecords = [
@@ -370,7 +385,10 @@ export default function ProfileScreen() {
               <Text style={styles.actionText}>Dashboard</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={() => router.push('/(tabs)/profile/schemes')}
+            >
               <View style={[styles.actionIconBg, { backgroundColor: COLORS.primaryLight }]}>
                 <Ionicons name="medal-outline" size={24} color={COLORS.primary} />
               </View>
@@ -406,7 +424,7 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={20} color={COLORS.text.light} />
           </TouchableOpacity>
           
-          <TouchableOpacity style={[styles.settingItem, styles.logoutItem]}>
+          <TouchableOpacity style={[styles.settingItem, styles.logoutItem]} onPress={handleLogout}>
             <View style={styles.settingLeft}>
               <Ionicons name="log-out-outline" size={22} color={COLORS.risk.high} />
               <Text style={[styles.settingText, styles.logoutText]}>Logout</Text>
