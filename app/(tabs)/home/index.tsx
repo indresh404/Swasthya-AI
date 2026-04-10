@@ -1,4 +1,7 @@
 // app/(tabs)/home/index.tsx
+import { BodyMapVisualization3D } from '@/components/bodymap/BodyMapVisualization3D';
+import { BodyMapCard } from '@/components/home/BodyMapCard';
+import { GovernmentSchemeCard } from '@/components/home/GovernmentSchemeCard';
 import { ScreenIntroGate } from '@/components/ui/ScreenIntroGate';
 import { SkeletonHomeScreen } from '@/components/ui/SkeletonLoader';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,12 +23,21 @@ import { supabase } from '@/services/supabaseClient';
 import { useAuthStore } from '@/store/auth.store';
 
 // Top Navigation Bar Component (inline)
+<<<<<<< Auth
 const TopNavBar = ({
   onScanPress,
   onNotificationPress,
   onProfilePress,
   notificationCount = 3,
   userName = 'Rahul',
+=======
+const TopNavBar = ({ 
+  onScanPress, 
+  onNotificationPress, 
+  onProfilePress, 
+  notificationCount = 3, 
+  userName = 'Indresh',
+>>>>>>> main
   activeScreen = 'DASHBOARD'
 }: any) => {
   // Get the title based on active screen
@@ -106,20 +118,21 @@ const AIChatButton = () => {
   };
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      onPress={handlePress}
-      style={styles.aiChatButton}
-    >
-      <LinearGradient
-        colors={['#0474FC', '#0360D0']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.aiChatGradient}
+    <View style={styles.aiChatButton}>
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={handlePress}
       >
-        <Ionicons name="chatbubble-ellipses" size={28} color="#FFFFFF" />
-      </LinearGradient>
-    </TouchableOpacity>
+        <LinearGradient
+          colors={['#0474FC', '#0360D0']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.aiChatGradient}
+        >
+          <Ionicons name="chatbubble-ellipses" size={28} color="#FFFFFF" />
+        </LinearGradient>
+      </TouchableOpacity>
+    </View>
   );
 };
 
@@ -129,6 +142,7 @@ export default function HomeScreen() {
   const { user } = useAuthStore();
   const [profile, setProfile] = useState<any>(null);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [bodyMapVisible, setBodyMapVisible] = useState(false);
 
   // Skeleton loading timeout: 4 seconds fixed duration
   const SKELETON_DURATION = 4000; // 4 seconds
@@ -200,6 +214,7 @@ export default function HomeScreen() {
         {!isDataLoaded ? (
           <SkeletonHomeScreen />
         ) : (
+<<<<<<< Auth
           <ScrollView
             style={styles.container}
             contentContainerStyle={styles.scrollContent}
@@ -210,6 +225,50 @@ export default function HomeScreen() {
               {/* Rest of your existing home screen components */}
             </View>
           </ScrollView>
+=======
+          <>
+            <ScrollView 
+              style={styles.container} 
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.content}>
+                {/* Welcome Section */}
+                <View style={styles.welcomeSection}>
+                  <View style={styles.welcomeHeader}>
+                    <View style={styles.shieldIcon}>
+                      <Ionicons name="shield-checkmark" size={16} color="#0474FC" />
+                    </View>
+                    <Text style={styles.welcomeSubtitle}>CLINICAL HEALTH ID: #SW-9431</Text>
+                  </View>
+                  <Text style={styles.welcomeTitle}>Welcome back, Rahul</Text>
+                  <Text style={styles.welcomeDescription}>Your individualized health intelligence hub is ready</Text>
+                </View>
+
+                {/* Government Scheme Card */}
+                <GovernmentSchemeCard />
+
+                {/* 3D Body Map Card */}
+                <BodyMapCard onPress={() => setBodyMapVisible(true)} />
+
+                {/* Additional Content Areas */}
+                <View style={styles.contentSection}>
+                  <Text style={styles.sectionTitle}>Health Status</Text>
+                  <Text style={styles.placeholderText}>More health components coming soon...</Text>
+                </View>
+              </View>
+            </ScrollView>
+
+            {/* Body Map Modal */}
+            <BodyMapVisualization3D 
+              visible={bodyMapVisible} 
+              onClose={() => setBodyMapVisible(false)} 
+            />
+
+            {/* AI Chat Button - Floating */}
+            <AIChatButton />
+          </>
+>>>>>>> main
         )}
       </ScreenIntroGate>
     </SafeAreaView>
@@ -225,11 +284,66 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
   content: {
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+  },
+  welcomeSection: {
+    marginBottom: 24,
+  },
+  welcomeHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  shieldIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    backgroundColor: 'rgba(4, 116, 252, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  welcomeSubtitle: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#0474FC',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  welcomeTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  welcomeDescription: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  contentSection: {
+    marginTop: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  placeholderText: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    fontWeight: '500',
   },
   welcomeText: {
     fontSize: 18,
@@ -247,6 +361,9 @@ const styles = StyleSheet.create({
   },
   // AI Chat Button Styles
   aiChatButton: {
+    position: 'absolute',
+    bottom: 32,
+    right: 20,
     marginVertical: 20,
     shadowColor: '#0474FC',
     shadowOffset: { width: 0, height: 4 },
