@@ -1,6 +1,6 @@
 import * as Location from 'expo-location';
-import { useRouter } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -15,6 +15,8 @@ import {
   View
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { getCurrentPatient, normalizePhone, savePatientProfile } from '@/services/auth.service';
+import { useAuthStore } from '@/store/auth.store';
 
 import { COLORS, STYLES } from '../../constants/Colors';
 import { supabase } from '@/services/supabaseClient';
@@ -22,6 +24,8 @@ import { useAuthStore } from '@/store/auth.store';
 
 export default function UserDetailsScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ phone?: string }>();
+  const { patientId, phoneNumber: storedPhone, setSessionState } = useAuthStore();
 
   // Form states
   const [name, setName] = useState('');
@@ -30,6 +34,7 @@ export default function UserDetailsScreen() {
   const [gender, setGender] = useState<string | null>(null);
   const [location, setLocation] = useState('');
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // UI states
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
@@ -40,6 +45,29 @@ export default function UserDetailsScreen() {
   const ageInputRef = useRef<TextInput>(null);
   const phoneInputRef = useRef<TextInput>(null);
   const locationInputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    const initialPhone = normalizePhone(params.phone || storedPhone || '');
+    if (initialPhone) {
+      setPhoneNumber(initialPhone);
+    }
+
+    const hydrateExistingProfile = async () => {
+      try {
+        const patient = patientId ? await getCurrentPatient() : null;
+        if (!patient) return;
+
+        setName(patient.name || '');
+        setAge(patient.age ? String(patient.age) : '');
+        setPhoneNumber(patient.phone || initialPhone);
+        setGender(patient.gender || null);
+      } catch (error) {
+        console.error('Failed to hydrate patient profile', error);
+      }
+    };
+
+    void hydrateExistingProfile();
+  }, [params.phone, patientId, storedPhone]);
 
   // Get current location
   const getCurrentLocation = async () => {
@@ -220,7 +248,7 @@ export default function UserDetailsScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     // Mark all fields as touched
     setTouched({
       name: true,
@@ -269,7 +297,7 @@ export default function UserDetailsScreen() {
   const isFormValid = () => {
     return name.trim() &&
       age.trim() &&
-      phoneNumber.trim() &&
+      normalizePhone(phoneNumber).length === 10 &&
       gender &&
       location.trim() &&
       !errors.name &&
@@ -390,9 +418,9 @@ export default function UserDetailsScreen() {
                   placeholderTextColor={COLORS.text.muted}
                   value={phoneNumber}
                   onChangeText={(text) => {
-                    setPhoneNumber(text);
+                    setPhoneNumber(normalizePhone(text));
                     setTouched({ ...touched, phoneNumber: true });
-                    validateField('phoneNumber', text);
+                    validateField('phoneNumber', normalizePhone(text));
                   }}
                   keyboardType="phone-pad"
                   onFocus={() => setFocusedInput('phoneNumber')}
@@ -507,9 +535,13 @@ export default function UserDetailsScreen() {
               ]}
               onPress={handleContinue}
               activeOpacity={0.8}
-              disabled={!isFormValid()}
+              disabled={!isFormValid() || isSaving}
             >
-              <Text style={styles.primaryButtonText}>Continue</Text>
+              {isSaving ? (
+                <ActivityIndicator color={COLORS.white || '#FFFFFF'} />
+              ) : (
+                <Text style={styles.primaryButtonText}>Continue</Text>
+              )}
             </TouchableOpacity>
           </Animated.View>
 
