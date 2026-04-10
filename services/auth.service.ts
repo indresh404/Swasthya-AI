@@ -331,7 +331,7 @@ const getUniqueJoinCode = async () => {
 
 export const createFamilyForPatient = async (familyName: string, patient: PatientRecord) => {
   const joinCode = await getUniqueJoinCode();
-  console.log('Creating family:', familyName, 'for patient:', patient.id);
+  console.log('Creating family:', familyName, 'for patient:', patient.id, 'with code:', joinCode);
 
   const { data: family, error: familyError } = await supabase
     .from('families')
@@ -344,40 +344,30 @@ export const createFamilyForPatient = async (familyName: string, patient: Patien
     .single();
 
   if (familyError) {
-    // If RLS error, we'll proceed with a client-side family object
-    if (isRlsError(familyError)) {
-      console.warn('RLS policy prevented family creation, proceeding with client-side family object');
-      // Return a client-side family object
-      const clientFamily = {
-        id: `family_${joinCode}`,
-        family_name: familyName.trim(),
-        created_by: patient.id,
-        join_code: joinCode,
-        created_at: new Date().toISOString(),
-        qr_code: null,
-      };
-      
-      return {
-        family: clientFamily as FamilyRecord,
-        joinCode,
-      };
-    }
-    
     console.error('Family creation error:', familyError);
     throw new Error(`Failed to create family: ${familyError.message}`);
   }
 
+  if (!family) {
+    throw new Error('Family creation returned no data. Please try again.');
+  }
+
   console.log('Family created:', family.id);
 
+  // Update patient with family ID
   const { error: patientUpdateError } = await supabase
     .from('users')
     .update({ family_id: family.id })
     .eq('id', patient.id);
 
   if (patientUpdateError) {
-    console.warn('Patient update error:', patientUpdateError);
+    console.error('Patient update error:', patientUpdateError);
+    throw new Error(`Failed to update patient family: ${patientUpdateError.message}`);
+  } else {
+    console.log('Patient family ID updated successfully');
   }
 
+  // Add patient to family_groups as admin
   const { error: memberError } = await supabase
     .from('family_groups')
     .insert({
@@ -386,8 +376,15 @@ export const createFamilyForPatient = async (familyName: string, patient: Patien
       role: 'admin',
     });
 
-  if (memberError && memberError.code !== '23505') {
-    console.warn('Member add error:', memberError);
+  if (memberError) {
+    if (memberError.code === '23505') {
+      console.log('Admin member already exists (duplicate key)');
+    } else {
+      console.error('Member add error:', memberError);
+      throw new Error(`Failed to add admin to family: ${memberError.message}`);
+    }
+  } else {
+    console.log('Patient added to family as admin successfully');
   }
 
   return {
@@ -397,53 +394,69 @@ export const createFamilyForPatient = async (familyName: string, patient: Patien
 };
 
 export const joinFamilyForPatient = async (joinCode: string, patient: PatientRecord) => {
-  console.log('Joining family with code:', joinCode, 'patient:', patient.id);
+  const normalizedCode = joinCode.trim();
+  console.log('Joining family with code:', normalizedCode, 'patient:', patient.id);
 
   const { data: family, error: familyError } = await supabase
     .from('families')
     .select('*')
-    .eq('join_code', joinCode)
+    .eq('join_code', normalizedCode)
     .maybeSingle();
 
   if (familyError) {
-    // If RLS error on read, still try to continue
-    if (isRlsError(familyError)) {
-      console.warn('RLS policy on family lookup, cannot verify. Please check code.');
-    } else {
-      console.error('Family lookup error:', familyError);
-    }
+    console.error('Family lookup error:', familyError);
+    throw new Error(`Failed to lookup family: ${familyError.message}`);
   }
 
   if (!family) {
+    console.warn('No family found with code:', normalizedCode);
+    console.log('Tip: Check that the family was created successfully and the code is correct');
     throw new Error('Invalid family code. Please check and try again.');
   }
 
-  console.log('Found family:', family.id);
+  console.log('Found family:', family.id, 'Name:', family.family_name);
 
-  const { data: existingMember, error: existingError } = await supabase
-    .from('family_groups')
-    .select('id')
-    .eq('family_id', family.id)
-    .eq('patient_id', patient.id)
-    .maybeSingle();
-
-  if (existingError) {
-    console.warn('Existing member check error:', existingError);
-  }
-
-  if (!existingMember) {
-    console.log('Adding patient to family group');
-    const { error: memberError } = await supabase
+  try {
+    const { data: existingMember, error: existingError } = await supabase
       .from('family_groups')
-      .insert({
-        family_id: family.id,
-        patient_id: patient.id,
-        role: 'member',
-      });
+      .select('id')
+      .eq('family_id', family.id)
+      .eq('patient_id', patient.id)
+      .maybeSingle();
 
-    if (memberError && memberError.code !== '23505') {
-      console.warn('Member addition error:', memberError);
+    if (existingError && !isRlsError(existingError)) {
+      console.error('Existing member check error:', existingError);
+      throw new Error(`Failed to check family membership: ${existingError.message}`);
     }
+
+    if (!existingMember) {
+      console.log('Adding patient to family group');
+      const { error: memberError } = await supabase
+        .from('family_groups')
+        .insert({
+          family_id: family.id,
+          patient_id: patient.id,
+          role: 'member',
+        });
+
+      if (memberError) {
+        if (memberError.code === '23505') {
+          console.log('Member already exists (duplicate key)');
+        } else if (isRlsError(memberError)) {
+          console.warn('RLS policy prevented member addition, but continuing');
+        } else {
+          console.error('Member addition error:', memberError);
+          throw new Error(`Failed to add member to family: ${memberError.message}`);
+        }
+      } else {
+        console.log('Patient added to family group successfully');
+      }
+    } else {
+      console.log('Patient is already a member of this family');
+    }
+  } catch (error) {
+    console.error('Family membership error:', error);
+    throw error;
   }
 
   console.log('Updating patient family ID');
@@ -453,9 +466,70 @@ export const joinFamilyForPatient = async (joinCode: string, patient: PatientRec
     .eq('id', patient.id);
 
   if (patientUpdateError) {
-    console.warn('Patient update error:', patientUpdateError);
+    if (isRlsError(patientUpdateError)) {
+      console.warn('RLS policy prevented patient update, but family join may still be valid');
+    } else {
+      console.error('Patient update error:', patientUpdateError);
+      throw new Error(`Failed to update patient family: ${patientUpdateError.message}`);
+    }
+  } else {
+    console.log('Patient family ID updated successfully');
   }
 
   console.log('Patient joined family successfully');
   return family as FamilyRecord;
+};
+
+export const getFamilyByPatientId = async (patientId: string) => {
+  console.log('Fetching family for patient:', patientId);
+
+  const { data: patient, error: patientError } = await supabase
+    .from('users')
+    .select('family_id')
+    .eq('id', patientId)
+    .maybeSingle();
+
+  if (patientError) {
+    console.error('Patient lookup error:', patientError);
+    return null;
+  }
+
+  if (!patient || !patient.family_id) {
+    console.log('Patient does not have a family');
+    return null;
+  }
+
+  const { data: family, error: familyError } = await supabase
+    .from('families')
+    .select('*')
+    .eq('id', patient.family_id)
+    .maybeSingle();
+
+  if (familyError) {
+    console.error('Family lookup error:', familyError);
+    return null;
+  }
+
+  console.log('Found family:', family?.id);
+  return family as FamilyRecord | null;
+};
+
+export const getFamilyMembers = async (familyId: string) => {
+  console.log('Fetching family members for family:', familyId);
+
+  const { data: members, error } = await supabase
+    .from('family_groups')
+    .select(`
+      *,
+      patient:users(id, name, age, gender, phone, family_id)
+    `)
+    .eq('family_id', familyId);
+
+  if (error) {
+    console.error('Family members lookup error:', error);
+    return [];
+  }
+
+  console.log('Found family members:', members?.length || 0);
+  return members || [];
 };

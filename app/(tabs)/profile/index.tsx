@@ -1,12 +1,13 @@
 // app/(tabs)/profile/index.tsx
 import { ScreenIntroGate } from '@/components/ui/ScreenIntroGate';
 import { SkeletonProfileScreen } from '@/components/ui/SkeletonLoader';
-import { signOut } from '@/services/auth.service';
+import { signOut, getFamilyByPatientId } from '@/services/auth.service';
 import { useAuthStore } from '@/store/auth.store';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useSegments } from 'expo-router';
 import React, { useState, useEffect } from 'react';
+import QRCode from 'react-native-qrcode-svg';
 import {
     Alert,
     Platform,
@@ -121,11 +122,14 @@ export default function ProfileScreen() {
   const { user } = useAuthStore();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [familyData, setFamilyData] = useState<any>(null);
+  const [loadingFamily, setLoadingFamily] = useState(false);
 
 
   useEffect(() => {
     if (user?.id || patientId) {
       loadProfile();
+      loadFamily();
       return;
     }
     setProfile({
@@ -177,6 +181,24 @@ export default function ProfileScreen() {
     }
   };
 
+  const loadFamily = async () => {
+    try {
+      const resolvedId = user?.id || patientId;
+      if (!resolvedId) return;
+
+      setLoadingFamily(true);
+      const family = await getFamilyByPatientId(resolvedId);
+      if (family) {
+        console.log('Family loaded:', family.family_name);
+        setFamilyData(family);
+      }
+    } catch (error) {
+      console.error("Family load error:", error);
+    } finally {
+      setLoadingFamily(false);
+    }
+  };
+
   const handleIntroComplete = () => {
     setIsDataLoaded(true);
   };
@@ -204,6 +226,31 @@ export default function ProfileScreen() {
     } finally {
       logout();
       router.replace('/(auth)/welcome');
+    }
+  };
+
+  const handleCopyFamilyCode = async () => {
+    if (!familyData?.join_code) return;
+    try {
+      // Try using expo-clipboard if available
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const Clipboard = require('expo-clipboard');
+      await Clipboard.setStringAsync(familyData.join_code);
+      Alert.alert('Copied!', 'Family code copied to clipboard');
+    } catch {
+      Alert.alert('Family Code', `Your family code is: ${familyData.join_code}`);
+    }
+  };
+
+  const handleShareFamilyCode = async () => {
+    if (!familyData?.join_code) return;
+    try {
+      await Share.share({
+        message: `Join my family "${familyData.family_name}" on Swasthya! Use code: ${familyData.join_code}`,
+        title: 'Share Family Code',
+      });
+    } catch {
+      Alert.alert('Error', 'Could not share family code');
     }
   };
 
@@ -365,6 +412,61 @@ export default function ProfileScreen() {
             </View>
           </View>
         </View>
+
+        {/* F. Family Information & QR */}
+        {familyData && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Your Family</Text>
+            <TouchableOpacity 
+              style={styles.familyQRCard}
+              activeOpacity={0.95}
+            >
+              <View style={styles.familyQRLeft}>
+                <View style={styles.familyQRCode}>
+                  <Ionicons name="people" size={28} color={COLORS.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.familyQRTitle}>{familyData.family_name || 'Your Family'}</Text>
+                  <Text style={styles.familyQRSubtitle}>Code: {familyData.join_code}</Text>
+                </View>
+              </View>
+              <TouchableOpacity activeOpacity={0.7}>
+                <Ionicons name="chevron-forward" size={24} color={COLORS.text.secondary} />
+              </TouchableOpacity>
+            </TouchableOpacity>
+
+            <View style={styles.familyQRButtons}>
+              <TouchableOpacity 
+                style={styles.familyActionButton}
+                onPress={handleCopyFamilyCode}
+              >
+                <Ionicons name="copy-outline" size={18} color={COLORS.primary} />
+                <Text style={styles.familyActionText}>Copy Code</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.familyActionButton}
+                onPress={handleShareFamilyCode}
+              >
+                <Ionicons name="share-social-outline" size={18} color={COLORS.primary} />
+                <Text style={styles.familyActionText}>Share</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Family QR Code Display */}
+            <View style={styles.familyQRDisplayContainer}>
+              <Text style={styles.familyQRLabel}>Share this code to invite members</Text>
+              <View style={styles.familyQRBox}>
+                <QRCode 
+                  value={`SWASTHYA_FAMILY:${familyData.join_code}`}
+                  size={130}
+                  color="#000000"
+                  backgroundColor="#FFFFFF"
+                />
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* G. Quick Actions */}
         <View style={styles.section}>
@@ -854,6 +956,50 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.text.secondary,
     marginTop: 2,
+  },
+  familyQRButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  familyActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: COLORS.primaryLight,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  familyActionText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  familyQRDisplayContainer: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  familyQRLabel: {
+    fontSize: 12,
+    color: COLORS.text.secondary,
+    marginBottom: 12,
+  },
+  familyQRBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   memberCard: {
     flexDirection: 'row',

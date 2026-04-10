@@ -1,4 +1,5 @@
 // app/(onboarding)/family-setup.tsx
+import { useAuthStore } from '@/store/auth.store';
 import { TYPOGRAPHY } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -6,30 +7,28 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import QRCode from 'react-native-qrcode-svg';
-import { useAuthStore } from '@/store/auth.store';
 
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  ActivityIndicator,
-} from 'react-native';
-import {
-  createFamilyForPatient,
-  getCurrentPatient,
-  getPatientById,
-  getPatientByPhone,
-  joinFamilyForPatient,
-  type PatientRecord,
+    createFamilyForPatient,
+    getPatientById,
+    getPatientByPhone,
+    joinFamilyForPatient,
+    type PatientRecord
 } from '@/services/auth.service';
+import {
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 const CODE_LENGTH = 6;
 
@@ -168,15 +167,45 @@ export default function FamilySetupScreen() {
 
   const handleBarCodeScanned = (result: any) => {
     try {
-      const scannedCode = String(result.data || '').trim();
-      const payloadMatch = scannedCode.match(/^SWASTHYA_FAMILY:(\d{6})$/);
-      const directMatch = scannedCode.match(/^(\d{6})$/);
-      const tailMatch = scannedCode.match(/(\d{6})$/);
-      const code = payloadMatch?.[1] || directMatch?.[1] || tailMatch?.[1] || '';
+      const scannedCode = String(result.data || '').trim().toUpperCase();
+      console.log('Scanned QR code:', scannedCode);
+      
+      let code = '';
+      
+      // Try different patterns to extract the 6-digit code
+      // Pattern 1: SWASTHYA_FAMILY:XXXXXX
+      let match = scannedCode.match(/SWASTHYA_FAMILY[:\s]+(\d{6})/i);
+      if (match) {
+        code = match[1];
+      }
+      
+      // Pattern 2: Just 6 digits (exact match)
       if (!code) {
-        Alert.alert('Invalid QR', 'This QR does not contain a valid family join code.');
+        match = scannedCode.match(/^(\d{6})$/);
+        if (match) {
+          code = match[1];
+        }
+      }
+      
+      // Pattern 3: 6 digits anywhere in the string (last resort)
+      if (!code) {
+        match = scannedCode.match(/(\d{6})/);
+        if (match) {
+          code = match[1];
+        }
+      }
+      
+      // Validate the code format
+      if (!code || code.length !== CODE_LENGTH || !/^\d{6}$/.test(code)) {
+        Alert.alert(
+          'Invalid QR Code',
+          'This QR code does not contain a valid 6-digit family join code.\n\nMake sure you\'re scanning a valid Swasthya family QR code.',
+          [{ text: 'Try Again', onPress: () => setShowQRScanner(true) }]
+        );
         return;
       }
+      
+      console.log('Extracted family code:', code);
       const digits = code.split('');
       
       const newDigits = [...codeDigits];
@@ -194,7 +223,8 @@ export default function FamilySetupScreen() {
       }
     } catch (error) {
       console.error('QR scan error:', error);
-      Alert.alert('Error', 'Failed to process QR code');
+      Alert.alert('Error', 'Failed to process QR code. Please try again.');
+      setShowQRScanner(true);
     }
   };
 
