@@ -7,7 +7,7 @@ import { SkeletonHomeScreen } from '@/components/ui/SkeletonLoader';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useSegments } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Alert,
   Platform,
@@ -19,19 +19,30 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { supabase } from '@/services/supabaseClient';
+import { useAuthStore } from '@/store/auth.store';
 
 // Top Navigation Bar Component (inline)
+<<<<<<< Auth
+const TopNavBar = ({
+  onScanPress,
+  onNotificationPress,
+  onProfilePress,
+  notificationCount = 3,
+  userName = 'Rahul',
+=======
 const TopNavBar = ({ 
   onScanPress, 
   onNotificationPress, 
   onProfilePress, 
   notificationCount = 3, 
   userName = 'Indresh',
+>>>>>>> main
   activeScreen = 'DASHBOARD'
 }: any) => {
   // Get the title based on active screen
   const getTitle = () => {
-    switch(activeScreen) {
+    switch (activeScreen) {
       case 'home': return 'DASHBOARD';
       case 'checkin': return 'CHECK-IN';
       case 'meds': return 'MEDICATIONS';
@@ -128,6 +139,8 @@ const AIChatButton = () => {
 export default function HomeScreen() {
   const segments = useSegments();
   const currentRoute = segments[segments.length - 1];
+  const { user } = useAuthStore();
+  const [profile, setProfile] = useState<any>(null);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [bodyMapVisible, setBodyMapVisible] = useState(false);
 
@@ -136,10 +149,30 @@ export default function HomeScreen() {
   const MAX_SKELETON_TIME = 90000; // 4 minutes max timeout
   const skeletonStartTime = React.useRef<number>(Date.now());
 
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+    }
+  }, [user]);
+
+  const fetchProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user?.id)
+        .single();
+
+      if (data) setProfile(data);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
   const handleIntroComplete = () => {
     // Start skeleton loading after intro animation
     skeletonStartTime.current = Date.now();
-    
+
     // Hide skeleton after fixed 4 seconds duration
     const skeletonTimeout = setTimeout(() => {
       setIsDataLoaded(true);
@@ -155,21 +188,21 @@ export default function HomeScreen() {
       clearTimeout(maxTimeoutTimer);
     };
   };
-  
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
-      
+
       {/* Top Navigation Bar with dynamic title */}
-      <TopNavBar 
+      <TopNavBar
         onScanPress={() => console.log('Scan pressed')}
         onNotificationPress={() => console.log('Notification pressed')}
-        onProfilePress={() => console.log('Profile pressed')}
+        onProfilePress={() => router.push('/(tabs)/profile')}
         notificationCount={3}
-        userName="Rahul"
+        userName={profile?.name || 'User'}
         activeScreen={currentRoute}
       />
-      
+
       <ScreenIntroGate
         loaderText="Loading your health dashboard..."
         loaderDuration={3000}
@@ -181,6 +214,18 @@ export default function HomeScreen() {
         {!isDataLoaded ? (
           <SkeletonHomeScreen />
         ) : (
+<<<<<<< Auth
+          <ScrollView
+            style={styles.container}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.content}>
+              <Text style={styles.welcomeText}>Welcome to Your Health Dashboard</Text>
+              {/* Rest of your existing home screen components */}
+            </View>
+          </ScrollView>
+=======
           <>
             <ScrollView 
               style={styles.container} 
@@ -223,6 +268,7 @@ export default function HomeScreen() {
             {/* AI Chat Button - Floating */}
             <AIChatButton />
           </>
+>>>>>>> main
         )}
       </ScreenIntroGate>
     </SafeAreaView>
