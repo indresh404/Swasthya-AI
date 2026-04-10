@@ -118,6 +118,74 @@ const AIChatButton = () => {
   );
 };
 
+// Prediction Card
+const PredictionCard = () => {
+  const [idx, setIdx] = useState(0);
+  const predictions = [
+    { day: 'Day 3', score: 32, label: 'Low', color: '#10B981', note: 'Mild upward trend detected — maintain medication schedule.' },
+    { day: 'Day 5', score: 45, label: 'Moderate', color: '#F59E0B', note: 'Fatigue pattern may resurface — monitor sleep quality.' },
+    { day: 'Day 7', score: 37, label: 'Low', color: '#10B981', note: 'Trajectory stabilising. Risk score projected to plateau.' },
+  ];
+  useEffect(() => {
+    const timer = setInterval(() => setIdx(i => (i + 1) % predictions.length), 3000);
+    return () => clearInterval(timer);
+  }, []);
+  const p = predictions[idx];
+  return (
+    <View style={styles.predCard}>
+      <View style={styles.predHeader}>
+        <Ionicons name="trending-up-outline" size={20} color="#8B5CF6" />
+        <Text style={styles.predTitle}>AI Risk Prediction</Text>
+        <View style={[styles.predBadge, { backgroundColor: p.color + '20' }]}>
+          <Text style={[styles.predBadgeText, { color: p.color }]}>{p.label}</Text>
+        </View>
+      </View>
+      <View style={styles.predBody}>
+        <View style={styles.predScoreBox}>
+          <Text style={[styles.predScore, { color: p.color }]}>{p.score}</Text>
+          <Text style={styles.predScoreLabel}>/{p.day}</Text>
+        </View>
+        <Text style={styles.predNote}>{p.note}</Text>
+      </View>
+      <View style={styles.predDots}>
+        {predictions.map((_, i) => (
+          <View key={i} style={[styles.predDot, i === idx && styles.predDotActive]} />
+        ))}
+      </View>
+    </View>
+  );
+};
+
+// Family AI Summary Card
+const FamilySummaryCard = () => {
+  const members = [
+    { label: 'Adult Member 1', risk: 'Low', tag: 'Stable', color: '#10B981' },
+    { label: 'Adult Member 2', risk: 'Moderate', tag: 'Respiratory↑', color: '#F59E0B' },
+    { label: 'Child Member', risk: 'Low', tag: 'Healthy', color: '#10B981' },
+  ];
+  return (
+    <View style={styles.familyCard}>
+      <View style={styles.familyHeader}>
+        <Ionicons name="people-outline" size={20} color="#0474FC" />
+        <Text style={styles.familyTitle}>Family AI Summary</Text>
+        <View style={styles.envFlag}>
+          <Ionicons name="warning-outline" size={12} color="#F59E0B" />
+          <Text style={styles.envFlagText}>Env. Risk</Text>
+        </View>
+      </View>
+      <Text style={styles.familyInsight}>🤖 2 family members reported respiratory symptoms this week — possible environmental trigger detected.</Text>
+      {members.map((m, i) => (
+        <View key={i} style={styles.familyMemberRow}>
+          <View style={[styles.familyDot, { backgroundColor: m.color }]} />
+          <Text style={styles.familyMemberLabel}>{m.label}</Text>
+          <View style={{ flex: 1 }} />
+          <Text style={[styles.familyTag, { color: m.color }]}>{m.tag}</Text>
+        </View>
+      ))}
+    </View>
+  );
+};
+
 export default function HomeScreen() {
   const segments = useSegments();
   const currentRoute = segments[segments.length - 1];
@@ -219,11 +287,12 @@ export default function HomeScreen() {
                 {/* 3D Body Map Card */}
                 <BodyMapCard onPress={() => setBodyMapVisible(true)} />
 
-                {/* Additional Content Areas */}
-                <View style={styles.contentSection}>
-                  <Text style={styles.sectionTitle}>Health Status</Text>
-                  <Text style={styles.placeholderText}>More health components coming soon...</Text>
-                </View>
+                {/* Prediction Card */}
+                <PredictionCard />
+
+                {/* Family AI Summary Card */}
+                <FamilySummaryCard />
+
               </View>
             </ScrollView>
 
@@ -310,6 +379,31 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     fontWeight: '500',
   },
+  // Prediction Card
+  predCard: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginTop: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2, borderLeftWidth: 3, borderLeftColor: '#8B5CF6' },
+  predHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  predTitle: { flex: 1, fontSize: 15, fontWeight: '700', color: '#111827' },
+  predBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  predBadgeText: { fontSize: 12, fontWeight: '600' },
+  predBody: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 12 },
+  predScoreBox: { flexDirection: 'row', alignItems: 'baseline', gap: 2 },
+  predScore: { fontSize: 36, fontWeight: '800' },
+  predScoreLabel: { fontSize: 13, color: '#6B7280' },
+  predNote: { flex: 1, fontSize: 13, color: '#374151', lineHeight: 18 },
+  predDots: { flexDirection: 'row', gap: 6, justifyContent: 'center' },
+  predDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#E5E7EB' },
+  predDotActive: { backgroundColor: '#8B5CF6', width: 18 },
+  // Family Card
+  familyCard: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginTop: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  familyHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  familyTitle: { flex: 1, fontSize: 15, fontWeight: '700', color: '#111827' },
+  envFlag: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#FEF3C7', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
+  envFlagText: { fontSize: 11, color: '#D97706', fontWeight: '600' },
+  familyInsight: { fontSize: 13, color: '#374151', lineHeight: 18, marginBottom: 12, backgroundColor: '#F0F9FF', padding: 10, borderRadius: 10 },
+  familyMemberRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  familyDot: { width: 10, height: 10, borderRadius: 5 },
+  familyMemberLabel: { fontSize: 13, color: '#374151', fontWeight: '500' },
+  familyTag: { fontSize: 12, fontWeight: '700' },
   aiChatButton: {
     position: 'absolute',
     bottom: 32,
