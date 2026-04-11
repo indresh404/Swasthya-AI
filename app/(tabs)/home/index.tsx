@@ -162,8 +162,13 @@ const PredictionCard = () => {
         {predictions.map((_, i) => (
           <View key={i} style={[styles.predDot, i === idx && styles.predDotActive]} />
         ))}
+      </View>
+    </View>
+  );
+};
+
 // Watch Simulator Card Component
-const WatchSimulatorCard = ({ isAbnormal, setIsAbnormal }: { isAbnormal: boolean, setIsAbnormal: React.Dispatch<React.SetStateAction<boolean>> }) => {
+const WatchSimulatorCard = ({ isAbnormal, setIsAbnormal }: { isAbnormal: boolean; setIsAbnormal: React.Dispatch<React.SetStateAction<boolean>> }) => {
   const [vitals, setVitals] = useState({ hr: 72, spo2: 98, sys: 120, dia: 80 });
 
   useEffect(() => {
@@ -257,8 +262,12 @@ const FamilySummaryCard = () => {
           <Text style={[styles.familyTag, { color: m.color }]}>{m.tag}</Text>
         </View>
       ))}
+    </View>
+  );
+};
+
 // Risk Score Card Component
-const RiskScoreCard = ({ profile, isAbnormal }: { profile: any, isAbnormal: boolean }) => {
+const RiskScoreCard = ({ profile, isAbnormal }: { profile: any; isAbnormal: boolean }) => {
   const getRiskDetails = () => {
     if (isAbnormal) {
       return { score: 92, color: '#EF4444', label: 'Critical' };
