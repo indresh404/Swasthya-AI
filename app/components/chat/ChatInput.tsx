@@ -69,6 +69,7 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
+    paddingBottom: Platform.OS === 'android' ? 32 : SPACING.sm,
     backgroundColor: COLORS.primary, // Changed from blue[900]
     borderTopWidth: 1,
     borderTopColor: COLORS.primaryDark, // Changed from blue[700]
@@ -97,6 +98,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: SPACING.sm,
+  
+
   },
   sendButtonDisabled: {
     backgroundColor: COLORS.gray[200],
