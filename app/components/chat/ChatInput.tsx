@@ -1,7 +1,7 @@
 // components/chat/ChatInput.tsx
-import { COLORS, SPACING, TYPOGRAPHY } from '@/theme';
-import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import { COLORS, SPACING, TYPOGRAPHY } from "@/theme";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -9,7 +9,8 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
+  useWindowDimensions,
+} from "react-native";
 
 interface ChatInputProps {
   value: string;
@@ -24,7 +25,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   onChangeText,
   onSend,
   disabled = false,
-  placeholder = 'Type your answer...',
+  placeholder = "Type your answer...",
 }) => {
   const handleSend = () => {
     if (value.trim() && !disabled) {
@@ -34,8 +35,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      style={styles.keyboardAvoidingView}
     >
       <View style={styles.container}>
         <View style={styles.inputContainer}>
@@ -49,14 +51,19 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             editable={!disabled}
           />
           <TouchableOpacity
-            style={[styles.sendButton, (!value.trim() || disabled) && styles.sendButtonDisabled]}
+            style={[
+              styles.sendButton,
+              (!value.trim() || disabled) && styles.sendButtonDisabled,
+            ]}
             onPress={handleSend}
             disabled={!value.trim() || disabled}
           >
             <Ionicons
               name="send"
               size={20}
-              color={value.trim() && !disabled ? COLORS.white : COLORS.gray[400]}
+              color={
+                value.trim() && !disabled ? COLORS.white : COLORS.gray[400]
+              }
             />
           </TouchableOpacity>
         </View>
@@ -66,17 +73,23 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 };
 
 const styles = StyleSheet.create({
+  keyboardAvoidingView: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
   container: {
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
-    paddingBottom: Platform.OS === 'android' ? 32 : SPACING.sm,
-    backgroundColor: COLORS.primary, // Changed from blue[900]
+    paddingBottom: Platform.OS === "ios" ? SPACING.sm : SPACING.md,
+    backgroundColor: COLORS.primary,
     borderTopWidth: 1,
-    borderTopColor: COLORS.primaryDark, // Changed from blue[700]
+    borderTopColor: COLORS.primaryDark,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    alignItems: "flex-end",
     backgroundColor: COLORS.white,
     borderRadius: 24,
     paddingHorizontal: SPACING.md,
@@ -89,17 +102,17 @@ const styles = StyleSheet.create({
     color: COLORS.text.primary,
     maxHeight: 100,
     paddingTop: SPACING.sm,
+    paddingBottom: Platform.OS === "android" ? SPACING.xs : 0,
   },
   sendButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: COLORS.primary, // Changed from blue[500]
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    justifyContent: "center",
+    alignItems: "center",
     marginLeft: SPACING.sm,
-  
-
+    marginBottom: Platform.OS === "android" ? 2 : 0,
   },
   sendButtonDisabled: {
     backgroundColor: COLORS.gray[200],
