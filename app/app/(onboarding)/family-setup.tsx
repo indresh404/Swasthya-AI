@@ -46,7 +46,13 @@ export default function FamilySetupScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
-  const handleBack = () => router.back();
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(onboarding)/user-details');
+    }
+  };
 
   const requirePatient = async (): Promise<PatientRecord> => {
     console.log('=== Requiring Patient ===');

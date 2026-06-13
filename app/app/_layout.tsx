@@ -25,6 +25,7 @@ export default function RootLayout() {
   const router = useRouter();
 
   const url = Linking.useURL();
+  const [isDeepLinkLoading, setIsDeepLinkLoading] = React.useState(false);
 
   useEffect(() => {
     const handleDeepLink = async () => {
@@ -52,6 +53,7 @@ export default function RootLayout() {
         const finalRefreshToken = Array.isArray(refresh_token) ? refresh_token[0] : refresh_token;
 
         if (finalAccessToken && finalRefreshToken) {
+          setIsDeepLinkLoading(true);
           try {
             const { supabase } = require('@/config/supabase');
             const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
@@ -78,6 +80,9 @@ export default function RootLayout() {
                 }
               }
 
+              const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+              const hasShownIntroVal = await AsyncStorage.getItem(`has_shown_intro_${sessionData.user.id}`);
+
               setSessionState({
                 userId: sessionData.user.id,
                 patientId: sessionData.user.id,
@@ -86,12 +91,15 @@ export default function RootLayout() {
                 hasProfile: Boolean(dbPatient?.age && dbPatient?.gender),
                 hasFamilyGroup: Boolean(dbPatient?.family_id),
                 isHydrated: true,
+                hasShownIntro: hasShownIntroVal === 'true',
               });
 
               router.replace('/');
             }
           } catch (e: any) {
             console.error('Deep link auth error:', e);
+          } finally {
+            setIsDeepLinkLoading(false);
           }
         }
       }
@@ -126,6 +134,9 @@ export default function RootLayout() {
         const patient = await getCurrentPatient();
         if (!mounted) return;
 
+        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+        const hasShownIntroVal = await AsyncStorage.getItem(`has_shown_intro_${session.user.id}`);
+
         setSessionState({
           userId: session.user.id,
           patientId: patient?.id ?? session.user.id,
@@ -134,6 +145,7 @@ export default function RootLayout() {
           hasProfile: Boolean(patient?.age && patient?.gender),
           hasFamilyGroup: Boolean(patient?.family_id),
           isHydrated: true,
+          hasShownIntro: hasShownIntroVal === 'true',
         });
       } catch {
         if (mounted) {
@@ -148,7 +160,7 @@ export default function RootLayout() {
     return () => { mounted = false; };
   }, [logout, setSessionState]);
 
-  if (!loaded) return <Loader text="Loading Swasthya AI..." />;
+  if (!loaded || isDeepLinkLoading) return <Loader text={isDeepLinkLoading ? "Signing in with Google..." : "Loading Swasthya AI..."} />;
 
   return (
     <>

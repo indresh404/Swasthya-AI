@@ -1,5 +1,5 @@
 // app/(tabs)/meds/index.tsx
-import { ScreenIntroGate } from '@/components/ui/ScreenIntroGate';
+
 import { SkeletonMedsScreen } from '@/components/ui/SkeletonLoader';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -225,7 +225,7 @@ const AIAnalysisPanel = ({ visible, onClose, medName }: { visible: boolean; onCl
 export default function MedsScreen() {
   const segments = useSegments();
   const currentRoute = segments[segments.length - 1];
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
   const [medications, setMedications] = useState<any[]>([]);
   const [takenToday, setTakenToday] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -460,8 +460,7 @@ export default function MedsScreen() {
         userName="Rahul"
         activeScreen={currentRoute}
       />
-      <ScreenIntroGate loaderText="Loading medication details..." loaderDuration={2000} backgroundColor="#F9FAFB" onIntroComplete={() => setIsDataLoaded(true)}>
-        {!isDataLoaded || loading ? <SkeletonMedsScreen /> : (
+      {loading ? <SkeletonMedsScreen /> : (
           <ScrollView contentContainerStyle={styles.scrollContent}>
             <View style={styles.headerRow}>
               <View>
@@ -587,7 +586,6 @@ export default function MedsScreen() {
             <View style={{ height: 40 }} />
           </ScrollView>
         )}
-      </ScreenIntroGate>
 
       {/* Add Med Modal */}
       <Modal transparent animationType="slide" visible={addModalVisible}>

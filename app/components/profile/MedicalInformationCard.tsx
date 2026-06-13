@@ -27,19 +27,16 @@ export interface MedicalInfo {
   surgeries?: string;
   chronicConditions?: string;
   vaccinations?: string;
-  familyGenetics?: string;
 }
 
 interface MedicalInformationCardProps {
   initialInfo: MedicalInfo;
   onSave: (info: MedicalInfo) => void;
-  mode?: 'profile' | 'family';
 }
 
 export const MedicalInformationCard: React.FC<MedicalInformationCardProps> = ({
   initialInfo,
   onSave,
-  mode = 'profile',
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<MedicalInfo>(initialInfo);
@@ -80,76 +77,6 @@ export const MedicalInformationCard: React.FC<MedicalInformationCardProps> = ({
     onSave(formData);
     setIsEditing(false);
   };
-
-  if (mode === 'family') {
-    return (
-      <View style={styles.card}>
-        <View style={styles.header}>
-          <View style={styles.headerTitleContainer}>
-            <Ionicons name="shield-half-outline" size={22} color={COLORS.primary} />
-            <Text style={styles.title}>Family Medical Conditions</Text>
-          </View>
-          {!isEditing && (
-            <TouchableOpacity
-              style={styles.editButton}
-              onPress={() => setIsEditing(true)}
-            >
-              <Ionicons name="create-outline" size={16} color={COLORS.primary} />
-              <Text style={styles.editButtonText}>Edit</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {isEditing ? (
-          <View style={styles.form}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Inherited / Genetic Conditions</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.familyGenetics}
-                onChangeText={(val) => setFormData({ ...formData, familyGenetics: val })}
-                placeholder="e.g. History of Hypertension, Diabetes, Cancer risk"
-                placeholderTextColor={COLORS.text.light}
-                multiline
-                numberOfLines={3}
-              />
-            </View>
-
-            <View style={styles.actionButtons}>
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => {
-                  setFormData(initialInfo);
-                  setIsEditing(false);
-                }}
-              >
-                <Text style={styles.cancelBtnText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-                <Text style={styles.saveBtnText}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.detailsList}>
-            <View style={styles.fullRow}>
-              <Text style={styles.cellLabel}>Genetics & Family History</Text>
-              <Text
-                style={[
-                  styles.cellValueText,
-                  formData.familyGenetics ? styles.familyGeneticsText : styles.noAllergiesText,
-                ]}
-              >
-                {formData.familyGenetics || 'No family genetic conditions listed.'}
-              </Text>
-            </View>
-          </View>
-        )}
-      </View>
-    );
-  }
-
-  // Profile Mode
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -552,10 +479,7 @@ const styles = StyleSheet.create({
     color: '#EF4444',
     fontWeight: '600',
   },
-  familyGeneticsText: {
-    color: '#D97706',
-    fontWeight: '600',
-  },
+
   noAllergiesText: {
     color: COLORS.text.secondary,
     fontWeight: '400',

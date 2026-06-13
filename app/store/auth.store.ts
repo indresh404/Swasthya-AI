@@ -14,8 +14,9 @@ interface AuthState {
   user: User | null;
   session: Session | null;
   isHydrated: boolean;
+  hasShownIntro: boolean;
   setSession: (session: Session | null) => void;
-  setSessionState: (state: Partial<Pick<AuthState, 'userId' | 'patientId' | 'phoneNumber' | 'isLoggedIn' | 'hasProfile' | 'hasFamilyGroup' | 'onboardingComplete' | 'isHydrated'>>) => void;
+  setSessionState: (state: Partial<Pick<AuthState, 'userId' | 'patientId' | 'phoneNumber' | 'isLoggedIn' | 'hasProfile' | 'hasFamilyGroup' | 'onboardingComplete' | 'isHydrated' | 'hasShownIntro'>>) => void;
   setHasProfile: (value: boolean) => void;
   setHasFamilyGroup: (value: boolean) => void;
   logout: () => void;
@@ -32,6 +33,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   session: null,
   isHydrated: false,
+  hasShownIntro: false,
   setSession: (session) => set({
     session,
     user: session?.user || null,
@@ -101,6 +103,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       user: null,
       session: null,
       isHydrated: true,
+      hasShownIntro: false,
     });
   },
 }));

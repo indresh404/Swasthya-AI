@@ -16,7 +16,7 @@ import { useRouter, useSegments } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
 
-import { ScreenIntroGate } from '@/components/ui/ScreenIntroGate';
+
 import { SkeletonProfileScreen } from '@/components/ui/SkeletonLoader';
 import { signOut, getFamilyByPatientId, getFamilyMembers } from '@/services/auth.service';
 import { useAuthStore } from '@/store/auth.store';
@@ -68,7 +68,7 @@ export default function ProfileScreen() {
 
   // Component States
   const [activeTab, setActiveTab] = useState<'profile' | 'family'>('profile');
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   const [familyData, setFamilyData] = useState<any>(null);
@@ -82,27 +82,22 @@ export default function ProfileScreen() {
   const [medicalInfo, setMedicalInfo] = useState({
     age: '',
     gender: '',
-    weight: '72',
-    height: '175',
-    bloodType: 'O+',
+    weight: '',
+    height: '',
+    bloodType: '',
     allergies: '',
-    bloodPressure: '120/80',
-    heartRate: '72',
-    oxygenLevel: '98',
-    surgeries: 'None',
-    chronicConditions: 'None',
-    vaccinations: 'Covid-19, Hep B',
-    familyGenetics: 'Hypertension history in parents',
+    bloodPressure: '',
+    heartRate: '',
+    oxygenLevel: '',
+    surgeries: '',
+    chronicConditions: '',
+    vaccinations: '',
   });
 
   const [emergencyContacts, setEmergencyContacts] = useState<any[]>([]);
   
-  // Family members list state (seeding with demo data, will sync with database if present)
-  const [familyMembers, setFamilyMembers] = useState<any[]>([
-    { id: 'm_1', name: 'Meera Sharma', age: 34, relationship: 'Spouse', risk: 'Low', phone: '9876543211' },
-    { id: 'm_2', name: 'Aarav Sharma', age: 12, relationship: 'Son', risk: 'Moderate', phone: '9876543212' },
-    { id: 'm_3', name: 'Vikram Sharma', age: 65, relationship: 'Father', risk: 'Low', phone: '9876543213' },
-  ]);
+  // Family members list state
+  const [familyMembers, setFamilyMembers] = useState<any[]>([]);
 
   // Income certificate verification & scanner states
   const [incomeCertificateVerified, setIncomeCertificateVerified] = useState(false);
@@ -127,7 +122,7 @@ export default function ProfileScreen() {
     if (resolvedId) {
       loadProfileAndData(resolvedId);
     } else {
-      loadDemoProfile();
+      setLoading(false);
     }
     loadVerificationStatus();
   }, [user, patientId]);
@@ -158,48 +153,6 @@ export default function ProfileScreen() {
     } catch (err) {
       console.error('Failed to load certificate status:', err);
     }
-  };
-
-  const loadDemoProfile = async () => {
-    const demoProfile = {
-      name: 'Demo User',
-      age: 30,
-      gender: 'Other',
-      phone: '9999999999',
-      risk_level: 'Low',
-      profile_summary: 'Swasthya\'s Advanced AI Engine has analyzed your health records. You are showing excellent health metrics with stable risk factors. Complete check-ins to unlock deeper insights.',
-      chronic_diseases: [],
-      medications: [],
-      allergies: [],
-      state: 'Demo State',
-      adherence_rate: 100,
-    };
-    setProfile(demoProfile);
-    setHealthId('DEMO_USER_ID');
-    
-    // Set medical info with demo data
-    setMedicalInfo({
-      age: '30',
-      gender: 'Other',
-      weight: '72',
-      height: '175',
-      bloodType: 'O+',
-      allergies: 'None',
-      bloodPressure: '120/80',
-      heartRate: '72',
-      oxygenLevel: '98',
-      surgeries: 'None',
-      chronicConditions: 'None',
-      vaccinations: 'Covid-19, Hep B',
-      familyGenetics: 'Hypertension history in parents',
-    });
-
-    // Seed empty demo emergency contacts
-    setEmergencyContacts([
-      { id: 'demo_doc_1', name: 'Dr. Satish Gupta', specialty: 'Cardiologist', phone: '9876543210' }
-    ]);
-    
-    setLoading(false);
   };
 
   const loadProfileAndData = async (resolvedId: string) => {
@@ -266,37 +219,35 @@ export default function ProfileScreen() {
 
       if (medicalDbData) {
         const mappedMed = {
-          age: currentProfile.age?.toString() || '30',
-          gender: currentProfile.gender || 'Male',
-          weight: medicalDbData.weight || '72',
-          height: medicalDbData.height || '175',
-          bloodType: medicalDbData.blood_type || 'O+',
+          age: currentProfile.age?.toString() || '',
+          gender: currentProfile.gender || '',
+          weight: medicalDbData.weight || '',
+          height: medicalDbData.height || '',
+          bloodType: medicalDbData.blood_type || '',
           allergies: medicalDbData.allergies || '',
-          bloodPressure: medicalDbData.blood_pressure || '120/80',
-          heartRate: medicalDbData.heart_rate || '72',
-          oxygenLevel: medicalDbData.oxygen_level || '98',
-          surgeries: medicalDbData.surgeries || 'None',
-          chronicConditions: medicalDbData.chronic_conditions || 'None',
-          vaccinations: medicalDbData.vaccinations || 'Covid-19, Hep B',
-          familyGenetics: medicalDbData.family_genetics || 'None',
+          bloodPressure: medicalDbData.blood_pressure || '',
+          heartRate: medicalDbData.heart_rate || '',
+          oxygenLevel: medicalDbData.oxygen_level || '',
+          surgeries: medicalDbData.surgeries || '',
+          chronicConditions: medicalDbData.chronic_conditions || '',
+          vaccinations: medicalDbData.vaccinations || '',
         };
         setMedicalInfo(mappedMed);
         await AsyncStorage.setItem(`medical_info_${resolvedId}`, JSON.stringify(mappedMed));
       } else {
         const initialMed = {
-          age: currentProfile.age?.toString() || '30',
-          gender: currentProfile.gender || 'Male',
-          weight: '72',
-          height: '175',
-          bloodType: 'O+',
+          age: currentProfile.age?.toString() || '',
+          gender: currentProfile.gender || '',
+          weight: '',
+          height: '',
+          bloodType: '',
           allergies: currentProfile.allergies?.join(', ') || '',
-          bloodPressure: '120/80',
-          heartRate: '72',
-          oxygenLevel: '98',
-          surgeries: 'None',
-          chronicConditions: 'None',
-          vaccinations: 'Covid-19, Hep B',
-          familyGenetics: 'Hypertension history in parents',
+          bloodPressure: '',
+          heartRate: '',
+          oxygenLevel: '',
+          surgeries: '',
+          chronicConditions: '',
+          vaccinations: '',
         };
         setMedicalInfo(initialMed);
         await AsyncStorage.setItem(`medical_info_${resolvedId}`, JSON.stringify(initialMed));
@@ -316,7 +267,6 @@ export default function ProfileScreen() {
             surgeries: initialMed.surgeries,
             chronic_conditions: initialMed.chronicConditions,
             vaccinations: initialMed.vaccinations,
-            family_genetics: initialMed.familyGenetics,
           });
       }
 
@@ -325,24 +275,16 @@ export default function ProfileScreen() {
       if (storedContacts) {
         setEmergencyContacts(JSON.parse(storedContacts));
       } else {
-        const defaultContacts = [
-          { id: 'doc_1', name: 'Dr. Satish Gupta', specialty: 'Cardiologist', phone: '9876543210' }
-        ];
-        setEmergencyContacts(defaultContacts);
-        await AsyncStorage.setItem(`emergency_contacts_${resolvedId}`, JSON.stringify(defaultContacts));
+        setEmergencyContacts([]);
       }
 
     } catch (err) {
       console.error("Error loading profile details:", err);
-      loadDemoProfile();
     } finally {
       setLoading(false);
     }
   };
 
-  const handleIntroComplete = () => {
-    setIsDataLoaded(true);
-  };
 
   const getQRValue = () => {
     if (healthId) {
@@ -352,17 +294,6 @@ export default function ProfileScreen() {
       return `SWASTHYA_PATIENT:${patientId}`;
     }
     return `SWASTHYA_USER:${user?.id || 'GUEST'}`;
-  };
-
-  const handleShareQR = async () => {
-    try {
-      await Share.share({
-        message: `Scan my Health ID QR to view my medical summary. ID: ${healthId || patientId || 'SWASTHYA'}`,
-        title: 'Share Health ID',
-      });
-    } catch {
-      showCustomAlert('Error', 'Could not share QR code', 'error');
-    }
   };
 
   const handleDownloadQR = () => {
@@ -378,18 +309,6 @@ export default function ProfileScreen() {
       showCustomAlert('Copied!', 'Family code copied to clipboard.', 'success');
     } catch {
       showCustomAlert('Family Code', `Your family code is: ${familyData.join_code}`, 'info');
-    }
-  };
-
-  const handleShareFamilyCode = async () => {
-    if (!familyData?.join_code) return;
-    try {
-      await Share.share({
-        message: `Join my family group "${familyData.family_name || 'Family'}" on Swasthya! Use code: ${familyData.join_code}`,
-        title: 'Share Family Code',
-      });
-    } catch {
-      showCustomAlert('Error', 'Could not share family code', 'error');
     }
   };
 
@@ -435,7 +354,6 @@ export default function ProfileScreen() {
           surgeries: newInfo.surgeries,
           chronic_conditions: newInfo.chronicConditions,
           vaccinations: newInfo.vaccinations,
-          family_genetics: newInfo.familyGenetics,
           updated_at: new Date().toISOString(),
         });
 
@@ -613,10 +531,9 @@ export default function ProfileScreen() {
     }
   };
 
-  // Demo AI Summaries for profile vs family
+  // AI Summaries for profile vs family
   const profileAISummary = profile?.profile_summary;
-  const familyAISummary = 
-    "Family Health Analysis: All family members show stable health trends. Your son Aarav Sharma is showing moderate risk metrics and is due for a checkup, while Vikram Sharma's cardiovascular risks are currently low and stable. Keep monitoring check-ins daily.";
+  const familyAISummary = familyData?.health_summary || "All Family Health summaries will be compiled and displayed here. Swasthya AI monitors and tracks your family members' vital health stats and indicators, keeping you updated on your family's overall well-being without requiring you to manually watch or track them.";
 
   const SettingsSection = () => (
     <View style={styles.settingsSection}>
@@ -665,15 +582,9 @@ export default function ProfileScreen() {
         activeScreen={currentRoute}
       />
 
-      <ScreenIntroGate
-        loaderText="Loading your profile..."
-        loaderDuration={2000}
-        backgroundColor={COLORS.background}
-        onIntroComplete={handleIntroComplete}
-      >
-        {!isDataLoaded || loading ? (
-          <SkeletonProfileScreen />
-        ) : (
+      {loading ? (
+        <SkeletonProfileScreen />
+      ) : (
           <ScrollView
             style={styles.container}
             contentContainerStyle={styles.scrollContent}
@@ -709,7 +620,6 @@ export default function ProfileScreen() {
                   <ProfileTabContent
                     profile={profile}
                     qrValue={getQRValue()}
-                    onShareQR={handleShareQR}
                     onSaveQR={handleDownloadQR}
                     getRiskColor={getRiskColor}
                   />
@@ -725,7 +635,6 @@ export default function ProfileScreen() {
                   <AIInsightCard summaryText={profileAISummary} />
 
                   <MedicalInformationCard
-                    mode="profile"
                     initialInfo={medicalInfo}
                     onSave={handleSaveMedicalInfo}
                   />
@@ -745,7 +654,6 @@ export default function ProfileScreen() {
                   <FamilyTabContent
                     familyData={familyData}
                     onCopyFamilyCode={handleCopyFamilyCode}
-                    onShareFamilyCode={handleShareFamilyCode}
                     onSetupFamily={handleSetupFamily}
                     membersCount={familyMembers.length}
                     familyRiskLevel="Low"
@@ -763,12 +671,6 @@ export default function ProfileScreen() {
 
                   <AIInsightCard summaryText={familyAISummary} />
 
-                  <MedicalInformationCard
-                    mode="family"
-                    initialInfo={medicalInfo}
-                    onSave={handleSaveMedicalInfo}
-                  />
-
                   {/* Government Schemes Card */}
                   <SchemesCard isVerified={incomeCertificateVerified} onPress={handleSchemesPress} />
 
@@ -782,7 +684,6 @@ export default function ProfileScreen() {
             <View style={styles.bottomPadding} />
           </ScrollView>
         )}
-      </ScreenIntroGate>
 
       {/* Schemes Modal popup */}
       <SchemesModal

@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import ViewShot from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 
 const COLORS = {
   primary: '#0474FC',
@@ -24,7 +26,6 @@ const COLORS = {
 interface FamilyTabContentProps {
   familyData: any;
   onCopyFamilyCode: () => void;
-  onShareFamilyCode: () => void;
   onSetupFamily: () => void;
   membersCount: number;
   familyRiskLevel?: string;
@@ -34,12 +35,31 @@ interface FamilyTabContentProps {
 export const FamilyTabContent: React.FC<FamilyTabContentProps> = ({
   familyData,
   onCopyFamilyCode,
-  onShareFamilyCode,
   onSetupFamily,
   membersCount,
   familyRiskLevel = 'Low',
   getRiskColor,
 }) => {
+  const viewShotRef = useRef<any>(null);
+
+  const handleShare = async () => {
+    try {
+      if (viewShotRef.current) {
+        const uri = await viewShotRef.current.capture();
+        const isSharingAvailable = await Sharing.isAvailableAsync();
+        if (isSharingAvailable) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'image/png',
+            dialogTitle: 'Share my Swasthya Family Code',
+            UTI: 'public.png',
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to share family card image:', error);
+    }
+  };
+
   if (!familyData) {
     return (
       <View style={styles.noFamilyCard}>
@@ -68,69 +88,85 @@ export const FamilyTabContent: React.FC<FamilyTabContentProps> = ({
   }
 
   return (
-    <View style={styles.identityCard}>
-      <View style={styles.profileHeader}>
-        <View style={styles.profileInfo}>
-          <View style={styles.profilePhoto}>
-            <Ionicons name="people" size={26} color="#FFFFFF" />
+    <View style={styles.container}>
+      <ViewShot
+        ref={viewShotRef}
+        options={{ format: 'png', quality: 1.0 }}
+        style={styles.viewShotContainer}
+      >
+        <View style={styles.identityCard}>
+          <View style={styles.profileHeader}>
+            <View style={styles.profileInfo}>
+              <View style={styles.profilePhoto}>
+                <Ionicons name="people" size={26} color="#FFFFFF" />
+              </View>
+              <View>
+                <Text style={styles.profileName}>
+                  {familyData.family_name || 'Your Family'}
+                </Text>
+                <Text style={styles.profileAge}>
+                  {membersCount} {membersCount === 1 ? 'Member' : 'Members'} • Code: {familyData.join_code}
+                </Text>
+              </View>
+            </View>
+            <View
+              style={[
+                styles.riskBadge,
+                { backgroundColor: getRiskColor(familyRiskLevel) },
+              ]}
+            >
+              <Text style={styles.riskBadgeText}>{familyRiskLevel}</Text>
+            </View>
           </View>
-          <View>
-            <Text style={styles.profileName}>
-              {familyData.family_name || 'Your Family'}
-            </Text>
-            <Text style={styles.profileAge}>
-              {membersCount} {membersCount === 1 ? 'Member' : 'Members'} • Code: {familyData.join_code}
-            </Text>
-          </View>
-        </View>
-        <View
-          style={[
-            styles.riskBadge,
-            { backgroundColor: getRiskColor(familyRiskLevel) },
-          ]}
-        >
-          <Text style={styles.riskBadgeText}>{familyRiskLevel}</Text>
-        </View>
-      </View>
 
-      <View style={styles.qrSection}>
-        <Text style={styles.qrTitle}>Family QR Code</Text>
-        <View style={styles.qrBox}>
-          <QRCode
-            value={`SWASTHYA_FAMILY:${familyData.join_code}`}
-            size={120}
-            color="#000000"
-            backgroundColor="#FFFFFF"
-          />
+          <View style={styles.qrSection}>
+            <Text style={styles.qrTitle}>Family QR Code</Text>
+            <View style={styles.qrBox}>
+              <QRCode
+                value={`SWASTHYA_FAMILY:${familyData.join_code}`}
+                size={120}
+                color="#000000"
+                backgroundColor="#FFFFFF"
+              />
+            </View>
+            <Text style={styles.qrSubtitle}>Scan QR code to join this family</Text>
+          </View>
         </View>
-        <Text style={styles.qrSubtitle}>Scan QR code to join this family</Text>
-        <View style={styles.qrButtons}>
-          <TouchableOpacity style={styles.qrButton} onPress={onCopyFamilyCode}>
-            <Ionicons name="copy-outline" size={20} color={COLORS.primary} />
-            <Text style={styles.qrButtonText}>Copy Code</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.qrButton} onPress={onShareFamilyCode}>
-            <Ionicons name="share-social-outline" size={20} color={COLORS.primary} />
-            <Text style={styles.qrButtonText}>Share QR</Text>
-          </TouchableOpacity>
-        </View>
+      </ViewShot>
+
+      {/* Buttons rendered OUTSIDE the ViewShot capture area */}
+      <View style={styles.qrButtons}>
+        <TouchableOpacity style={styles.qrButton} onPress={onCopyFamilyCode}>
+          <Ionicons name="copy-outline" size={20} color={COLORS.primary} />
+          <Text style={styles.qrButtonText}>Copy Code</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.qrButton} onPress={handleShare}>
+          <Ionicons name="share-social-outline" size={20} color={COLORS.primary} />
+          <Text style={styles.qrButtonText}>Share QR</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  identityCard: {
-    backgroundColor: '#EEF2FF', // Indigo background for Family card
+  container: {
     marginHorizontal: 16,
     marginTop: 16,
+  },
+  viewShotContainer: {
     borderRadius: 20,
-    padding: 20,
+    overflow: 'hidden',
+    backgroundColor: '#EEF2FF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 3,
+  },
+  identityCard: {
+    padding: 20,
+    backgroundColor: '#EEF2FF',
   },
   profileHeader: {
     flexDirection: 'row',
@@ -205,7 +241,8 @@ const styles = StyleSheet.create({
   qrButtons: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 8,
+    marginTop: 16,
+    justifyContent: 'center',
   },
   qrButton: {
     flexDirection: 'row',

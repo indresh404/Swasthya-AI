@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
+import { CustomAlertModal } from '@/components/profile/CustomAlertModal';
 import {
   Alert,
   Animated,
@@ -167,6 +168,19 @@ export default function LoginScreen() {
   const router = useRouter();
   const setSessionState = useAuthStore(s => s.setSessionState);
 
+  // Custom Alert Modal States
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertType, setAlertType] = useState<'success' | 'warning' | 'error' | 'info' | 'confirm'>('info');
+
+  const showAlert = (title: string, message: string, type: 'success' | 'warning' | 'error' | 'info' | 'confirm' = 'info') => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setAlertType(type);
+    setAlertVisible(true);
+  };
+
   const [tab, setTab] = useState<'signin' | 'signup'>('signin');
   const [loading, setLoading] = useState(false);
 
@@ -280,10 +294,10 @@ export default function LoginScreen() {
         });
         router.replace('/');
       } else {
-        Alert.alert('Sign In Failed', result.error ?? 'Invalid email or password');
+        showAlert('Sign In Failed', result.error ?? 'Invalid email or password', 'error');
       }
     } catch (e: any) {
-      Alert.alert('Sign In Failed', e?.message ?? 'Something went wrong');
+      showAlert('Sign In Failed', e?.message ?? 'Something went wrong', 'error');
     } finally {
       setLoading(false);
     }
@@ -305,7 +319,7 @@ export default function LoginScreen() {
       });
       router.replace('/');
     } catch (e: any) {
-      Alert.alert('Sign Up Failed', e?.message ?? 'Something went wrong');
+      showAlert('Sign Up Failed', e?.message ?? 'Something went wrong', 'error');
     } finally {
       setLoading(false);
     }
@@ -329,7 +343,7 @@ export default function LoginScreen() {
         router.replace('/');
       }
     } catch (e: any) {
-      Alert.alert('Google Auth Failed', e?.message ?? 'Something went wrong');
+      showAlert('Google Auth Failed', e?.message ?? 'Something went wrong', 'error');
     } finally {
       setLoading(false);
     }
@@ -442,7 +456,7 @@ export default function LoginScreen() {
                 </TouchableOpacity>
 
                 <Divider />
-                <GoogleButton label="Sign in with Google" onPress={handleGoogle} />
+                <GoogleButton label="Sign in with Google" onPress={handleGoogle} disabled={loading} loading={loading} />
 
                 <Pressable onPress={() => slideTab('signup')} style={s.switchRow}>
                   <Text style={s.switchText}>{"Don't have an account? "}</Text>
@@ -527,7 +541,7 @@ export default function LoginScreen() {
                 </TouchableOpacity>
 
                 <Divider />
-                <GoogleButton label="Sign up with Google" onPress={handleGoogle} />
+                <GoogleButton label="Sign up with Google" onPress={handleGoogle} disabled={loading} loading={loading} />
 
                 <Pressable onPress={() => slideTab('signin')} style={s.switchRow}>
                   <Text style={s.switchText}>Already have an account? </Text>
@@ -539,6 +553,14 @@ export default function LoginScreen() {
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <CustomAlertModal
+        visible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        type={alertType}
+        onClose={() => setAlertVisible(false)}
+      />
     </View>
   );
 }
@@ -560,10 +582,11 @@ const div_s = StyleSheet.create({
   text: { fontFamily: FONT.regular, fontSize: 12, color: C.textMuted, marginHorizontal: 12 },
 });
 
-function GoogleButton({ label, onPress }: { label: string; onPress: () => void }) {
+function GoogleButton({ label, onPress, disabled, loading }: { label: string; onPress: () => void; disabled?: boolean; loading?: boolean }) {
   const scale = useRef(new Animated.Value(1)).current;
 
   const pop = () => {
+    if (disabled || loading) return;
     Animated.sequence([
       Animated.spring(scale, { toValue: 0.94, tension: 300, friction: 2, useNativeDriver: true }),
       Animated.spring(scale, { toValue: 1, tension: 200, friction: 3, useNativeDriver: true }),
@@ -572,10 +595,16 @@ function GoogleButton({ label, onPress }: { label: string; onPress: () => void }
   };
 
   return (
-    <TouchableOpacity onPress={pop} activeOpacity={1}>
-      <Animated.View style={[g_s.btn, { transform: [{ scale }] }]}>
-        <Ionicons name="logo-google" size={20} color={C.google} />
-        <Text style={g_s.text}>{label}</Text>
+    <TouchableOpacity onPress={pop} activeOpacity={1} disabled={disabled || loading}>
+      <Animated.View style={[g_s.btn, { transform: [{ scale }] }, (disabled || loading) && { opacity: 0.6 }]}>
+        {loading ? (
+          <ActivityIndicator color={C.google} size="small" />
+        ) : (
+          <>
+            <Ionicons name="logo-google" size={20} color={C.google} />
+            <Text style={g_s.text}>{label}</Text>
+          </>
+        )}
       </Animated.View>
     </TouchableOpacity>
   );

@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { Ionicons } from '@expo/vector-icons';
+import ViewShot from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 
 const COLORS = {
   primary: '#0474FC',
@@ -14,7 +16,7 @@ const COLORS = {
   risk: {
     low: '#10B981',
     moderate: '#F59E0B',
-    elevated: '#F97316',
+    hover: '#F97316',
     high: '#EF4444',
   },
 };
@@ -22,7 +24,6 @@ const COLORS = {
 interface ProfileTabContentProps {
   profile: any;
   qrValue: string;
-  onShareQR: () => void;
   onSaveQR: () => void;
   getRiskColor: (risk: string) => string;
 }
@@ -30,82 +31,116 @@ interface ProfileTabContentProps {
 export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
   profile,
   qrValue,
-  onShareQR,
   onSaveQR,
   getRiskColor,
 }) => {
-  return (
-    <View style={styles.identityCard}>
-      <View style={styles.profileHeader}>
-        <View style={styles.profileInfo}>
-          <View style={styles.profilePhoto}>
-            <Text style={styles.profilePhotoText}>
-              {profile?.name ? profile.name[0] : 'U'}
-            </Text>
-          </View>
-          <View>
-            <Text style={styles.profileName}>{profile?.name || 'Patient Name'}</Text>
-            <Text style={styles.profileAge}>
-              {profile?.age || '--'} years • {profile?.gender || 'Other'}
-            </Text>
-          </View>
-        </View>
-        <View
-          style={[
-            styles.riskBadge,
-            { backgroundColor: getRiskColor(profile?.risk_level) },
-          ]}
-        >
-          <Text style={styles.riskBadgeText}>{profile?.risk_level || 'Low'}</Text>
-        </View>
-      </View>
+  const viewShotRef = useRef<any>(null);
 
-      <View style={styles.qrSection}>
-        <Text style={styles.qrTitle}>Your Health ID</Text>
-        <View style={styles.qrBox}>
-          {profile?.health_id_qr ? (
-            <Image
-              source={{ uri: profile.health_id_qr }}
-              style={{ width: 120, height: 120 }}
-            />
-          ) : (
-            <QRCode
-              value={qrValue}
-              size={120}
-              color="#000000"
-              backgroundColor="#FFFFFF"
-            />
-          )}
+  const handleShare = async () => {
+    try {
+      if (viewShotRef.current) {
+        const uri = await viewShotRef.current.capture();
+        const isSharingAvailable = await Sharing.isAvailableAsync();
+        if (isSharingAvailable) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'image/png',
+            dialogTitle: 'Share my Swasthya Health ID',
+            UTI: 'public.png',
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to share card image:', error);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <ViewShot
+        ref={viewShotRef}
+        options={{ format: 'png', quality: 1.0 }}
+        style={styles.viewShotContainer}
+      >
+        <View style={styles.identityCard}>
+          <View style={styles.profileHeader}>
+            <View style={styles.profileInfo}>
+              <View style={styles.profilePhoto}>
+                <Text style={styles.profilePhotoText}>
+                  {profile?.name ? profile.name[0] : 'U'}
+                </Text>
+              </View>
+              <View>
+                <Text style={styles.profileName}>{profile?.name || 'Patient Name'}</Text>
+                <Text style={styles.profileAge}>
+                  {profile?.age || '--'} years • {profile?.gender || 'Other'}
+                </Text>
+              </View>
+            </View>
+            <View
+              style={[
+                styles.riskBadge,
+                { backgroundColor: getRiskColor(profile?.risk_level) },
+              ]}
+            >
+              <Text style={styles.riskBadgeText}>{profile?.risk_level || 'Low'}</Text>
+            </View>
+          </View>
+
+          <View style={styles.qrSection}>
+            <Text style={styles.qrTitle}>Your Health ID</Text>
+            <View style={styles.qrBox}>
+              {profile?.health_id_qr ? (
+                <Image
+                  source={{ uri: profile.health_id_qr }}
+                  style={{ width: 120, height: 120 }}
+                />
+              ) : (
+                <QRCode
+                  value={qrValue}
+                  size={120}
+                  color="#000000"
+                  backgroundColor="#FFFFFF"
+                />
+              )}
+            </View>
+            <Text style={styles.qrSubtitle}>Scan to access your health summary</Text>
+          </View>
         </View>
-        {/* Removed the raw Health ID text per user request */}
-        <Text style={styles.qrSubtitle}>Scan to access your health summary</Text>
-        <View style={styles.qrButtons}>
-          <TouchableOpacity style={styles.qrButton} onPress={onShareQR}>
-            <Ionicons name="share-outline" size={20} color={COLORS.primary} />
-            <Text style={styles.qrButtonText}>Share QR</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.qrButton} onPress={onSaveQR}>
-            <Ionicons name="download-outline" size={20} color={COLORS.primary} />
-            <Text style={styles.qrButtonText}>Save QR</Text>
-          </TouchableOpacity>
-        </View>
+      </ViewShot>
+
+      {/* Buttons rendered OUTSIDE the ViewShot capture area */}
+      <View style={styles.qrButtons}>
+        <TouchableOpacity style={styles.qrButton} onPress={handleShare}>
+          <Ionicons name="share-outline" size={20} color={COLORS.primary} />
+          <Text style={styles.qrButtonText}>Share QR</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.qrButton} onPress={onSaveQR}>
+          <Ionicons name="download-outline" size={20} color={COLORS.primary} />
+          <Text style={styles.qrButtonText}>Save QR</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  identityCard: {
-    backgroundColor: '#ECFDF5',
+  container: {
     marginHorizontal: 16,
     marginTop: 16,
+  },
+  viewShotContainer: {
     borderRadius: 20,
-    padding: 20,
+    overflow: 'hidden',
+    backgroundColor: '#ECFDF5',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 3,
+  },
+  identityCard: {
+    padding: 20,
+    backgroundColor: '#ECFDF5',
   },
   profileHeader: {
     flexDirection: 'row',
@@ -180,7 +215,8 @@ const styles = StyleSheet.create({
   qrButtons: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 8,
+    marginTop: 16,
+    justifyContent: 'center',
   },
   qrButton: {
     flexDirection: 'row',

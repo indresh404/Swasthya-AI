@@ -21,12 +21,14 @@ import {
   TouchableOpacity,
   View,
   ActivityIndicator,
-  Modal
+  Modal,
+  RefreshControl
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { backendService } from '@/services/backend.service';
 import { supabase } from '@/services/supabaseClient';
 import { useAuthStore } from '@/store/auth.store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Top Navigation Bar Component (inline)
 const TopNavBar = ({
@@ -303,31 +305,49 @@ const WatchSimulatorCard = ({ isAbnormal, setIsAbnormal }: { isAbnormal: boolean
 };
 
 // Family AI Summary Card
-const FamilySummaryCard = () => {
-  const members = [
-    { label: 'Adult Member 1', risk: 'Low', tag: 'Stable', color: '#10B981' },
-    { label: 'Adult Member 2', risk: 'Moderate', tag: 'Respiratory↑', color: '#F59E0B' },
-    { label: 'Child Member', risk: 'Low', tag: 'Healthy', color: '#10B981' },
-  ];
+const FamilySummaryCard = ({ familyData, familyMembers }: { familyData: any; familyMembers: any[] }) => {
+  if (!familyData) {
+    return (
+      <View style={styles.familyCard}>
+        <View style={styles.familyHeader}>
+          <Ionicons name="people-outline" size={20} color="#0474FC" />
+          <Text style={styles.familyTitle}>Family Health Summary</Text>
+        </View>
+        <Text style={styles.familyInsight}>
+          You are not currently in a family group. Set up your family in the Profile tab to enable family tracking and summaries.
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.familyCard}>
       <View style={styles.familyHeader}>
         <Ionicons name="people-outline" size={20} color="#0474FC" />
-        <Text style={styles.familyTitle}>Family AI Summary</Text>
-        <View style={styles.envFlag}>
-          <Ionicons name="warning-outline" size={12} color="#F59E0B" />
-          <Text style={styles.envFlagText}>Env. Risk</Text>
-        </View>
+        <Text style={styles.familyTitle}>{familyData.family_name || 'Family'} Summary</Text>
       </View>
-      <Text style={styles.familyInsight}>🤖 2 family members reported respiratory symptoms this week — possible environmental trigger detected.</Text>
-      {members.map((m, i) => (
-        <View key={i} style={styles.familyMemberRow}>
-          <View style={[styles.familyDot, { backgroundColor: m.color }]} />
-          <Text style={styles.familyMemberLabel}>{m.label}</Text>
-          <View style={{ flex: 1 }} />
-          <Text style={[styles.familyTag, { color: m.color }]}>{m.tag}</Text>
-        </View>
-      ))}
+      <Text style={styles.familyInsight}>
+        🤖 {familyData.health_summary || 'No family health summary available.'}
+      </Text>
+      {familyMembers.map((m, i) => {
+        const getRiskColor = (risk: string) => {
+          const r = risk?.toLowerCase();
+          if (r === 'high' || r === 'critical') return '#EF4444';
+          if (r === 'elevated' || r === 'moderate') return '#F59E0B';
+          return '#10B981';
+        };
+        const color = getRiskColor(m.risk);
+        return (
+          <View key={m.id || i} style={styles.familyMemberRow}>
+            <View style={[styles.familyDot, { backgroundColor: color }]} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.familyMemberLabel}>{m.name} ({m.role})</Text>
+              <Text style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>{m.healthSummary}</Text>
+            </View>
+            <Text style={[styles.familyTag, { color }]}>{m.risk}</Text>
+          </View>
+        );
+      })}
     </View>
   );
 };
@@ -504,16 +524,27 @@ export default function HomeScreen() {
   const [extractedData, setExtractedData] = useState<any>(null);
   const [extractionModalVisible, setExtractionModalVisible] = useState(false);
 
-  // Skeleton loading timeout: 2 seconds fixed duration
-  const SKELETON_DURATION = 2000; // 2 seconds
-  const MAX_SKELETON_TIME = 90000; // 4 minutes max timeout
-  const skeletonStartTime = React.useRef<number>(Date.now());
+  const hasShownIntro = useAuthStore((state) => state.hasShownIntro);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const [familyData, setFamilyData] = useState<any>(null);
+  const [familyMembers, setFamilyMembers] = useState<any[]>([]);
 
   useEffect(() => {
-    if (user?.id || patientId) {
-      fetchProfile();
+    const resolvedId = user?.id || patientId;
+    if (resolvedId) {
+      const loadAll = async () => {
+        setIsDataLoading(true);
+        await Promise.all([
+          fetchProfile(),
+          fetchFamilyData(resolvedId)
+        ]);
+        setIsDataLoading(false);
+      };
+      loadAll();
     } else {
-      setIsLoadingProfile(false);
+      setIsDataLoading(false);
     }
   }, [user, patientId]);
 
@@ -555,24 +586,82 @@ export default function HomeScreen() {
     }
   };
 
-  const handleIntroComplete = () => {
-    // Start skeleton loading after intro animation
-    skeletonStartTime.current = Date.now();
+  const fetchFamilyData = async (resolvedId: string) => {
+    try {
+      const { data: memberRecord } = await supabase
+        .from('family_members')
+        .select('family_id')
+        .eq('patient_id', resolvedId)
+        .maybeSingle();
 
-    // Hide skeleton after fixed 2 seconds duration
-    const skeletonTimeout = setTimeout(() => {
-      setIsDataLoaded(true);
-    }, SKELETON_DURATION);
+      if (memberRecord?.family_id) {
+        const { data: familyGroup } = await supabase
+          .from('family_groups')
+          .select('id, family_name, health_summary')
+          .eq('id', memberRecord.family_id)
+          .single();
 
-    // Safety: force show content after 4 minutes max
-    const maxTimeoutTimer = setTimeout(() => {
-      setIsDataLoaded(true);
-    }, MAX_SKELETON_TIME);
+        if (familyGroup) {
+          setFamilyData(familyGroup);
+        }
 
-    return () => {
-      clearTimeout(skeletonTimeout);
-      clearTimeout(maxTimeoutTimer);
-    };
+        const { data: membersList } = await supabase
+          .from('family_members')
+          .select(`
+            id,
+            role,
+            health_summary,
+            patient:patients (
+              id,
+              full_name,
+              gender,
+              risk_level
+            )
+          `)
+          .eq('family_id', memberRecord.family_id);
+
+        if (membersList) {
+          const formatted = membersList.map((m: any) => ({
+            id: m.id || `m_${m.patient?.id}`,
+            name: m.patient?.full_name || 'Family Member',
+            role: m.role || 'member',
+            risk: m.patient?.risk_level || 'Low',
+            gender: m.patient?.gender || 'Other',
+            healthSummary: m.health_summary || 'Individual health summary for this member.',
+          }));
+          setFamilyMembers(formatted);
+        }
+      } else {
+        setFamilyData(null);
+        setFamilyMembers([]);
+      }
+    } catch (err) {
+      console.error('Error fetching family data on home page:', err);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    const resolvedId = user?.id || patientId;
+    if (resolvedId) {
+      await Promise.all([
+        fetchProfile(),
+        fetchFamilyData(resolvedId)
+      ]);
+    }
+    setRefreshing(false);
+  };
+
+  const handleIntroComplete = async () => {
+    useAuthStore.setState({ hasShownIntro: true });
+    const resolvedId = user?.id || patientId;
+    if (resolvedId) {
+      try {
+        await AsyncStorage.setItem(`has_shown_intro_${resolvedId}`, 'true');
+      } catch (e) {
+        console.error('Failed to save intro state:', e);
+      }
+    }
   };
 
   // Get user name from profile
@@ -635,15 +724,8 @@ export default function HomeScreen() {
         activeScreen={currentRoute}
       />
 
-      <ScreenIntroGate
-        loaderText="Loading your health dashboard..."
-        loaderDuration={2500}
-        introSource={require('../../../assets/lottie_animations/heart_animation.json')}
-        introText="Tracking your heartbeat and getting everything ready"
-        backgroundColor="#F9FAFB"
-        onIntroComplete={handleIntroComplete}
-      >
-        {!isDataLoaded || isLoadingProfile ? (
+      {hasShownIntro ? (
+        isDataLoading ? (
           <SkeletonHomeScreen />
         ) : (
           <>
@@ -651,6 +733,9 @@ export default function HomeScreen() {
               style={styles.container}
               contentContainerStyle={styles.scrollContent}
               showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
             >
               <View style={styles.content}>
                 {/* Welcome Section */}
@@ -661,7 +746,6 @@ export default function HomeScreen() {
                     </View>
                     <Text style={styles.welcomeSubtitle}>CLINICAL HEALTH ID: #SW-9431</Text>
                   </View>
-                  {/* FIXED: Changed from "Rahul" to dynamic profile name */}
                   <Text style={styles.welcomeTitle}>Welcome back, {getFirstName()}</Text>
                   <Text style={styles.welcomeDescription}>Your individualized health intelligence hub is ready</Text>
                 </View>
@@ -676,7 +760,7 @@ export default function HomeScreen() {
                 <PredictionCard />
 
                 {/* Family AI Summary Card */}
-                <FamilySummaryCard />
+                <FamilySummaryCard familyData={familyData} familyMembers={familyMembers} />
 
                 {/* Smartwatch Simulator Area */}
                 <WatchSimulatorCard isAbnormal={isAbnormal} setIsAbnormal={setIsAbnormal} />
@@ -714,8 +798,19 @@ export default function HomeScreen() {
             {/* AI Chat Button - Floating */}
             <AIChatButton />
           </>
-        )}
-      </ScreenIntroGate>
+        )
+      ) : (
+        <ScreenIntroGate
+          loaderText="Loading your health dashboard..."
+          loaderDuration={2500}
+          introSource={require('../../../assets/lottie_animations/heart_animation.json')}
+          introText="Tracking your heartbeat and getting everything ready"
+          backgroundColor="#F9FAFB"
+          onIntroComplete={handleIntroComplete}
+        >
+          <SkeletonHomeScreen />
+        </ScreenIntroGate>
+      )}
     </SafeAreaView>
   );
 }

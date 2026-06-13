@@ -32,6 +32,7 @@ export interface FamilyRecord {
   created_by: string | null;
   created_at: string;
   join_code: string | null;
+  health_summary?: string | null;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -383,6 +384,7 @@ export const createFamilyForPatient = async (familyName: string, patient: Patien
     created_by: familyGroup.created_by,
     created_at: familyGroup.created_at,
     join_code: joinCode,
+    health_summary: familyGroup.health_summary,
   };
 
   return { family, joinCode };
@@ -419,6 +421,7 @@ export const joinFamilyForPatient = async (joinCode: string, patient: PatientRec
     created_by: familyGroup.created_by,
     created_at: familyGroup.created_at,
     join_code: normalizedCode,
+    health_summary: familyGroup.health_summary,
   };
 
   return family;
@@ -443,6 +446,7 @@ export const getFamilyByPatientId = async (patientId: string): Promise<FamilyRec
     created_by: fg.created_by,
     created_at: fg.created_at,
     join_code: fg.family_code,
+    health_summary: fg.health_summary,
   };
 };
 

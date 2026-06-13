@@ -15,8 +15,10 @@ import {
   View
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
 import { getCurrentPatient, normalizePhone } from '@/services/auth.service';
 import { useAuthStore } from '@/store/auth.store';
+import { CustomAlertModal } from '@/components/profile/CustomAlertModal';
 
 import { COLORS, STYLES } from '../../constants/Colors';
 import { supabase } from '@/services/supabaseClient';
@@ -35,6 +37,26 @@ export default function UserDetailsScreen() {
   const [height, setHeight] = useState('');
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Custom Alert Modal States
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertType, setAlertType] = useState<'success' | 'warning' | 'error' | 'info' | 'confirm'>('info');
+  const [onAlertConfirm, setOnAlertConfirm] = useState<(() => void) | null>(null);
+
+  const showAlert = (
+    title: string,
+    message: string,
+    type: 'success' | 'warning' | 'error' | 'info' | 'confirm' = 'info',
+    onConfirm: (() => void) | null = null
+  ) => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setAlertType(type);
+    setOnAlertConfirm(() => onConfirm);
+    setAlertVisible(true);
+  };
 
   // UI states
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
@@ -91,10 +113,10 @@ export default function UserDetailsScreen() {
       const { status } = await Location.requestForegroundPermissionsAsync();
 
       if (status !== 'granted') {
-        Alert.alert(
+        showAlert(
           'Permission Required',
           'Please enable location permissions to automatically detect your location.',
-          [{ text: 'OK' }]
+          'warning'
         );
         setIsLoadingLocation(false);
         return;
@@ -128,16 +150,17 @@ export default function UserDetailsScreen() {
             setErrors({ ...errors, location: '' });
           }
         } else {
-          Alert.alert('Info', 'Could not determine your city/region. Please enter manually.');
+          showAlert('Info', 'Could not determine your city/region. Please enter manually.', 'info');
         }
       } else {
-        Alert.alert('Info', 'Could not determine your location. Please enter manually.');
+        showAlert('Info', 'Could not determine your location. Please enter manually.', 'info');
       }
     } catch (error) {
       console.error('Location error:', error);
-      Alert.alert(
+      showAlert(
         'Location Error',
-        'Unable to get your location. Please check your GPS and try again, or enter manually.'
+        'Unable to get your location. Please check your GPS and try again, or enter manually.',
+        'error'
       );
     } finally {
       setIsLoadingLocation(false);
@@ -331,6 +354,19 @@ export default function UserDetailsScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleBack = () => {
+    showAlert(
+      'Exit Onboarding',
+      'Are you sure you want to go back? This will sign you out.',
+      'confirm',
+      () => {
+        const authStore = useAuthStore.getState();
+        authStore.logout();
+        router.replace('/(auth)/login');
+      }
+    );
+  };
+
   const handleContinue = async () => {
     // Mark all fields as touched
     setTouched({
@@ -352,13 +388,13 @@ export default function UserDetailsScreen() {
     const resolvedId = authStore.userId || patientId;
 
     if (!resolvedId) {
-      Alert.alert('Error', 'Session expired. Please log in again.');
+      showAlert('Error', 'Session expired. Please log in again.', 'error');
       return;
     }
 
     const userPhone = phoneNumber ? normalizePhone(phoneNumber) : null;
     if (!isGoogleUser && !userPhone) {
-      Alert.alert('Error', 'Invalid phone number');
+      showAlert('Error', 'Invalid phone number', 'error');
       return;
     }
 
@@ -437,15 +473,14 @@ export default function UserDetailsScreen() {
         gender: gender,
         weight: weight.trim(),
         height: height.trim(),
-        bloodType: 'O+',
+        bloodType: '',
         allergies: '',
-        bloodPressure: '120/80',
-        heartRate: '72',
-        oxygenLevel: '98',
-        surgeries: 'None',
-        chronicConditions: 'None',
-        vaccinations: 'Covid-19, Hep B',
-        familyGenetics: 'None',
+        bloodPressure: '',
+        heartRate: '',
+        oxygenLevel: '',
+        surgeries: '',
+        chronicConditions: '',
+        vaccinations: '',
       };
       await AsyncStorage.setItem(`medical_info_${resolvedId}`, JSON.stringify(mappedMed));
 
@@ -454,7 +489,7 @@ export default function UserDetailsScreen() {
       router.push('/(onboarding)/family-setup');
     } catch (error: any) {
       console.error('Save profile error:', error);
-      Alert.alert('Error', error.message || 'An unexpected error occurred while saving your profile');
+      showAlert('Error', error.message || 'An unexpected error occurred while saving your profile', 'error');
       setIsSaving(false);
     }
   };
@@ -491,6 +526,19 @@ export default function UserDetailsScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              onPress={handleBack}
+              style={styles.backButton}
+              activeOpacity={0.6}
+            >
+              <Ionicons name="arrow-back" size={22} color={COLORS.text?.primary || '#1F2937'} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Swasthya AI</Text>
+            <View style={styles.headerSpacer} />
+          </View>
+
           {/* Progress Bar */}
           <View style={styles.topBar}>
             <View style={styles.progressBarContainer}>
@@ -785,6 +833,15 @@ export default function UserDetailsScreen() {
 
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <CustomAlertModal
+        visible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        type={alertType}
+        onClose={() => setAlertVisible(false)}
+        onConfirm={onAlertConfirm || undefined}
+      />
     </SafeAreaView>
   );
 }
@@ -958,5 +1015,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 8,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  backButton: {
+    padding: 4,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter_700Bold',
+    color: COLORS.text?.primary || '#1F2937',
+  },
+  headerSpacer: {
+    width: 24,
   },
 });
