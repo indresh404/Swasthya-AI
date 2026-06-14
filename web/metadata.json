@@ -1,5 +1,0 @@
-{
-  "name": "Swasthya AI",
-  "description": "Doctor-facing dashboard for real-time patient health intelligence, risk monitoring, and clinical decision support.",
-  "requestFramePermissions": ["camera"]
-}
