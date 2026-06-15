@@ -138,7 +138,7 @@ export default function AIBotScreen() {
       <ScreenWrapper style={{ backgroundColor: COLORS.blue[900] }} scroll={false}>
           <View style={styles.container}>
             <View style={styles.header}>
-              <Text style={styles.title}>AI Health Assistant</Text>
+              <Text style={styles.title}>Swasthya AI</Text>
               <View style={styles.onlineDot} />
             </View>
             
