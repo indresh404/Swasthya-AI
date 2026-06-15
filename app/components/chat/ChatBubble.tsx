@@ -9,9 +9,15 @@ interface ChatBubbleProps {
   role: 'user' | 'assistant';
   content: string;
   timestamp?: Date;
+  saveStatus?: {
+    action: string;
+    symptom_name: string;
+    is_new: boolean;
+    message: string;
+  };
 }
 
-export const ChatBubble: React.FC<ChatBubbleProps> = ({ role, content, timestamp }) => {
+export const ChatBubble: React.FC<ChatBubbleProps> = ({ role, content, timestamp, saveStatus }) => {
   const isUser = role === 'user';
 
   return (
@@ -41,6 +47,18 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ role, content, timestamp
           <Text style={[styles.timestamp, isUser ? styles.userTimestamp : styles.assistantTimestamp]}>
             {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </Text>
+        )}
+        
+        {/* Save Status Badge - Only show for assistant messages that saved data */}
+        {!isUser && saveStatus && saveStatus.action !== 'none' && saveStatus.symptom_name && (
+          <View style={[
+            styles.saveBadge,
+            saveStatus.is_new ? styles.newSymptomBadge : styles.updatedSymptomBadge
+          ]}>
+            <Text style={styles.saveBadgeText}>
+              {saveStatus.is_new ? `🆕 New: ${saveStatus.symptom_name}` : `🔄 Updated: ${saveStatus.symptom_name}`}
+            </Text>
+          </View>
         )}
       </View>
     </View>
@@ -80,7 +98,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 4,
   },
   assistantBubble: {
-    backgroundColor: COLORS.white,
+    backgroundColor: '#1E293B',
     borderBottomLeftRadius: 4,
   },
   userText: {
@@ -89,7 +107,7 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.sizes.md,
   },
   assistantText: {
-    color: COLORS.text.primary,
+    color: COLORS.white,
     fontFamily: TYPOGRAPHY.fonts.regular,
     fontSize: TYPOGRAPHY.sizes.md,
   },
@@ -104,5 +122,23 @@ const styles = StyleSheet.create({
   assistantTimestamp: {
     color: COLORS.gray[400],
     textAlign: 'left',
+  },
+  saveBadge: {
+    marginTop: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 2,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  newSymptomBadge: {
+    backgroundColor: COLORS.green[500],
+  },
+  updatedSymptomBadge: {
+    backgroundColor: COLORS.blue[500],
+  },
+  saveBadgeText: {
+    color: COLORS.white,
+    fontFamily: TYPOGRAPHY.fonts.medium,
+    fontSize: TYPOGRAPHY.sizes.xs,
   },
 });

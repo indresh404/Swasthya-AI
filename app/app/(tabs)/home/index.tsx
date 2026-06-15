@@ -109,7 +109,7 @@ const AIChatButton = () => {
   const handlePress = () => {
     try {
       // Navigate to AI Chat screen
-      router.push('/(onboarding)/chat');
+      router.push('/chat');
     } catch (error) {
       Alert.alert('Error', 'Unable to open chat. Please try again.');
       console.error('Navigation error:', error);

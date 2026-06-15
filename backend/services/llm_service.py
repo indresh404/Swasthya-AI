@@ -43,32 +43,32 @@ class LLMService:
             print("[LLMService] GROQ_API_KEY not set. Using mock extraction fallback.")
             return cls._mock_message_extraction(user_message)
 
+        # Combined conversational response & clinical extraction prompt
         system_prompt = (
-            "You are Swasthya AI's Medical Conversation Agent.\n\n"
+            "You are Swasthya AI's Clinical Assistant.\n\n"
             "Responsibilities:\n"
-            "1. Speak ONLY in English.\n"
-            "2. Never diagnose diseases.\n"
-            "3. Provide symptom support and clarification.\n"
-            "4. Extract structured medical information from every message.\n\n"
-            "You MUST output a single valid JSON object with the following schema:\n"
+            "1. Answer user queries conversationally in English. Provide supportive, clear, and empathetic clinical chatbot responses.\n"
+            "2. Never diagnose specific diseases or prescribe treatments. Advise consultation with a doctor when appropriate.\n"
+            "3. Identify if the message contains clinical details (symptoms, medications, allergies, chronic diseases, family history, etc.).\n"
+            "4. Extract structured medical info if present.\n\n"
+            "You MUST output a single valid JSON object matching the following schema:\n"
             "{\n"
             "  \"conversational_response\": \"Your conversational reply to the patient, in English.\",\n"
-            "  \"medical_event\": true/false,\n"
-            "  \"extraction\": {\n"
-            "    \"symptom_name\": \"Standardized symptom name in English (e.g., headache, chest pain, nausea) or null if not medical.\",\n"
-            "    \"body_zone\": \"Affected body part (e.g., head, chest, abdomen) or null.\",\n"
-            "    \"duration_days\": integer representing duration of this symptom in days, or null.\n"
-            "    \"severity\": integer (1-10) representing pain/severity, or null.\n"
-            "    \"onset\": \"sudden\" or \"gradual\" or null,\n"
-            "    \"status\": \"active\" or \"resolved\" (resolved if user says symptom has stopped or is gone, otherwise active),\n"
-            "    \"medication_mentions\": [\"list of medications mentioned\"],\n"
-            "    \"confidence_score\": float confidence score from 0.0 to 1.0\n"
-            "  }\n"
+            "  \"is_medical\": true/false,\n"
+            "  \"symptoms\": [\"Standardized symptom name(s) in English (e.g. headache, fever, nausea, chest pain) or empty array\"],\n"
+            "  \"medications\": [\"list\", \"of\", \"meds\"],\n"
+            "  \"allergies\": [\"list\", \"of\", \"allergies\"],\n"
+            "  \"severity\": \"mild, moderate, severe, or null\",\n"
+            "  \"resolved\": true/false,\n"
+            "  \"duration_days\": integer representing duration in days or null\n"
             "}\n\n"
-            "Rules:\n"
-            "1. Ignore non-medical messages (e.g., 'hi', 'thanks') and set medical_event = false, extraction = null.\n"
-            "2. Do not diagnose; just describe symptoms reported.\n"
-            "3. Parse duration references (e.g., 'for 3 days' -> duration_days = 3, 'for 2 weeks' -> duration_days = 14).\n"
+            "CRITICAL RULES:\n"
+            "1. Set is_medical = true if the user mentions symptoms, medications, allergies, chronic diseases, or medical history.\n"
+            "2. If is_medical is false, set symptoms, medications, and allergies to empty arrays, severity and duration_days to null, and resolved to false.\n"
+            "3. Parse durations (e.g. '3 days' -> duration_days = 3; 'since yesterday' -> duration_days = 1; 'two weeks' -> duration_days = 14).\n"
+            "4. If symptoms are mentioned as resolved, or 'gone', 'fine', 'cured', set resolved to true.\n"
+            "5. Do not diagnose; just describe symptoms reported.\n"
+            "6. ALWAYS include all keys - never omit them.\n"
         )
 
         payload = {
@@ -88,6 +88,19 @@ class LLMService:
                     data = res.json()
                     content = data["choices"][0]["message"]["content"]
                     content_json = json.loads(content)
+                    
+                    # Fix properties fallback if omitted
+                    for key in ["symptoms", "medications", "allergies"]:
+                        if key not in content_json:
+                            content_json[key] = []
+                    if "is_medical" not in content_json:
+                        content_json["is_medical"] = False
+                    if "resolved" not in content_json:
+                        content_json["resolved"] = False
+                    if "severity" not in content_json:
+                        content_json["severity"] = None
+                    if "duration_days" not in content_json:
+                        content_json["duration_days"] = None
 
                     # If the user spoke Hindi originally, translate the English reply back to Hindi
                     if is_hindi:
@@ -99,7 +112,9 @@ class LLMService:
                                 print(f"[LLMService] Translated output: '{eng_reply}' -> '{hindi_reply}'")
                             except Exception as e:
                                 print(f"[LLMService] Sarvam output translation failed: {e}")
-
+                    
+                    # Debug print
+                    print(f"[LLMService] Final JSON response: {json.dumps(content_json, indent=2)}")
                     return content_json
                 else:
                     print(f"[LLMService] Groq API returned status {res.status_code}: {res.text}")
@@ -122,16 +137,16 @@ class LLMService:
             for e in chat_events
         ])
         symptoms_str = ", ".join([
-            f"{s['symptom_name']} (Severity: {s.get('current_severity') or 'N/A'}, Duration: {s.get('reported_duration_days') or 'N/A'} days)"
+            f"{s['symptom_name']} (Severity: {s.get('current_severity') or s.get('severity') or 'N/A'}, Duration: {s.get('reported_duration_days') or s.get('duration_days') or 'N/A'} days)"
             for s in active_symptoms
         ])
 
         system_prompt = (
             "You are a clinical summarization assistant.\n"
-            "Generate a concise clinical summary from the today's chat history and active symptoms log.\n"
+            "Generate a concise clinical summary from the recent chat history and active symptoms log.\n"
             "Include:\n"
             "- Active symptoms & durations\n"
-            "- New symptoms reported today\n"
+            "- New symptoms reported in this block\n"
             "- Resolved symptoms mentioned\n"
             "- Severity changes\n\n"
             "Constraints: Max 150 words. Write in a formal, clinical, objective third-person tone (e.g. 'Patient reports...')."
@@ -172,17 +187,21 @@ class LLMService:
         lower = msg.lower()
         is_hindi = any(char in msg for char in ["क", "ख", "ग", "म", "स", "ह"])
         
-        # Default fallback
         conversational = (
             "नमस्ते! मैंने आपके लक्षण नोट कर लिए हैं। कृपया अपनी सेहत का ध्यान रखें और कोई समस्या होने पर डॉक्टर से परामर्श करें।"
             if is_hindi else
-            "Hello! I have noted your symptom. Please take care, monitor your vitals, and consult a doctor if severe."
+            "Hello! I have noted your symptoms. Please take care, monitor your vitals, and consult a doctor if severe."
         )
         
         res_json = {
             "conversational_response": conversational,
-            "medical_event": False,
-            "extraction": None
+            "is_medical": False,
+            "symptoms": [],
+            "medications": [],
+            "allergies": [],
+            "severity": None,
+            "resolved": False,
+            "duration_days": None
         }
 
         # Check for headache / सिरदर्द
@@ -192,7 +211,9 @@ class LLMService:
                 if is_hindi else
                 "Thank you for reporting the headache. Headaches can sometimes be linked to screen usage, dehydration, or blood pressure changes."
             )
-            res_json["medical_event"] = True
+            res_json["is_medical"] = True
+            res_json["symptoms"] = ["headache"]
+            res_json["severity"] = "moderate"
             
             # Simple duration parser
             duration = 1
@@ -202,17 +223,7 @@ class LLMService:
                 duration = 2
             elif "14" in msg or "10" in msg:
                 duration = 14
-
-            res_json["extraction"] = {
-                "symptom_name": "headache",
-                "body_zone": "head",
-                "duration_days": duration,
-                "severity": 5,
-                "onset": "gradual",
-                "status": "active",
-                "medication_mentions": [],
-                "confidence_score": 0.95
-            }
+            res_json["duration_days"] = duration
         
         # Check for chest pain / छाती में दर्द
         elif "chest" in lower or "छाती" in lower or "घबराहट" in lower:
@@ -221,17 +232,10 @@ class LLMService:
                 if is_hindi else
                 "🚨 Chest pain or discomfort is a critical symptom. Please rest immediately and seek emergency medical assistance if it worsens."
             )
-            res_json["medical_event"] = True
-            res_json["extraction"] = {
-                "symptom_name": "chest pain",
-                "body_zone": "chest",
-                "duration_days": 1,
-                "severity": 8,  # Critical
-                "onset": "sudden",
-                "status": "active",
-                "medication_mentions": [],
-                "confidence_score": 0.98
-            }
+            res_json["is_medical"] = True
+            res_json["symptoms"] = ["chest pain"]
+            res_json["severity"] = "severe"
+            res_json["duration_days"] = 1
 
         # Check for symptom resolution
         elif "gone" in lower or "fine" in lower or "ठीक" in lower or "चला गया" in lower or "दूर" in lower:
@@ -240,17 +244,9 @@ class LLMService:
                 if is_hindi else
                 "It is great to hear that your symptoms have resolved! I am logging this in your health history tracker."
             )
-            res_json["medical_event"] = True
-            res_json["extraction"] = {
-                "symptom_name": "headache", # default resolved target
-                "body_zone": "head",
-                "duration_days": None,
-                "severity": None,
-                "onset": None,
-                "status": "resolved",
-                "medication_mentions": [],
-                "confidence_score": 0.90
-            }
+            res_json["is_medical"] = True
+            res_json["symptoms"] = ["headache"]
+            res_json["resolved"] = True
 
         return res_json
 

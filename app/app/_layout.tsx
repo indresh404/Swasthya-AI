@@ -179,6 +179,7 @@ export default function RootLayout() {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(onboarding)" />
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="chat/index" options={{ presentation: 'modal' }} />
         <Stack.Screen name="auth/callback" />
       </Stack>
       <StatusBar style="light" />

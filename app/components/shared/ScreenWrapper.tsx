@@ -2,7 +2,8 @@
 import { COLORS } from '@/theme';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, ViewStyle } from 'react-native';
+import { ScrollView, StyleSheet, ViewStyle } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface ScreenWrapperProps {
   children: React.ReactNode;

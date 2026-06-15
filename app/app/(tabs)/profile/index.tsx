@@ -21,6 +21,7 @@ import { SkeletonProfileScreen } from '@/components/ui/SkeletonLoader';
 import { signOut, getFamilyByPatientId, getFamilyMembers } from '@/services/auth.service';
 import { useAuthStore } from '@/store/auth.store';
 import { supabase } from '@/services/supabaseClient';
+import { BACKEND_URL, API_VERSION } from '@/config/api';
 
 // Import newly refactored profile components
 import {
@@ -158,38 +159,32 @@ export default function ProfileScreen() {
   const loadProfileAndData = async (resolvedId: string) => {
     setLoading(true);
     try {
-      // 1. Fetch user profile from Supabase
-      const { data, error } = await supabase
-        .from('patients')
-        .select('*')
-        .eq('id', resolvedId)
-        .single();
-
-      let currentProfile = data;
-      if (error) {
-        console.error("Supabase user profile fetch error:", error);
-        currentProfile = {
-          name: 'Patient Name',
-          age: 30,
-          gender: 'Other',
-          phone: '9999999999',
-          risk_level: 'Low',
-          profile_summary: 'Complete your check-in or upload records to generate AI Insights.',
-          chronic_diseases: [],
-          medications: [],
-          allergies: [],
-          state: 'Not set',
-          adherence_rate: 100,
-        };
-      } else {
-        currentProfile = {
-          ...data,
-          name: data.full_name,
-          phone: data.phone_number,
-        };
+      // 1. Fetch user profile from Backend API
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
+
+      const response = await fetch(`${BACKEND_URL}${API_VERSION}/profile/me`, { headers });
+      if (!response.ok) throw new Error(`Server returned ${response.status}`);
+      const profileDb = await response.json();
+
+      const currentProfile = {
+        ...profileDb,
+        name: profileDb.full_name || 'Patient Name',
+        phone: profileDb.phone_number || '',
+        risk_level: 'Low',
+        profile_summary: 'Complete your check-in or upload records to generate AI Insights.',
+        state: 'Not set',
+        adherence_rate: 100,
+      };
       setProfile(currentProfile);
-      setHealthId(currentProfile.health_id || currentProfile.id || resolvedId);
+      setHealthId(currentProfile.id || resolvedId);
 
       // 2. Fetch Family Group & Members
       const family = await getFamilyByPatientId(resolvedId);
@@ -210,65 +205,23 @@ export default function ProfileScreen() {
         }
       }
 
-      // 3. Load Medical Information from Supabase
-      const { data: medicalDbData, error: medicalError } = await supabase
-        .from('medical_information')
-        .select('*')
-        .eq('patient_id', resolvedId)
-        .maybeSingle();
-
-      if (medicalDbData) {
-        const mappedMed = {
-          age: currentProfile.age?.toString() || '',
-          gender: currentProfile.gender || '',
-          weight: medicalDbData.weight || '',
-          height: medicalDbData.height || '',
-          bloodType: medicalDbData.blood_type || '',
-          allergies: medicalDbData.allergies || '',
-          bloodPressure: medicalDbData.blood_pressure || '',
-          heartRate: medicalDbData.heart_rate || '',
-          oxygenLevel: medicalDbData.oxygen_level || '',
-          surgeries: medicalDbData.surgeries || '',
-          chronicConditions: medicalDbData.chronic_conditions || '',
-          vaccinations: medicalDbData.vaccinations || '',
-        };
-        setMedicalInfo(mappedMed);
-        await AsyncStorage.setItem(`medical_info_${resolvedId}`, JSON.stringify(mappedMed));
-      } else {
-        const initialMed = {
-          age: currentProfile.age?.toString() || '',
-          gender: currentProfile.gender || '',
-          weight: '',
-          height: '',
-          bloodType: '',
-          allergies: currentProfile.allergies?.join(', ') || '',
-          bloodPressure: '',
-          heartRate: '',
-          oxygenLevel: '',
-          surgeries: '',
-          chronicConditions: '',
-          vaccinations: '',
-        };
-        setMedicalInfo(initialMed);
-        await AsyncStorage.setItem(`medical_info_${resolvedId}`, JSON.stringify(initialMed));
-        
-        // Save initial medical info to DB
-        await supabase
-          .from('medical_information')
-          .insert({
-            patient_id: resolvedId,
-            weight: initialMed.weight,
-            height: initialMed.height,
-            blood_type: initialMed.bloodType,
-            allergies: initialMed.allergies,
-            blood_pressure: initialMed.bloodPressure,
-            heart_rate: initialMed.heartRate,
-            oxygen_level: initialMed.oxygenLevel,
-            surgeries: initialMed.surgeries,
-            chronic_conditions: initialMed.chronicConditions,
-            vaccinations: initialMed.vaccinations,
-          });
-      }
+      // 3. Load Medical Information from the profile response
+      const mappedMed = {
+        age: profileDb.age?.toString() || '',
+        gender: profileDb.gender || '',
+        weight: profileDb.weight || '',
+        height: profileDb.height || '',
+        bloodType: profileDb.blood_group || '',
+        allergies: profileDb.allergies || '',
+        bloodPressure: '',
+        heartRate: '',
+        oxygenLevel: '',
+        surgeries: '',
+        chronicConditions: profileDb.chronic_diseases || '',
+        vaccinations: '',
+      };
+      setMedicalInfo(mappedMed);
+      await AsyncStorage.setItem(`medical_info_${resolvedId}`, JSON.stringify(mappedMed));
 
       // 4. Load Emergency Contacts from AsyncStorage
       const storedContacts = await AsyncStorage.getItem(`emergency_contacts_${resolvedId}`);
@@ -321,58 +274,56 @@ export default function ProfileScreen() {
     if (!resolvedId) return;
 
     try {
-      // Save locally
       setMedicalInfo(newInfo);
       await AsyncStorage.setItem(`medical_info_${resolvedId}`, JSON.stringify(newInfo));
 
-      // 1. Sync age & gender with patients table
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const payload = {
+        full_name: profile?.name || '',
+        age: parseInt(newInfo.age) || null,
+        gender: newInfo.gender || '',
+        blood_group: newInfo.bloodType || '',
+        height: newInfo.height || '',
+        weight: newInfo.weight || '',
+        allergies: newInfo.allergies || '',
+        current_medication: profile?.current_medication || '',
+        chronic_diseases: newInfo.chronicConditions || '',
+        family_history: profile?.family_history || '',
+        smoking: profile?.smoking || '',
+        alcohol: profile?.alcohol || '',
+        emergency_contact: profile?.emergency_contact || '',
+      };
+
+      const response = await fetch(`${BACKEND_URL}${API_VERSION}/profile`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+
       const ageNum = parseInt(newInfo.age);
-      const { error: patientErr } = await supabase
-        .from('patients')
-        .update({
-          age: isNaN(ageNum) ? null : ageNum,
-          gender: newInfo.gender,
-        })
-        .eq('id', resolvedId);
-
-      if (patientErr) {
-        console.warn('Supabase patient profile sync error:', patientErr);
-      }
-
-      // 2. Save complete medical details to medical_information table
-      const { error: medErr } = await supabase
-        .from('medical_information')
-        .upsert({
-          patient_id: resolvedId,
-          weight: newInfo.weight,
-          height: newInfo.height,
-          blood_type: newInfo.bloodType,
-          allergies: newInfo.allergies,
-          blood_pressure: newInfo.bloodPressure,
-          heart_rate: newInfo.heartRate,
-          oxygen_level: newInfo.oxygenLevel,
-          surgeries: newInfo.surgeries,
-          chronic_conditions: newInfo.chronicConditions,
-          vaccinations: newInfo.vaccinations,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'patient_id' });
-
-      if (medErr) {
-        console.error('Supabase medical info save error:', medErr);
-        throw medErr;
-      }
-
-      // Update local profile state
       setProfile((prev: any) => ({
         ...prev,
         age: isNaN(ageNum) ? prev?.age : ageNum,
         gender: newInfo.gender,
       }));
 
-      showCustomAlert('Success', 'Medical information saved successfully', 'success');
+      showCustomAlert('Saved', 'Your medical information has been updated.', 'success');
     } catch (err) {
-      console.error('Failed to save medical info:', err);
-      showCustomAlert('Saved Locally', 'Information saved offline successfully', 'warning');
+      console.error('Failed to save medical info to server:', err);
+      showCustomAlert('Error', 'Failed to save medical info to server.', 'error');
     }
   };
 

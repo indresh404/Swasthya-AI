@@ -30,10 +30,10 @@ app.add_middleware(
 async def health_check():
     return {"status": "ok"}
 
-# Mount MVP Routers
-app.include_router(auth.router)
-app.include_router(profiles.router)
-app.include_router(chat.router)
+# Mount MVP Routers under /api/v1 prefix
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(profiles.router, prefix="/api/v1")
+app.include_router(chat.router, prefix="/api/v1")
 
 @app.get("/")
 async def root():

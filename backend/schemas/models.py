@@ -19,3 +19,19 @@ class UpdateMedicalRequest(BaseModel):
     chronic_conditions: Optional[str] = ""
     vaccinations: Optional[str] = ""
     family_genetics: Optional[str] = ""
+
+class PatientProfileUpsertRequest(BaseModel):
+    full_name: Optional[str] = ""
+    age: Optional[int] = None
+    gender: Optional[str] = ""
+    blood_group: Optional[str] = ""
+    height: Optional[str] = ""
+    weight: Optional[str] = ""
+    allergies: Optional[str] = ""
+    current_medication: Optional[str] = ""
+    chronic_diseases: Optional[str] = ""
+    family_history: Optional[str] = ""
+    smoking: Optional[str] = ""
+    alcohol: Optional[str] = ""
+    emergency_contact: Optional[str] = ""
+

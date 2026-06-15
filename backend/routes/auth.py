@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from services.auth_middleware import get_current_user
 
-router = APIRouter(prefix="/api/auth", tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.get("/verify-token")
 async def verify_token(current_user = Depends(get_current_user)):

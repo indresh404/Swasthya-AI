@@ -1,3 +1,4 @@
+// app/config/api.ts
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
@@ -8,7 +9,11 @@ import Constants from 'expo-constants';
  */
 const getDevBackendUrl = () => {
   const envUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
-  if (envUrl) return envUrl;
+  // If envUrl is set and we are on web, or if it's a non-localhost address (e.g. production), use it directly.
+  // Otherwise, on native platforms (iOS/Android), if it's localhost, we bypass it so we can dynamically detect the host computer IP.
+  if (envUrl && (Platform.OS === 'web' || (!envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')))) {
+    return envUrl;
+  }
 
   // Dynamically detect local dev machine IP from Expo bundler
   const hostUri = Constants.expoConfig?.hostUri || (Constants as any).manifest?.debuggerHost;
@@ -27,7 +32,12 @@ const getDevBackendUrl = () => {
 
 export const BACKEND_URL = getDevBackendUrl();
 
+// Add API_VERSION constant
+export const API_VERSION = '/api/v1';  // ← ADD THIS
+
 export const API_ENDPOINTS = {
+    BASE_URL: `${BACKEND_URL}${API_VERSION}`,  // ← ADD THIS
+    
     AUTH: {
         LOGIN: '/auth/login',
         VERIFY: '/auth/verify',
