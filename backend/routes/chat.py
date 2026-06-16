@@ -1,105 +1,155 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from datetime import datetime
-from services.supabase_service import supabase
-from services.llm_service import LLMService
-from services.medical_pipeline import MedicalPipeline
+from schemas.models import ChatMessageInput, ChatResponse, SessionSummaryInput, SessionSummary, SymptomExtraction, CheckinQuestionsInput, CheckinQuestionsResponse
+from services.groq_client import call_groq
+from services.supabase_service import SupabaseService
+from prompts.chat import CHAT_SYSTEM_PROMPT, SYMPTOM_EXTRACTION_PROMPT, SESSION_SUMMARIZATION_PROMPT, CHECKIN_QUESTIONS_PROMPT
 import json
+import asyncio
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
-class ChatMessageRequest(BaseModel):
-    patient_id: str
-    session_id: str
-    message: str
-    patient_context: dict = None
-
-class EndSessionRequest(BaseModel):
-    patient_id: str
-    session_id: str = None
-
-@router.post("/message")
-async def process_chat_message(req: ChatMessageRequest):
+@router.post("/message", response_model=ChatResponse)
+async def chat_message(data: ChatMessageInput):
     """
-    Main endpoint for chatbot interaction. Processes user messages, executes the combined
-    medical pipeline, and returns the bot reply, extraction details, and database persistence status.
+    POST /chat/message - Handles patient messages with demo mode support
     """
+    print(f"📨 Received message from {data.patient_id}: {data.message}")
+
+    # Persistence attempt (User Message)
     try:
-        # Run consolidated message processing pipeline
-        pipeline_res = await MedicalPipeline.process_message_pipeline(
-            patient_id=req.patient_id,
-            session_id=req.session_id,
-            message=req.message
+        SupabaseService.save_message(data.patient_id, data.session_id, "user", data.message)
+    except Exception as e:
+        print(f"⚠️ Persistence skipped (User): {e}")
+
+    # Build context
+    context_str = f"Rolling Summary: {data.patient_context.rolling_summary}\nProfile: {data.patient_context.profile_summary}"
+
+    # Call AI for reply and extraction
+    try:
+        # 1. AI Reply (Conversational, NOT JSON)
+        bot_reply = await call_groq(
+            CHAT_SYSTEM_PROMPT,
+            f"Context: {context_str}\nPatient: {data.message}\n\nRespond helpfully as a health assistant.",
+            json_mode=False
         )
-        
-        return {
-            "bot_reply": pipeline_res["bot_reply"],
-            "extracted_symptom": pipeline_res["extracted_data"],
-            "medical_event": pipeline_res["is_medical"],
-            "save_status": pipeline_res["save_status"]
-        }
-    except Exception as e:
-        print(f"[chat/message] Error running clinical pipeline: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to process chat message: {e}")
 
-@router.post("/end-session")
-async def end_chat_session(req: EndSessionRequest):
+        # Check if Groq returned an internal error message
+        if bot_reply.startswith('{"error":'):
+            error_data = json.loads(bot_reply)
+            print(f"❌ Groq internal error found in reply: {error_data}")
+            bot_reply = "I understand. Could you tell me more about your symptoms?"
+
+        # 2. Symptom Extraction (JSON Mode)
+        try:
+            extraction_json = await call_groq(
+                SYMPTOM_EXTRACTION_PROMPT,
+                f"Extract symptoms from: {data.message}",
+                json_mode=True
+            )
+            extraction_data = json.loads(extraction_json)
+            if "error" in extraction_data:
+                 raise ValueError(extraction_data["error"])
+            extraction = SymptomExtraction(**extraction_data)
+        except Exception as e:
+            print(f"⚠️ Symptom extraction skipped/failed: {e}")
+            extraction = SymptomExtraction(has_symptom=False)
+
+    except Exception as e:
+        print(f"❌ AI Core Error: {e}")
+        bot_reply = "I understand you're sharing health information. Could you tell me more about your symptoms?"
+        extraction = SymptomExtraction(has_symptom=False)
+
+    # Persistence attempt (Bot Reply)
+    try:
+        SupabaseService.save_message(data.patient_id, data.session_id, "assistant", bot_reply)
+    except Exception as e:
+        print(f"⚠️ Persistence skipped (Assistant): {e}")
+
+    clarification_needed = False
+    save_ready = False
+    confirmation_required = False
+
+    if extraction:
+        # RULE 7 — SYMPTOM CONFIDENCE THRESHOLD
+        if extraction.confidence < 70:
+            clarification_needed = True
+        elif extraction.severity is not None and extraction.severity >= 7:
+            confirmation_required = True
+        elif extraction.confidence >= 70:
+            save_ready = True
+            # Persist Symptom if ready
+            try:
+                SupabaseService.save_symptom(data.patient_id, data.session_id, extraction.model_dump())
+            except Exception as e:
+                print(f"⚠️ Symptom persistence skipped: {e}")
+
+    return ChatResponse(
+        bot_reply=bot_reply,
+        extracted_symptom=extraction,
+        clarification_needed=clarification_needed,
+        save_ready=save_ready,
+        confirmation_required=confirmation_required,
+        session_updated=True
+    )
+
+@router.post("/end-session", response_model=SessionSummary)
+async def end_session(data: SessionSummaryInput):
     """
-    On-demand summary endpoint. Generates a clinical summary for the current session and stores it.
+    POST /chat/end-session
+    Summarizes the session and updates rolling context.
+    """
+    log_str = "\n".join([f"{m['role']}: {m['content']}" for m in data.full_conversation_log])
+    try:
+        summary_json = await call_groq(SESSION_SUMMARIZATION_PROMPT, f"History: {log_str}\nExisting Rolling: {data.existing_rolling_summary}")
+        summary_data = json.loads(summary_json)
+        
+        # Check if Groq returned an error JSON
+        if "error" in summary_data:
+            raise ValueError(summary_data["error"])
+            
+        return SessionSummary(**summary_data)
+    except Exception as e:
+        print(f"Summarization Fallback Triggered: {e}")
+        # Return a sensible fallback summary so the UI doesn't crash
+        return SessionSummary(
+            daily_summary="Session completed. (AI Summary unavailable)",
+            rolling_summary=data.existing_rolling_summary or "Continuing health tracking.",
+            symptoms_today=[],
+            key_risks="unknown:low",
+            urgency="Routine"
+        )
+
+@router.post("/extract-symptom", response_model=SymptomExtraction)
+async def extract_symptom(message: str, patient_id: str):
+    """
+    Internal/Direct extraction route.
     """
     try:
-        session_id = req.session_id or "default-session"
-        summary_text = await MedicalPipeline.generate_and_store_summary(req.patient_id, session_id)
-        return {
-            "status": "success",
-            "summary": summary_text
-        }
+        extraction_json = await call_groq(SYMPTOM_EXTRACTION_PROMPT, f"Extract from: {message}")
+        extraction_data = json.loads(extraction_json)
+        if "error" in extraction_data:
+            raise ValueError(extraction_data["error"])
+        return SymptomExtraction(**extraction_data)
     except Exception as e:
-        print(f"[end-session] Failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to generate summary: {e}")
+        print(f"Extraction Fallback Triggered: {e}")
+        return SymptomExtraction(has_symptom=False, confidence=0, clarification_needed=False)
 
-@router.post("/cron/daily-summaries")
-async def cron_generate_daily_summaries():
+@router.post("/checkin-questions", response_model=CheckinQuestionsResponse)
+async def checkin_questions(data: CheckinQuestionsInput):
     """
-    Nightly cron endpoint to generate daily summaries for all active patients today.
+    POST /chat/checkin-questions
+    Generates tailored follow-up questions for the next session.
     """
     try:
-        today = datetime.utcnow().date().isoformat()
-        recent_chats = supabase.table("chat_events").select("patient_id").gte("created_at", today).execute()
-        patient_ids = list(set([c["patient_id"] for c in recent_chats.data]))
-        
-        processed_count = 0
-        for patient_id in patient_ids:
-            # Check if summary already exists for today
-            existing_summary = supabase.table("daily_summaries").select("id").eq("user_id", patient_id).eq("summary_date", today).execute()
-            if existing_summary.data:
-                continue
-                
-            active_symptoms = supabase.table("symptom_tracker").select("*").eq("user_id", patient_id).eq("status", "active").execute()
-            chat_events_res = supabase.table("chat_events").select("*").eq("patient_id", patient_id).gte("created_at", today).execute()
-            
-            summary_text = await LLMService.generate_clinical_summary(chat_events_res.data, active_symptoms.data)
-            
-            symptoms_list = [s["symptom_name"] for s in active_symptoms.data]
-            max_severity = max([s["current_severity"] for s in active_symptoms.data if s.get("current_severity") is not None]) if active_symptoms.data else None
-            requires_followup = any([s.get("current_severity", 0) >= 7 for s in active_symptoms.data])
-            
-            summary_payload = {
-                "user_id": patient_id,
-                "summary_date": today,
-                "summary": summary_text,
-                "symptoms": symptoms_list,
-                "severity_max": max_severity,
-                "requires_followup": requires_followup
-            }
-            supabase.table("daily_summaries").insert(summary_payload).execute()
-            processed_count += 1
-            
-        return {
-            "status": "success",
-            "message": f"Processed summaries for {processed_count} active users",
-            "active_users_today": patient_ids
-        }
+        questions_json = await call_groq(CHECKIN_QUESTIONS_PROMPT, f"Data: {data.model_dump_json()}")
+        questions_dict = json.loads(questions_json)
+        if "error" in questions_dict:
+            raise ValueError(questions_dict["error"])
+        return CheckinQuestionsResponse(**questions_dict)
     except Exception as e:
-        print(f"[cron] Failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"CheckinQuestions Fallback Triggered: {e}")
+        # Fallback questions
+        return CheckinQuestionsResponse(questions=[
+            {"text": "How did you sleep last night?", "clinical_reason": "General recovery monitoring", "expected_data_type": "free_text", "pending_question_id": None},
+            {"text": "How is your energy level today?", "clinical_reason": "General wellness check", "expected_data_type": "severity_score", "pending_question_id": None}
+        ])

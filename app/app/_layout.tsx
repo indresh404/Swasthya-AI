@@ -1,14 +1,5 @@
 // app/_layout.tsx
 import 'react-native-url-polyfill/auto';
-import { LogBox } from 'react-native';
-
-// Suppress noisy React Native deprecation warnings in development
-LogBox.ignoreLogs([
-  'shadow* style props are deprecated',
-  'textShadow* style props are deprecated',
-  'Image: style.resizeMode is deprecated',
-]);
-
 import { Delius_400Regular } from '@expo-google-fonts/delius';
 import {
   Poppins_300Light,
@@ -78,13 +69,13 @@ export default function RootLayout() {
 
               if (!dbPatient) {
                 const fullName = sessionData.user.user_metadata?.full_name || sessionData.user.user_metadata?.name || 'User';
-                const { error: insertError } = await supabase.from('patients').upsert({
+                const { error: insertError } = await supabase.from('patients').insert({
                   id: sessionData.user.id,
                   full_name: fullName,
                   email: sessionData.user.email,
                   phone_number: generateDummyPhoneFromId(sessionData.user.id),
                   created_at: new Date().toISOString(),
-                }, { onConflict: 'id' });
+                });
                 if (!insertError) {
                   dbPatient = await getPatientById(sessionData.user.id);
                 }
@@ -179,8 +170,6 @@ export default function RootLayout() {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(onboarding)" />
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="chat/index" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="auth/callback" />
       </Stack>
       <StatusBar style="light" />
     </>

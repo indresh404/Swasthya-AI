@@ -9,9 +9,10 @@ export default function OnboardingLayout() {
         contentStyle: { backgroundColor: '#F9FAFB' },
       }}
     >
-      <Stack.Screen name="welcome" />
-      <Stack.Screen name="medical-profile" />
-      <Stack.Screen name="summary" />
+      <Stack.Screen name="chat" />
+      <Stack.Screen name="confirm" />
+      <Stack.Screen name="family-setup" />
+      <Stack.Screen name="user-details" />
     </Stack>
   );
 }

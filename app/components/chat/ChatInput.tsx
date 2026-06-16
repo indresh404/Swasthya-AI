@@ -1,114 +1,120 @@
 // components/chat/ChatInput.tsx
-import React from 'react';
-import { StyleSheet, TextInput, View, TouchableOpacity, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, TYPOGRAPHY } from '@/theme';
+import { COLORS, SPACING, TYPOGRAPHY } from "@/theme";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useState } from "react";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+} from "react-native";
 
 interface ChatInputProps {
   value: string;
   onChangeText: (text: string) => void;
   onSend: () => void;
-  placeholder?: string;
   disabled?: boolean;
-  isLoading?: boolean;
+  placeholder?: string;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
   value,
   onChangeText,
   onSend,
-  placeholder = "Message Swasthya AI...",
   disabled = false,
-  isLoading = false,
+  placeholder = "Type your answer...",
 }) => {
-  const handleVoicePress = () => {
-    Alert.alert(
-      "Voice Input",
-      "Voice dictation and speech-to-text integration is currently a simulation stub in this version."
-    );
+  const handleSend = () => {
+    if (value.trim() && !disabled) {
+      onSend();
+    }
   };
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity 
-        style={styles.voiceButton} 
-        onPress={handleVoicePress}
-        disabled={disabled}
-        activeOpacity={0.7}
-      >
-        <Ionicons name="mic-outline" size={22} color="#9CA3AF" />
-      </TouchableOpacity>
-
-      <TextInput
-        style={styles.input}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor="#6B7280"
-        multiline={true}
-        maxHeight={100}
-        disabled={disabled}
-      />
-
-      <TouchableOpacity
-        style={[
-          styles.sendButton,
-          (!value.trim() || disabled) && styles.sendButtonDisabled
-        ]}
-        onPress={onSend}
-        disabled={!value.trim() || disabled}
-        activeOpacity={0.7}
-      >
-        <Ionicons 
-          name="arrow-up" 
-          size={20} 
-          color={value.trim() && !disabled ? COLORS.white : "#4B5563"} 
-        />
-      </TouchableOpacity>
-    </View>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      style={styles.keyboardAvoidingView}
+    >
+      <View style={styles.container}>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            value={value}
+            onChangeText={onChangeText}
+            placeholder={placeholder}
+            placeholderTextColor={COLORS.gray[400]}
+            multiline
+            editable={!disabled}
+          />
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              (!value.trim() || disabled) && styles.sendButtonDisabled,
+            ]}
+            onPress={handleSend}
+            disabled={!value.trim() || disabled}
+          >
+            <Ionicons
+              name="send"
+              size={20}
+              color={
+                value.trim() && !disabled ? COLORS.white : COLORS.gray[400]
+              }
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
+  keyboardAvoidingView: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
-    backgroundColor: '#0F172A',
+    paddingBottom: Platform.OS === "ios" ? SPACING.sm : SPACING.md,
+    backgroundColor: COLORS.primary,
     borderTopWidth: 1,
-    borderTopColor: '#1E293B',
-    gap: SPACING.sm,
+    borderTopColor: COLORS.primaryDark,
   },
-  voiceButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#1E293B',
-    alignItems: 'center',
-    justifyContent: 'center',
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    backgroundColor: COLORS.white,
+    borderRadius: 24,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
   },
   input: {
     flex: 1,
-    backgroundColor: '#1E293B',
-    color: COLORS.white,
     fontFamily: TYPOGRAPHY.fonts.regular,
     fontSize: TYPOGRAPHY.sizes.md,
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: '#334155',
+    color: COLORS.text.primary,
+    maxHeight: 100,
+    paddingTop: SPACING.sm,
+    paddingBottom: Platform.OS === "android" ? SPACING.xs : 0,
   },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#0474FC',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: SPACING.sm,
+    marginBottom: Platform.OS === "android" ? 2 : 0,
   },
   sendButtonDisabled: {
-    backgroundColor: '#1E293B',
+    backgroundColor: COLORS.gray[200],
   },
 });

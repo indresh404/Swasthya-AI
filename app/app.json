@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "swasthyaai",
+    "scheme": "app",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
@@ -23,7 +23,7 @@
       "googleServicesFile": "./google-services.json"
     },
     "web": {
-      "output": "single",
+      "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [

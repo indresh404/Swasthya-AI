@@ -1,43 +1,17 @@
 // app/config/api.ts
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
 
 /**
  * BACKEND_URL Configuration
  * - Loaded from EXPO_PUBLIC_BACKEND_URL if set.
- * - Otherwise dynamically detects the local development machine's IP address.
+ * - Otherwise falls back to localhost or 10.0.2.2 depending on platform.
  */
-const getDevBackendUrl = () => {
-  const envUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
-  // If envUrl is set and we are on web, or if it's a non-localhost address (e.g. production), use it directly.
-  // Otherwise, on native platforms (iOS/Android), if it's localhost, we bypass it so we can dynamically detect the host computer IP.
-  if (envUrl && (Platform.OS === 'web' || (!envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')))) {
-    return envUrl;
-  }
+const EMULATOR_IP = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+const ENV_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
-  // Dynamically detect local dev machine IP from Expo bundler
-  const hostUri = Constants.expoConfig?.hostUri || (Constants as any).manifest?.debuggerHost;
-  if (hostUri) {
-    const ip = hostUri.split(':')[0];
-    if (ip) {
-      console.log('[API] Detected local development host IP:', ip);
-      return `http://${ip}:8000`;
-    }
-  }
-
-  // Fallbacks if debugger host is not available
-  const defaultIp = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
-  return `http://${defaultIp}:8000`;
-};
-
-export const BACKEND_URL = getDevBackendUrl();
-
-// Add API_VERSION constant
-export const API_VERSION = '/api/v1';  // ← ADD THIS
+export const BACKEND_URL = ENV_BACKEND_URL || `http://${EMULATOR_IP}:8000`;
 
 export const API_ENDPOINTS = {
-    BASE_URL: `${BACKEND_URL}${API_VERSION}`,  // ← ADD THIS
-    
     AUTH: {
         LOGIN: '/auth/login',
         VERIFY: '/auth/verify',

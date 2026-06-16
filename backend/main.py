@@ -1,39 +1,71 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from routes import auth, profiles, chat
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
+from routes import chat, risk, agents, safety, schemes, auth, family, meds, profiles, checkins, extract
+from rag.embedder import build_index
 import os
+import logging
+from fastapi.middleware.cors import CORSMiddleware
+
+# CI Test Change: Trigger Backend CI
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Startup lifespan event:
+    1. Run RAG indexing (builds FAISS index if not on disk)
+    2. Log startup complete
+    """
+    logger.info("Starting Swasthya AI Backend...")
+    try:
+        # Run indexing
+        build_index()
+        logger.info("RAG Index check/initialization complete.")
+    except Exception as e:
+        logger.error(f"Failed to initialize RAG index: {e}")
+        
+    yield
+    logger.info("Shutting down Swasthya AI Backend...")
 
 app = FastAPI(
     title="Swasthya AI Backend",
-    description="Python FastAPI backend for authentication and profile management.",
-    version="1.0.0"
+    description="Python FastAPI backend for AI-driven health insights, clinical validation, and risk assessment.",
+    version="1.0.0",
+    lifespan=lifespan
 )
 
-# CORS Configuration
-# Allow local Expo development, React Vite development, and production Render sites
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    print(f"Validation Error: {exc.errors()}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": exc.body},
+    )
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8081",
-        "http://localhost:3000",
-        "http://localhost:19006",
-        "http://localhost:8000",
-    ],
-    allow_origin_regex="https://.*\\.onrender\\.com",
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Health Check Route
-@app.get("/health")
-async def health_check():
-    return {"status": "ok"}
-
-# Mount MVP Routers under /api/v1 prefix
-app.include_router(auth.router, prefix="/api/v1")
-app.include_router(profiles.router, prefix="/api/v1")
-app.include_router(chat.router, prefix="/api/v1")
+# Mounting Routers
+app.include_router(chat.router)
+app.include_router(risk.router)
+app.include_router(agents.router)
+app.include_router(safety.router)
+app.include_router(schemes.router)
+app.include_router(auth.router)
+app.include_router(family.router)
+app.include_router(meds.router)
+app.include_router(profiles.router)
+app.include_router(checkins.router)
+app.include_router(extract.router, prefix="/extract", tags=["Extraction"])
 
 @app.get("/")
 async def root():
@@ -46,5 +78,4 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

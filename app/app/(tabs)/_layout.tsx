@@ -1,8 +1,8 @@
 // app/(tabs)/_layout.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { router, Slot, useSegments } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { Animated, StyleSheet, TouchableOpacity, View, Easing, Keyboard, Platform } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, StyleSheet, TouchableOpacity, View, Easing } from 'react-native';
 
 const FAB_SIZE = 62;
 const TAB_CONFIG = [
@@ -17,23 +17,6 @@ const PRIMARY_COLOR = '#0474FC';
 
 export default function TabLayout() {
   const segments = useSegments();
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
-
-  useEffect(() => {
-    const showSubscription = Keyboard.addListener(
-      Platform.OS === 'android' ? 'keyboardDidShow' : 'keyboardWillShow',
-      () => setKeyboardVisible(true)
-    );
-    const hideSubscription = Keyboard.addListener(
-      Platform.OS === 'android' ? 'keyboardDidHide' : 'keyboardWillHide',
-      () => setKeyboardVisible(false)
-    );
-
-    return () => {
-      showSubscription.remove();
-      hideSubscription.remove();
-    };
-  }, []);
   
   // Smooth animation values
   const navbarGlow = useRef(new Animated.Value(0)).current;
@@ -83,11 +66,11 @@ export default function TabLayout() {
     if (currentRoute === 'checkin') return 1;
     if (currentRoute === 'meds') return 2;
     if (currentRoute === 'profile') return 3;
-    return -1;
+    return 0;
   };
 
   const handleFabPress = () => {
-    router.push('/chat');
+    router.push('/(onboarding)/chat');
   };
 
   const handleTabPress = (route: string, index: number) => {
@@ -155,8 +138,7 @@ export default function TabLayout() {
       <Slot />
       
       {/* Bottom Navigation Bar */}
-      {!keyboardVisible && (
-        <View style={styles.navContainer}>
+      <View style={styles.navContainer}>
         <View style={styles.navbar}>
           <View style={styles.navContent}>
             {leftTabs.map((tab, idx) => {
@@ -259,7 +241,6 @@ export default function TabLayout() {
           </View>
         </TouchableOpacity>
       </View>
-      )}
     </View>
   );
 }

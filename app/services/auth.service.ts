@@ -6,7 +6,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/config/supabase';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
-import { Platform } from 'react-native';
 
 // Initialize WebBrowser for OAuth redirects
 WebBrowser.maybeCompleteAuthSession();
@@ -498,40 +497,7 @@ export const generateDummyPhoneFromId = (id: string): string => {
 // Supabase Google Auth Flow
 export const signInWithGoogle = async (email?: string, name?: string) => {
   try {
-    // Let Expo dynamically choose the correct redirectUrl scheme for the current environment.
-    // On Web we use /auth/callback, on mobile we use '/' to prevent Expo Go from crashing with IOException.
-    let redirectUrl = Platform.OS === 'web' 
-      ? Linking.createURL('/auth/callback') 
-      : Linking.createURL('/');
-    
-    // If running on mobile, replace localhost/127.0.0.1 with the actual host IP to avoid pointing to the phone itself.
-    if (Platform.OS !== 'web') {
-      const Constants = require('expo-constants').default;
-      const hostUri = Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
-      if (hostUri) {
-        const ip = hostUri.split(':')[0];
-        if (ip && ip !== 'localhost' && ip !== '127.0.0.1') {
-          redirectUrl = redirectUrl.replace('localhost', ip).replace('127.0.0.1', ip);
-        }
-      }
-    }
-    
-    console.log("REDIRECT URL:", redirectUrl);
-    console.log('[Google Auth] Initializing with Redirect URL:', redirectUrl);
-
-    if (Platform.OS === 'web') {
-      // Web flow: Redirect the main window directly to preserve OAuth state storage/cookies
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectUrl,
-        },
-      });
-      if (error) throw error;
-      return null;
-    }
-
-    // Mobile flow: Use in-app WebBrowser to capture deep links
+    const redirectUrl = Linking.createURL('/(auth)/login');
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -546,23 +512,8 @@ export const signInWithGoogle = async (email?: string, name?: string) => {
     const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
 
     if (result.type === 'success' && result.url) {
-      console.log('[Google Auth] Redirect success, URL:', result.url);
       const parsedUrl = Linking.parse(result.url);
-      let access_token = parsedUrl.queryParams?.access_token;
-      let refresh_token = parsedUrl.queryParams?.refresh_token;
-
-      // Parse hash fragment as fallback (Supabase returns tokens in hash fragment)
-      if (!access_token || !refresh_token) {
-        const hash = result.url.split('#')[1] || result.url.split('?')[1];
-        if (hash) {
-          const parts = hash.split('&');
-          parts.forEach(part => {
-            const [key, val] = part.split('=');
-            if (key === 'access_token') access_token = decodeURIComponent(val);
-            if (key === 'refresh_token') refresh_token = decodeURIComponent(val);
-          });
-        }
-      }
+      const { access_token, refresh_token } = parsedUrl.queryParams || {};
 
       if (access_token && refresh_token) {
         const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
@@ -577,13 +528,13 @@ export const signInWithGoogle = async (email?: string, name?: string) => {
           const existing = await getPatientById(sessionData.user.id);
           if (!existing) {
             const fullName = sessionData.user.user_metadata?.full_name || sessionData.user.user_metadata?.name || name || 'User';
-            await supabase.from('patients').upsert({
+            await supabase.from('patients').insert({
               id: sessionData.user.id,
               full_name: fullName,
               email: sessionData.user.email,
               phone_number: generateDummyPhoneFromId(sessionData.user.id),
               created_at: new Date().toISOString(),
-            }, { onConflict: 'id' });
+            });
           }
 
           return {
