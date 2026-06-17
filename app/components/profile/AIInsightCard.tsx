@@ -1,3 +1,4 @@
+// app/components/profile/AIInsightCard.tsx
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,8 +9,18 @@ interface AIInsightCardProps {
 }
 
 export const AIInsightCard: React.FC<AIInsightCardProps> = ({ summaryText }) => {
+  // Demo AI summary for Indresh
   const defaultSummary = 
-    "Swasthya's Advanced AI Engine has analyzed your health records, check-in history, and active medications. You are showing excellent adherence rates with stable risk factors. Keep monitoring your vitals daily to receive precise, localized healthcare insights and prevent potential complications.";
+    "Swasthya AI has analyzed your health patterns. You show moderate risk factors with headache and anxiety being primary concerns. Regular monitoring and stress management recommended. Your adherence rate is 85% with stable vitals.";
+
+  // Demo insights data
+  const insights = [
+    { icon: '😴', title: 'Sleep Pattern Alert', text: 'Irregular sleep correlates with 78% of headache occurrences.' },
+    { icon: '🧘', title: 'Stress Management', text: 'Daily meditation could reduce anxiety by 45%.' },
+    { icon: '🥗', title: 'Nutrition Impact', text: 'Regular meals could boost energy by 60%.' },
+  ];
+
+  const displaySummary = summaryText || defaultSummary;
 
   return (
     <View style={styles.container}>
@@ -23,16 +34,31 @@ export const AIInsightCard: React.FC<AIInsightCardProps> = ({ summaryText }) => 
           <View style={styles.iconBg}>
             <Ionicons name="sparkles" size={20} color="#60A5FA" />
           </View>
-          <Text style={styles.title}>AI Insight Summary</Text>
+          <Text style={styles.title}>AI Health Insights</Text>
         </View>
         
         <Text style={styles.description}>
-          {summaryText || defaultSummary}
+          {displaySummary}
         </Text>
+
+        {/* Quick Insights */}
+        <View style={styles.insightsContainer}>
+          {insights.map((insight, index) => (
+            <View key={index} style={styles.insightItem}>
+              <View style={styles.insightIconWrapper}>
+                <Text style={styles.insightEmoji}>{insight.icon}</Text>
+              </View>
+              <View style={styles.insightContent}>
+                <Text style={styles.insightTitle}>{insight.title}</Text>
+                <Text style={styles.insightText}>{insight.text}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
         
         <View style={styles.footer}>
           <Ionicons name="shield-checkmark" size={16} color="#34D399" />
-          <Text style={styles.footerText}>Complete AI analysis based on your recent activity</Text>
+          <Text style={styles.footerText}>AI analysis based on your recent health data</Text>
         </View>
       </LinearGradient>
     </View>
@@ -42,7 +68,7 @@ export const AIInsightCard: React.FC<AIInsightCardProps> = ({ summaryText }) => 
 const styles = StyleSheet.create({
   container: {
     marginHorizontal: 16,
-    marginTop: 24,
+    marginTop: 16,
     borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -79,12 +105,49 @@ const styles = StyleSheet.create({
     color: '#E5E7EB',
     lineHeight: 22,
     fontWeight: '400',
+    marginBottom: 16,
+  },
+  insightsContainer: {
+    gap: 10,
+    marginBottom: 16,
+  },
+  insightItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 10,
+    padding: 10,
+  },
+  insightIconWrapper: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  insightEmoji: {
+    fontSize: 16,
+  },
+  insightContent: {
+    flex: 1,
+  },
+  insightTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#E5E7EB',
+  },
+  insightText: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    lineHeight: 16,
   },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 16,
+    marginTop: 4,
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#374151',
@@ -95,3 +158,5 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
+
+export default AIInsightCard;

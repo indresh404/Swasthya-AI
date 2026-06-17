@@ -13,7 +13,6 @@ const COLORS = {
 };
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-// Margins left/right: 16 each (32 total). Container padding: 4 each (8 total). Active pill left/right padding: 4.
 const PILL_WIDTH = (SCREEN_WIDTH - 40) / 2;
 
 interface ProfileToggleProps {
@@ -123,3 +122,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
+
+export default ProfileToggle;

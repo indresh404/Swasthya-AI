@@ -26,6 +26,7 @@ const COLORS = {
 interface FamilyTabContentProps {
   familyData: any;
   onCopyFamilyCode: () => void;
+  onShareFamilyCode?: () => void;
   onSetupFamily: () => void;
   membersCount: number;
   familyRiskLevel?: string;
@@ -35,6 +36,7 @@ interface FamilyTabContentProps {
 export const FamilyTabContent: React.FC<FamilyTabContentProps> = ({
   familyData,
   onCopyFamilyCode,
+  onShareFamilyCode,
   onSetupFamily,
   membersCount,
   familyRiskLevel = 'Low',
@@ -187,11 +189,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  profilePhotoText: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
   profileName: {
     fontSize: 18,
     fontWeight: '700',
@@ -306,3 +303,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
+
+export default FamilyTabContent;

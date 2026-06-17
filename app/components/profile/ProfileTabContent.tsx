@@ -12,18 +12,21 @@ const COLORS = {
   text: {
     primary: '#111827',
     secondary: '#6B7280',
+    light: '#9CA3AF',
   },
   risk: {
     low: '#10B981',
     moderate: '#F59E0B',
-    hover: '#F97316',
+    elevated: '#F97316',
     high: '#EF4444',
   },
+  border: '#E5E7EB',
 };
 
 interface ProfileTabContentProps {
   profile: any;
   qrValue: string;
+  onShareQR: () => void;
   onSaveQR: () => void;
   getRiskColor: (risk: string) => string;
 }
@@ -31,10 +34,19 @@ interface ProfileTabContentProps {
 export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
   profile,
   qrValue,
+  onShareQR,
   onSaveQR,
   getRiskColor,
 }) => {
   const viewShotRef = useRef<any>(null);
+
+  // Demo data for Indresh - using patient data
+  const displayName = profile?.name || 'Indresh';
+  const displayAge = profile?.age || 20;
+  const displayGender = profile?.gender || 'Male';
+  const displayPhone = profile?.phone || '+91 9324474812';
+  const displayRiskLevel = profile?.risk_level || 'Moderate';
+  const displayHealthId = profile?.health_id || 'SWASTHYA-IND-2024-001';
 
   const handleShare = async () => {
     try {
@@ -66,23 +78,27 @@ export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
             <View style={styles.profileInfo}>
               <View style={styles.profilePhoto}>
                 <Text style={styles.profilePhotoText}>
-                  {profile?.name ? profile.name[0] : 'U'}
+                  {displayName ? displayName[0].toUpperCase() : 'I'}
                 </Text>
               </View>
               <View>
-                <Text style={styles.profileName}>{profile?.name || 'Patient Name'}</Text>
+                <Text style={styles.profileName}>{displayName}</Text>
                 <Text style={styles.profileAge}>
-                  {profile?.age || '--'} years • {profile?.gender || 'Other'}
+                  {displayAge} years • {displayGender}
+                </Text>
+                <Text style={styles.profilePhone}>
+                  <Ionicons name="call-outline" size={12} color={COLORS.text.secondary} />{' '}
+                  {displayPhone}
                 </Text>
               </View>
             </View>
             <View
               style={[
                 styles.riskBadge,
-                { backgroundColor: getRiskColor(profile?.risk_level) },
+                { backgroundColor: getRiskColor(displayRiskLevel) },
               ]}
             >
-              <Text style={styles.riskBadgeText}>{profile?.risk_level || 'Low'}</Text>
+              <Text style={styles.riskBadgeText}>{displayRiskLevel}</Text>
             </View>
           </View>
 
@@ -103,7 +119,8 @@ export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
                 />
               )}
             </View>
-            <Text style={styles.qrSubtitle}>Scan to access your health summary</Text>
+            <Text style={styles.qrSubtitle}>{displayHealthId}</Text>
+            <Text style={styles.qrHint}>Scan to access your health summary</Text>
           </View>
         </View>
       </ViewShot>
@@ -176,6 +193,11 @@ const styles = StyleSheet.create({
     color: COLORS.text.secondary,
     marginTop: 2,
   },
+  profilePhone: {
+    fontSize: 12,
+    color: COLORS.text.secondary,
+    marginTop: 2,
+  },
   riskBadge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -205,12 +227,17 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   qrSubtitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.text.primary,
+    marginBottom: 2,
+  },
+  qrHint: {
     fontSize: 12,
     color: COLORS.text.secondary,
-    marginBottom: 8,
   },
   qrButtons: {
     flexDirection: 'row',
@@ -235,3 +262,5 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
+
+export default ProfileTabContent;

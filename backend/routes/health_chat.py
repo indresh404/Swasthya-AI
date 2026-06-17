@@ -49,7 +49,7 @@ Message:
 "{message}"
 """
 
-@router.post("/chat", response_model=ChatResponse)
+@router.post("/chat-old", response_model=ChatResponse)
 async def health_chat(request: ChatRequest):
     """
     Chat with patient → extract comprehensive health graph nodes → check importance →

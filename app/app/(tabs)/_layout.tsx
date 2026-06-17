@@ -2,9 +2,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, Slot, useSegments } from 'expo-router';
 import { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, TouchableOpacity, View, Easing } from 'react-native';
+import { Animated, StyleSheet, TouchableOpacity, View, Easing, Text } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const FAB_SIZE = 62;
+const PRIMARY_COLOR = '#0474FC';
+const PRIMARY_DARK = '#0360D0';
+
 const TAB_CONFIG = [
   { name: 'Home', icon: 'home-outline', activeIcon: 'home', route: '/(tabs)/home' },
   { name: 'Check-in', icon: 'checkmark-circle-outline', activeIcon: 'checkmark-circle', route: '/(tabs)/checkin' },
@@ -12,21 +16,14 @@ const TAB_CONFIG = [
   { name: 'Profile', icon: 'person-outline', activeIcon: 'person', route: '/(tabs)/profile' },
 ] as const;
 
-// Primary Color
-const PRIMARY_COLOR = '#0474FC';
-
 export default function TabLayout() {
   const segments = useSegments();
   
-  // Smooth animation values
-  const navbarGlow = useRef(new Animated.Value(0)).current;
-  const navbarBounce = useRef(new Animated.Value(1)).current;
   const fabPulseRing = useRef(new Animated.Value(0)).current;
   const fabShadowAnim = useRef(new Animated.Value(1)).current;
   const tabScaleAnims = useRef(TAB_CONFIG.map(() => new Animated.Value(1))).current;
   const tabTextAnims = useRef(TAB_CONFIG.map(() => new Animated.Value(0))).current;
 
-  // Continuous subtle pulse for active tab
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -43,7 +40,6 @@ export default function TabLayout() {
       ])
     ).start();
 
-    // Smooth floating animation for FAB
     Animated.loop(
       Animated.sequence([
         Animated.timing(fabShadowAnim, {
@@ -70,49 +66,24 @@ export default function TabLayout() {
     return 0;
   };
 
-  const handleFabPress = () => {
-    router.push('/(tabs)/chatbot' as any);
+  const getTabTitle = () => {
+    const currentRoute = segments[segments.length - 1];
+    if (currentRoute === 'home') return 'HOME';
+    if (currentRoute === 'checkin') return 'CHECK-IN';
+    if (currentRoute === 'meds') return 'MEDICATIONS';
+    if (currentRoute === 'profile') return 'PROFILE';
+    if (currentRoute === 'chatbot') return 'CHAT';
+    return 'SWASTHYA';
   };
 
-  const handleTabPress = (route: string, index: number) => {
-    // Smooth ripple effect on press
-    Animated.parallel([
-      Animated.timing(tabScaleAnims[index], {
-        toValue: 0.92,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(tabTextAnims[index], {
-        toValue: 0.8,
-        duration: 100,
-        useNativeDriver: false,
-      }),
-    ]).start();
-
-    // Smooth return
-    setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(tabScaleAnims[index], {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(tabTextAnims[index], {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: false,
-        }),
-      ]).start();
-    }, 100);
-
-    router.push(route as any);
+  const handleFabPress = () => {
+    router.push('/(tabs)/chatbot' as any);
   };
 
   const activeTab = getActiveTab();
   const leftTabs = TAB_CONFIG.slice(0, 2);
   const rightTabs = TAB_CONFIG.slice(2, 4);
 
-  // Animation value to slide bottom navbar out of view
   const navBarAnim = useRef(new Animated.Value(activeTab === 4 ? 0 : 1)).current;
 
   useEffect(() => {
@@ -148,6 +119,64 @@ export default function TabLayout() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
+      {/* Top Navigation Bar */}
+      <View style={styles.topNavContainer}>
+        <View style={styles.topNavBar}>
+          {/* Left - Scan Button */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={styles.leftButton}
+          >
+            <LinearGradient
+              colors={[PRIMARY_COLOR, PRIMARY_DARK]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.gradientButton}
+            >
+              <Ionicons name="scan-outline" size={22} color="#FFFFFF" />
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {/* Center - Title Pill */}
+          <View style={styles.centerPill}>
+            <View style={styles.pillContent}>
+              <View style={styles.blueDot} />
+              <Text style={styles.pillText}>{getTabTitle()}</Text>
+            </View>
+          </View>
+
+          {/* Right - Notification & Avatar */}
+          <View style={styles.rightSection}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={styles.iconButton}
+            >
+              <View style={styles.iconContainer}>
+                <Ionicons name="notifications-outline" size={22} color="#374151" />
+                <View style={styles.notificationBadge}>
+                  <Text style={styles.badgeText}>3</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={styles.avatarButton}
+            >
+              <LinearGradient
+                colors={[PRIMARY_COLOR, PRIMARY_DARK]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.avatarGradient}
+              >
+                <Text style={styles.avatarText}>I</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
+      {/* Content */}
       <Slot />
       
       {/* Bottom Navigation Bar */}
@@ -187,12 +216,6 @@ export default function TabLayout() {
                     <Animated.View style={[
                       styles.iconWrapper,
                       isActive && styles.activeIconWrapper,
-                      {
-                        shadowColor: PRIMARY_COLOR,
-                        shadowOffset: { width: 0, height: 0 },
-                        shadowOpacity: 0.3,
-                        shadowRadius: 10,
-                      }
                     ]}>
                       <Ionicons 
                         name={isActive ? (tab.activeIcon as any) : (tab.icon as any)} 
@@ -232,12 +255,6 @@ export default function TabLayout() {
                     <Animated.View style={[
                       styles.iconWrapper,
                       isActive && styles.activeIconWrapper,
-                      {
-                        shadowColor: PRIMARY_COLOR,
-                        shadowOffset: { width: 0, height: 0 },
-                        shadowOpacity: 0.3,
-                        shadowRadius: 10,
-                      }
                     ]}>
                       <Ionicons 
                         name={isActive ? (tab.activeIcon as any) : (tab.icon as any)} 
@@ -259,7 +276,7 @@ export default function TabLayout() {
           </View>
         </View>
 
-        {/* Floating Action Button - Clean & Simple */}
+        {/* Floating Action Button */}
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={handleFabPress}
@@ -282,6 +299,127 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
+  // Top Nav Styles
+  topNavContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 45,
+    paddingBottom: 12,
+    backgroundColor: '#F9FAFB',
+  },
+  topNavBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  leftButton: {
+    shadowColor: PRIMARY_COLOR,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  gradientButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  centerPill: {
+    flex: 1,
+    marginHorizontal: 12,
+  },
+  pillContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  blueDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: PRIMARY_COLOR,
+    marginRight: 8,
+  },
+  pillText: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 1.2,
+    color: '#1F2937',
+  },
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  iconButton: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#F9FAFB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: '#EF4444',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  avatarButton: {
+    shadowColor: PRIMARY_COLOR,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  avatarGradient: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  // Bottom Nav Styles
   navContainer: {
     position: 'absolute',
     bottom: 50,
@@ -354,22 +492,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 10,
-  },
-  fabRipple: {
-    position: 'absolute',
-    width: FAB_SIZE,
-    height: FAB_SIZE,
-    borderRadius: FAB_SIZE / 2,
-    backgroundColor: PRIMARY_COLOR,
-    opacity: 0.08,
-  },
-  fabPulseRing: {
-    position: 'absolute',
-    width: FAB_SIZE,
-    height: FAB_SIZE,
-    borderRadius: FAB_SIZE / 2,
-    backgroundColor: PRIMARY_COLOR,
-    top: 0,
-    left: 0,
   },
 });

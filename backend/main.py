@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import auth, profiles, chat, health_chat
+from routes import auth, profiles, chat, health_graph, health_chat
 import os
 
 app = FastAPI(
@@ -34,6 +34,7 @@ async def health_check():
 app.include_router(auth.router)
 app.include_router(profiles.router)
 app.include_router(chat.router)
+app.include_router(health_graph.router)
 app.include_router(health_chat.router)
 
 @app.get("/")

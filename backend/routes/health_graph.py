@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from groq import Groq
+from groq import Groq, AsyncGroq
+import asyncio
 from services.neo4j_service import neo4j
 import json
 import os
@@ -27,32 +28,39 @@ class AddMemberRequest(BaseModel):
     patient_id: str
     relation: str
 
-# LLM Extraction Prompt
-EXTRACT_PROMPT = """
-Extract health information from user's message. Return ONLY valid JSON (no markdown).
-
+# LLM Extraction Prompts for Multi-Agent Architecture
+SYMPTOM_AGENT_PROMPT = """
+You are a Symptom Extraction Agent. Extract currently active or past symptoms from the user's message.
+Return ONLY valid JSON.
 {
   "symptoms": [
-    {"name": "fever", "severity": 8, "duration": "2 days", "body_area": "whole body", "triggers": ["stress"], "relieved_by": ["paracetamol", "rest"]}
-  ],
+    {"name": "fever", "severity": 8, "duration": "2 days", "body_area": "whole body", "triggers": ["stress"], "relieved_by": ["paracetamol"]}
+  ]
+}
+If none, return {"symptoms": []}.
+"""
+
+HABIT_AGENT_PROMPT = """
+You are a Lifestyle & Habit Extraction Agent. Extract habits, routines, diet, sleep, exercise, and stress details.
+Return ONLY valid JSON.
+{
   "health_facts": [
     {"text": "Wakes up at 2 AM every night", "category": "sleep", "frequency": "daily"},
-    {"text": "Skips breakfast", "category": "diet", "frequency": "daily"},
-    {"text": "High stress at work", "category": "stress", "frequency": "recurring"},
-    {"text": "Does not exercise", "category": "exercise", "frequency": "never"}
-  ],
-  "diseases": ["fever", "migraine"],
-  "date": "2024-01-15"
+    {"text": "Skips breakfast", "category": "diet", "frequency": "daily"}
+  ]
 }
+Categories: sleep, diet, habit, routine, stress, exercise, mental, hygiene.
+Frequency: daily, weekly, recurring, occasional, never.
+If none, return {"health_facts": []}.
+"""
 
-Categories: sleep, diet, habit, routine, stress, exercise, mental, hygiene
-Frequency: daily, weekly, recurring, occasional, never
-Rules:
-- Only extract what user mentioned
-- Symptoms: things they're experiencing
-- Health facts: habits, lifestyle, routine, diet, sleep, stress patterns
-- Return empty arrays if nothing found
-- Always valid JSON only
+MEDICAL_AGENT_PROMPT = """
+You are a Medical History Agent. Extract confirmed diseases, diagnoses, surgeries, or known medical conditions.
+Return ONLY valid JSON.
+{
+  "diseases": ["diabetes", "migraine"]
+}
+If none, return {"diseases": []}.
 """
 
 # 1. CREATE USER
@@ -74,40 +82,55 @@ async def create_user(req: CreateUserRequest):
 @router.post("/chat")
 async def health_chat(req: ChatRequest):
     """
-    User sends health message → LLM extracts → Save to Neo4j
+    User sends health message → Multi-Agent LLMs extract concurrently → Save to Neo4j
     """
     today = datetime.now().strftime("%Y-%m-%d")
     groq_api_key = os.getenv("GROQ_API_KEY")
     if not groq_api_key:
         raise HTTPException(status_code=500, detail="GROQ_API_KEY environment variable is not set.")
     
-    client = Groq(api_key=groq_api_key)
+    async_client = AsyncGroq(api_key=groq_api_key)
     
-    # Get conversational reply
-    reply = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[
-            {"role": "system", "content": "You are a compassionate health assistant. Reply in the user's language."},
-            {"role": "user", "content": req.message}
-        ]
+    async def get_assistant_reply():
+        reply = await async_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": "You are a compassionate health assistant. Reply in the user's language."},
+                {"role": "user", "content": req.message}
+            ]
+        )
+        return reply.choices[0].message.content
+
+    async def run_agent(prompt: str):
+        extract = await async_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": req.message}
+            ]
+        )
+        try:
+            return json.loads(extract.choices[0].message.content)
+        except Exception as e:
+            print(f"[health/chat agent] Failed parsing JSON: {e}")
+            return {}
+
+    # Run all 4 agents concurrently
+    ai_reply, symptoms_data, habits_data, medical_data = await asyncio.gather(
+        get_assistant_reply(),
+        run_agent(SYMPTOM_AGENT_PROMPT),
+        run_agent(HABIT_AGENT_PROMPT),
+        run_agent(MEDICAL_AGENT_PROMPT)
     )
-    ai_reply = reply.choices[0].message.content
     
-    # Extract health data
-    extract = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        response_format={"type": "json_object"},
-        messages=[
-            {"role": "system", "content": EXTRACT_PROMPT},
-            {"role": "user", "content": req.message}
-        ]
-    )
-    
-    try:
-        extracted = json.loads(extract.choices[0].message.content)
-    except Exception as e:
-        print(f"[health/chat] Failed parsing LLM response as JSON: {e}")
-        extracted = {"symptoms": [], "health_facts": [], "diseases": [], "date": today}
+    # Merge extracted data
+    extracted = {
+        "symptoms": symptoms_data.get("symptoms", []),
+        "health_facts": habits_data.get("health_facts", []),
+        "diseases": medical_data.get("diseases", []),
+        "date": today
+    }
     
     # ===== SAVE TO NEO4J =====
     
@@ -129,7 +152,7 @@ async def health_chat(req: ChatRequest):
             "patient_id": req.patient_id,
             "symptom_name": symptom.get("name"),
             "severity": symptom.get("severity", 5),
-            "date": extracted.get("date", today),
+            "date": today,
             "body_area": symptom.get("body_area"),
             "duration": symptom.get("duration"),
             "triggers": symptom.get("triggers", []),
@@ -153,7 +176,7 @@ async def health_chat(req: ChatRequest):
             "text": fact.get("text"),
             "category": fact.get("category"),
             "frequency": fact.get("frequency"),
-            "date": extracted.get("date", today)
+            "date": today
         })
         
     # Save diseases
@@ -166,7 +189,7 @@ async def health_chat(req: ChatRequest):
         """, {
             "patient_id": req.patient_id,
             "disease_name": disease_name,
-            "date": extracted.get("date", today)
+            "date": today
         })
     
     return {
