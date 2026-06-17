@@ -9,14 +9,16 @@ import {
   Share,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import {
-  ProfileToggle,
-  ProfileTabContent,
-  FamilyTabContent,
-  RiskScoreCard,
-  HealthStatsCard,
-  AIInsightCard,
-} from '@/components/profile';
+
+// Direct imports
+import { ProfileToggle } from '@/components/profile/ProfileToggle';
+import { ProfileTabContent } from '@/components/profile/ProfileTabContent';
+import { FamilyTabContent } from '@/components/profile/FamilyTabContent';
+import { RiskScoreCard } from '@/components/profile/RiskScoreCard';
+import { HealthStatsCard } from '@/components/profile/HealthStatsCard';
+import { AIInsightCard } from '@/components/profile/AIInsightCard';
+import { HealthGraphCard } from '@/components/profile/HealthGraphCard';
+import { MedicalInformationCard } from '@/components/profile/MedicalInformationCard';
 
 const COLORS = {
   background: '#F9FAFB',
@@ -47,6 +49,22 @@ export default function ProfileScreen() {
     health_id: 'SWASTHYA-IND-2024-001',
   };
 
+  // Medical Information for Indresh
+  const [medicalInfo, setMedicalInfo] = useState({
+    age: '20',
+    gender: 'Male',
+    weight: '72',
+    height: '175',
+    bloodType: 'O+',
+    allergies: 'Penicillin',
+    bloodPressure: '120/80',
+    heartRate: '72',
+    oxygenLevel: '98',
+    surgeries: 'None',
+    chronicConditions: 'Migraine, Anxiety',
+    vaccinations: 'COVID-19, Tetanus',
+  });
+
   const handleShareQR = async () => {
     try {
       await Share.share({
@@ -76,6 +94,11 @@ export default function ProfileScreen() {
 
   const handleCopyFamilyCode = () => {
     console.log('Family code copied');
+  };
+
+  const handleSaveMedicalInfo = (info: any) => {
+    setMedicalInfo(info);
+    console.log('Medical info saved:', info);
   };
 
   // Risk factors data for Profile
@@ -141,6 +164,15 @@ export default function ProfileScreen() {
                 { icon: 'medkit-outline', label: 'Medications', value: '2', color: '#ECFDF5', iconColor: '#10B981' },
               ]}
             />
+
+            {/* Medical Information Card */}
+            <MedicalInformationCard
+              initialInfo={medicalInfo}
+              onSave={handleSaveMedicalInfo}
+            />
+
+            {/* Health Graph Card */}
+            <HealthGraphCard />
 
             {/* AI Insights Card - Profile */}
             <AIInsightCard key="profile-ai" summaryText={aiSummary} />
