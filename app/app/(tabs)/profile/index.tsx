@@ -15,6 +15,7 @@ import {
   FamilyTabContent,
   RiskScoreCard,
   HealthStatsCard,
+  AIInsightCard,
 } from '@/components/profile';
 
 const COLORS = {
@@ -76,6 +77,10 @@ export default function ProfileScreen() {
     { text: 'Regular exercise routine', color: '#10B981' },
   ];
 
+  // AI Insight summary for Indresh
+  const aiSummary = 
+    "Swasthya AI has analyzed your health patterns. You show moderate risk factors with headache and anxiety being primary concerns. Regular monitoring and stress management recommended. Your adherence rate is 85% with stable vitals.";
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
@@ -115,6 +120,9 @@ export default function ProfileScreen() {
                 { icon: 'medkit-outline', label: 'Medications', value: '2', color: '#ECFDF5', iconColor: '#10B981' },
               ]}
             />
+
+            {/* AI Insights Card */}
+            <AIInsightCard summaryText={aiSummary} />
           </>
         )}
 

@@ -57,6 +57,9 @@ interface RiskScoreCardProps {
   description?: string;
   factors?: Factor[];
   onLongPress?: () => void;
+  timestamp?: string;
+  nextAssessment?: string;
+  trend?: 'up' | 'down' | 'stable';
 }
 
 export const RiskScoreCard: React.FC<RiskScoreCardProps> = ({
@@ -67,8 +70,13 @@ export const RiskScoreCard: React.FC<RiskScoreCardProps> = ({
     { text: 'Chronic headache history', color: '#F59E0B' },
     { text: 'High stress levels', color: '#F59E0B' },
     { text: 'Regular exercise routine', color: '#10B981' },
+    { text: 'Family history of cardiovascular disease', color: '#EF4444' },
+    { text: 'Sedentary lifestyle', color: '#F97316' },
   ],
   onLongPress,
+  timestamp = 'Last updated: Today, 2:30 PM',
+  nextAssessment = 'Next assessment: In 14 days',
+  trend = 'stable',
 }) => {
   const [displayScore, setDisplayScore] = useState(0);
   const [showDetails, setShowDetails] = useState(false);
@@ -207,17 +215,13 @@ export const RiskScoreCard: React.FC<RiskScoreCardProps> = ({
         timeoutRef.current = null;
       }
     };
-  }, []); // Empty dependency array - runs only once
+  }, []);
 
   const handlePress = () => {
-    if (isAnimating) return;
-    // Reset and replay
-    setHasAnimated(false);
-    setDisplayScore(0);
-    progress.value = 0;
-    glowAngle.value = START_ANGLE;
-    pulseValue.value = 1;
-    startAnimation();
+    // Just a press handler without animation replay
+    // Could be used for navigation or other actions
+    console.log('Card pressed - showing details');
+    // You could add navigation or other actions here
   };
 
   const handlePressIn = () => {
@@ -241,6 +245,18 @@ export const RiskScoreCard: React.FC<RiskScoreCardProps> = ({
   };
 
   const riskLabel = getRiskLabel();
+
+  const getTrendIcon = () => {
+    if (trend === 'up') return '↑';
+    if (trend === 'down') return '↓';
+    return '→';
+  };
+
+  const getTrendColor = () => {
+    if (trend === 'up') return COLORS.risk.high;
+    if (trend === 'down') return COLORS.risk.low;
+    return COLORS.text.light;
+  };
 
   return (
     <TouchableOpacity
@@ -353,6 +369,9 @@ export const RiskScoreCard: React.FC<RiskScoreCardProps> = ({
             <Text style={[styles.riskLabelText, { color: riskLabel.color }]}>
               {riskLabel.label}
             </Text>
+            <Text style={[styles.trendIndicator, { color: getTrendColor() }]}>
+              {getTrendIcon()}
+            </Text>
           </View>
         </View>
 
@@ -367,8 +386,12 @@ export const RiskScoreCard: React.FC<RiskScoreCardProps> = ({
                   <Text style={styles.factorText}>{factor.text}</Text>
                 </View>
               ))}
+              <View style={styles.metadataContainer}>
+                <Text style={styles.metadataText}>{timestamp}</Text>
+                <Text style={styles.metadataText}>{nextAssessment}</Text>
+              </View>
               <View style={styles.hintText}>
-                <Text style={styles.hintTextStyle}>Tap to replay animation</Text>
+                <Text style={styles.hintTextStyle}>Long press to hide details</Text>
               </View>
             </View>
           ) : (
@@ -380,7 +403,7 @@ export const RiskScoreCard: React.FC<RiskScoreCardProps> = ({
                 </View>
               ))}
               {factors.length > 2 && (
-                <Text style={styles.moreText}>+{factors.length - 2} more</Text>
+                <Text style={styles.moreText}>+{factors.length - 2} more factors</Text>
               )}
               <View style={styles.hintText}>
                 <Text style={styles.hintTextStyle}>Long press for details</Text>
@@ -429,6 +452,11 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     letterSpacing: 0.5,
+  },
+  trendIndicator: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginLeft: 2,
   },
   detailsContainer: {
     flex: 1,
@@ -481,6 +509,15 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: COLORS.text.light,
     letterSpacing: 0.5,
+  },
+  metadataContainer: {
+    marginTop: 6,
+    gap: 2,
+  },
+  metadataText: {
+    fontSize: 9,
+    color: COLORS.text.light,
+    letterSpacing: 0.3,
   },
 });
 
