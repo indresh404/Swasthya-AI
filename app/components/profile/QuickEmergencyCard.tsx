@@ -1,9 +1,10 @@
+// app/components/profile/QuickEmergencyCard.tsx
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Linking, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const COLORS = {
-  primary: '#EF4444', // Red for emergency
+  primary: '#EF4444',
   primaryLight: '#FEE2E2',
   card: '#FFFFFF',
   text: {
@@ -39,26 +40,53 @@ export const QuickEmergencyCard: React.FC<QuickEmergencyCardProps> = ({
 
   const handleCall = (phoneNumber: string) => {
     const cleanPhone = phoneNumber.replace(/\D/g, '');
-    const url = `tel:${cleanPhone}`;
-    Linking.canOpenURL(url)
-      .then((supported) => {
-        if (supported) {
-          Linking.openURL(url);
-        } else {
-          Alert.alert('Error', 'Calling is not supported on this device');
-        }
-      })
-      .catch(() => {
-        Alert.alert('Error', 'Could not initiate call');
-      });
+    Alert.alert(
+      'Call',
+      `Call ${phoneNumber}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Call',
+          onPress: () => {
+            Linking.openURL(`tel:${cleanPhone}`).catch(() => {
+              Alert.alert('Error', 'Could not initiate call');
+            });
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDelete = (id: string) => {
+    Alert.alert(
+      'Remove Contact',
+      'Are you sure you want to remove this emergency contact?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove', style: 'destructive', onPress: () => onDeleteContact(id) },
+      ]
+    );
+  };
+
+  const validatePhone = (phoneNumber: string) => {
+    const clean = phoneNumber.replace(/\D/g, '');
+    return clean.length >= 10;
   };
 
   const handleSave = () => {
-    if (!name.trim() || !phone.trim()) {
-      Alert.alert('Error', 'Name and Phone Number are required');
+    if (!name.trim()) {
+      Alert.alert('Error', 'Name is required');
       return;
     }
-    onAddContact({ name: name.trim(), specialty: specialty.trim() || 'Doctor', phone: phone.trim() });
+    if (!validatePhone(phone)) {
+      Alert.alert('Error', 'Please enter a valid phone number (minimum 10 digits)');
+      return;
+    }
+    onAddContact({
+      name: name.trim(),
+      specialty: specialty.trim() || 'Doctor',
+      phone: phone.trim(),
+    });
     setName('');
     setSpecialty('');
     setPhone('');
@@ -73,10 +101,7 @@ export const QuickEmergencyCard: React.FC<QuickEmergencyCardProps> = ({
           <Text style={styles.title}>Quick Emergency Contacts</Text>
         </View>
         {!isAdding && (
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setIsAdding(true)}
-          >
+          <TouchableOpacity style={styles.addButton} onPress={() => setIsAdding(true)}>
             <Ionicons name="add-outline" size={16} color={COLORS.primary} />
             <Text style={styles.addButtonText}>Add Doctor</Text>
           </TouchableOpacity>
@@ -141,7 +166,7 @@ export const QuickEmergencyCard: React.FC<QuickEmergencyCardProps> = ({
           {contacts.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>No emergency contacts saved yet.</Text>
-              <Text style={styles.emptySubtext}>Add your doctor&apos;s details to call them quickly in an emergency.</Text>
+              <Text style={styles.emptySubtext}>Add your doctor's details to call them quickly in an emergency.</Text>
             </View>
           ) : (
             contacts.map((contact, index) => (
@@ -154,16 +179,10 @@ export const QuickEmergencyCard: React.FC<QuickEmergencyCardProps> = ({
                     <Text style={styles.contactPhone}>{contact.phone}</Text>
                   </View>
                   <View style={styles.actions}>
-                    <TouchableOpacity
-                      style={styles.callIconBtn}
-                      onPress={() => handleCall(contact.phone)}
-                    >
+                    <TouchableOpacity style={styles.callIconBtn} onPress={() => handleCall(contact.phone)}>
                       <Ionicons name="call" size={20} color="#FFFFFF" />
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.deleteIconBtn}
-                      onPress={() => onDeleteContact(contact.id)}
-                    >
+                    <TouchableOpacity style={styles.deleteIconBtn} onPress={() => handleDelete(contact.id)}>
                       <Ionicons name="trash-outline" size={20} color="#9CA3AF" />
                     </TouchableOpacity>
                   </View>
@@ -256,7 +275,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#10B981', // Green for calling
+    backgroundColor: '#10B981',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#10B981',
@@ -294,7 +313,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     lineHeight: 18,
   },
-  // Form styles
   form: {
     marginTop: 8,
   },
@@ -348,3 +366,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
+
+// IMPORTANT: Default export at the end
+export default QuickEmergencyCard;

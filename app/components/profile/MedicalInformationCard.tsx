@@ -1,3 +1,4 @@
+// app/components/profile/MedicalInformationCard.tsx
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -77,6 +78,7 @@ export const MedicalInformationCard: React.FC<MedicalInformationCardProps> = ({
     onSave(formData);
     setIsEditing(false);
   };
+
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -85,10 +87,7 @@ export const MedicalInformationCard: React.FC<MedicalInformationCardProps> = ({
           <Text style={styles.title}>Medical Information</Text>
         </View>
         {!isEditing && (
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={() => setIsEditing(true)}
-          >
+          <TouchableOpacity style={styles.editButton} onPress={() => setIsEditing(true)}>
             <Ionicons name="create-outline" size={16} color={COLORS.primary} />
             <Text style={styles.editButtonText}>Edit</Text>
           </TouchableOpacity>
@@ -257,7 +256,6 @@ export const MedicalInformationCard: React.FC<MedicalInformationCardProps> = ({
         </View>
       ) : (
         <View style={styles.detailsList}>
-          {/* Row 1: Age & Gender */}
           <View style={styles.row}>
             <View style={styles.cell}>
               <Text style={styles.cellLabel}>Age</Text>
@@ -272,7 +270,6 @@ export const MedicalInformationCard: React.FC<MedicalInformationCardProps> = ({
 
           <View style={styles.divider} />
 
-          {/* Row 2: Weight & Height */}
           <View style={styles.row}>
             <View style={styles.cell}>
               <Text style={styles.cellLabel}>Weight</Text>
@@ -287,7 +284,6 @@ export const MedicalInformationCard: React.FC<MedicalInformationCardProps> = ({
 
           <View style={styles.divider} />
 
-          {/* Row 3: Blood Type & BMI */}
           <View style={styles.row}>
             <View style={styles.cell}>
               <Text style={styles.cellLabel}>Blood Type</Text>
@@ -299,9 +295,7 @@ export const MedicalInformationCard: React.FC<MedicalInformationCardProps> = ({
               <View style={styles.bmiContainer}>
                 <Text style={styles.cellValue}>{bmiDetails.bmi}</Text>
                 {bmiDetails.bmi !== '--' && (
-                  <View
-                    style={[styles.bmiStatusBadge, { backgroundColor: bmiDetails.color }]}
-                  >
+                  <View style={[styles.bmiStatusBadge, { backgroundColor: bmiDetails.color }]}>
                     <Text style={styles.bmiStatusText}>{bmiDetails.status}</Text>
                   </View>
                 )}
@@ -311,7 +305,6 @@ export const MedicalInformationCard: React.FC<MedicalInformationCardProps> = ({
 
           <View style={styles.divider} />
 
-          {/* Row 4: BP & Heart Rate */}
           <View style={styles.row}>
             <View style={styles.cell}>
               <Text style={styles.cellLabel}>Blood Pressure</Text>
@@ -326,7 +319,6 @@ export const MedicalInformationCard: React.FC<MedicalInformationCardProps> = ({
 
           <View style={styles.divider} />
 
-          {/* Row 5: SpO2 */}
           <View style={styles.fullRow}>
             <Text style={styles.cellLabel}>Oxygen Saturation (SpO2)</Text>
             <Text style={styles.cellValueText}>{formData.oxygenLevel ? `${formData.oxygenLevel}%` : 'Not checked'}</Text>
@@ -334,7 +326,6 @@ export const MedicalInformationCard: React.FC<MedicalInformationCardProps> = ({
 
           <View style={styles.divider} />
 
-          {/* Row 6: Chronic Conditions */}
           <View style={styles.fullRow}>
             <Text style={styles.cellLabel}>Chronic Conditions</Text>
             <Text style={styles.cellValueText}>{formData.chronicConditions || 'None reported'}</Text>
@@ -342,7 +333,6 @@ export const MedicalInformationCard: React.FC<MedicalInformationCardProps> = ({
 
           <View style={styles.divider} />
 
-          {/* Row 7: Surgeries */}
           <View style={styles.fullRow}>
             <Text style={styles.cellLabel}>Surgeries</Text>
             <Text style={styles.cellValueText}>{formData.surgeries || 'None'}</Text>
@@ -350,7 +340,6 @@ export const MedicalInformationCard: React.FC<MedicalInformationCardProps> = ({
 
           <View style={styles.divider} />
 
-          {/* Row 8: Vaccinations */}
           <View style={styles.fullRow}>
             <Text style={styles.cellLabel}>Vaccinations</Text>
             <Text style={styles.cellValueText}>{formData.vaccinations || 'None listed'}</Text>
@@ -358,15 +347,9 @@ export const MedicalInformationCard: React.FC<MedicalInformationCardProps> = ({
 
           <View style={styles.divider} />
 
-          {/* Row 9: Allergies */}
           <View style={styles.fullRow}>
             <Text style={styles.cellLabel}>Allergies</Text>
-            <Text
-              style={[
-                styles.cellValueText,
-                formData.allergies ? styles.allergiesText : styles.noAllergiesText,
-              ]}
-            >
+            <Text style={[styles.cellValueText, formData.allergies ? styles.allergiesText : styles.noAllergiesText]}>
               {formData.allergies || 'No known allergies listed.'}
             </Text>
           </View>
@@ -479,12 +462,10 @@ const styles = StyleSheet.create({
     color: '#EF4444',
     fontWeight: '600',
   },
-
   noAllergiesText: {
     color: COLORS.text.secondary,
     fontWeight: '400',
   },
-  // Form styles
   form: {
     marginTop: 8,
   },
@@ -546,3 +527,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
+
+export default MedicalInformationCard;

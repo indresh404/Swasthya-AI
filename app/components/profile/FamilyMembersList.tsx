@@ -1,3 +1,4 @@
+// app/components/profile/FamilyMembersList.tsx
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, Linking, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -58,18 +59,21 @@ export const FamilyMembersList: React.FC<FamilyMembersListProps> = ({ members })
       return;
     }
     const cleanPhone = phone.replace(/\D/g, '');
-    const url = `tel:${cleanPhone}`;
-    Linking.canOpenURL(url)
-      .then((supported) => {
-        if (supported) {
-          Linking.openURL(url);
-        } else {
-          Alert.alert('Error', 'Calling is not supported on this device');
-        }
-      })
-      .catch(() => {
-        Alert.alert('Error', 'Could not initiate call');
-      });
+    Alert.alert(
+      'Call',
+      `Call ${phone}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Call',
+          onPress: () => {
+            Linking.openURL(`tel:${cleanPhone}`).catch(() => {
+              Alert.alert('Error', 'Could not initiate call');
+            });
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -94,20 +98,12 @@ export const FamilyMembersList: React.FC<FamilyMembersListProps> = ({ members })
             </View>
 
             <View style={styles.actionsContainer}>
-              <View
-                style={[
-                  styles.riskBadge,
-                  { backgroundColor: getRiskColor(member.risk) },
-                ]}
-              >
+              <View style={[styles.riskBadge, { backgroundColor: getRiskColor(member.risk) }]}>
                 <Text style={styles.riskBadgeText}>{member.risk}</Text>
               </View>
 
               {member.phone && (
-                <TouchableOpacity
-                  style={styles.callButton}
-                  onPress={() => handleCall(member.phone)}
-                >
+                <TouchableOpacity style={styles.callButton} onPress={() => handleCall(member.phone)}>
                   <Ionicons name="call" size={16} color="#FFFFFF" />
                 </TouchableOpacity>
               )}
@@ -215,3 +211,5 @@ const styles = StyleSheet.create({
     color: COLORS.text.secondary,
   },
 });
+
+export default FamilyMembersList;
