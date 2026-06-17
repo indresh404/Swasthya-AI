@@ -101,7 +101,7 @@ export default function ProfileScreen() {
 
             {/* Risk Score Card with Circular Gauge */}
             <RiskScoreCard
-              score={52}
+              score={58}
               riskLevel="Moderate Risk"
               description="Your health risk score is moderate. Regular monitoring and healthy habits are recommended."
               factors={riskFactors}
