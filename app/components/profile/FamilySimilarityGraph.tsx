@@ -9,519 +9,462 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
-import { Svg, Circle, G, Path, Text as SvgText, Defs, LinearGradient, Stop, Line } from 'react-native-svg';
+import { Svg, Circle, G, Path, Text as SvgText, Defs, LinearGradient, Stop } from 'react-native-svg';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   withSpring,
-  withRepeat,
-  withSequence,
   Easing,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient as ExpoLinearGradient } from 'expo-linear-gradient';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CANVAS_WIDTH = SCREEN_WIDTH * 1.8;
+const CENTER_X = CANVAS_WIDTH / 2;
+const CENTER_Y = 260;
 
 const COLORS = {
   primary: '#0474FC',
-  primaryDark: '#0360D0',
+  primaryLight: '#E8F1FE',
+  family: '#8B5CF6',
+  symptom: '#F59E0B',
+  condition: '#EF4444',
   card: '#FFFFFF',
   background: '#F8FAFC',
   text: {
-    primary: '#111827',
-    secondary: '#6B7280',
-    light: '#9CA3AF',
+    primary: '#0F172A',
+    secondary: '#475569',
+    light: '#94A3B8',
   },
   risk: {
     low: '#10B981',
     moderate: '#F59E0B',
-    elevated: '#F97316',
     high: '#EF4444',
   },
 };
 
+// --- DATA MODEL (Neo4j Graph Emulation) ---
+const graphNodes = [
+  // People Nodes
+  { id: 'indresh', label: 'Indresh', type: 'Person', role: 'Self', x: CENTER_X, y: CENTER_Y, color: COLORS.primary, data: { age: 20, phone: '+91 9324474812', risk: 'Moderate' } },
+  { id: 'divya', label: 'Divya', type: 'Person', role: 'Mother', x: CENTER_X - 160, y: CENTER_Y - 120, color: COLORS.family, data: { age: 42, phone: '+91 7559302315', risk: 'Low' } },
+  { id: 'monish', label: 'Monish', type: 'Person', role: 'Grandfather', x: CENTER_X - 140, y: CENTER_Y + 140, color: COLORS.family, data: { age: 65, phone: '+91 9372962545', risk: 'Low' } },
+  { id: 'ankita', label: 'Ankita', type: 'Person', role: 'Child', x: CENTER_X + 160, y: CENTER_Y + 60, color: COLORS.family, data: { age: 10, phone: '+91 9970206614', risk: 'Low' } },
+  // Medical Nodes
+  { id: 'symp_anxiety', label: 'Anxiety', type: 'Symptom', x: CENTER_X - 80, y: CENTER_Y - 80, color: COLORS.symptom, data: { severity: 'Moderate', connected: ['Indresh', 'Divya'] } },
+  { id: 'symp_migraine', label: 'Migraine', type: 'Symptom', x: CENTER_X + 90, y: CENTER_Y - 90, color: COLORS.symptom, data: { severity: 'High', connected: ['Indresh'] } },
+  { id: 'symp_fatigue', label: 'Fatigue', type: 'Symptom', x: CENTER_X - 60, y: CENTER_Y + 80, color: COLORS.symptom, data: { severity: 'Mild', connected: ['Monish'] } },
+  { id: 'cond_hyper', label: 'Hypertension', type: 'Condition', x: CENTER_X + 40, y: CENTER_Y + 160, color: COLORS.condition, data: { severity: 'Chronic', connected: ['Monish'] } },
+];
+
+const graphEdges = [
+  // Relationships
+  { source: 'indresh', target: 'divya', label: 'MOTHER' },
+  { source: 'indresh', target: 'monish', label: 'GRANDFATHER' },
+  { source: 'indresh', target: 'ankita', label: 'CHILD' },
+  // Health Vectors
+  { source: 'indresh', target: 'symp_anxiety', label: 'REPORTS' },
+  { source: 'indresh', target: 'symp_migraine', label: 'REPORTS' },
+  { source: 'divya', target: 'symp_anxiety', label: 'REPORTS' },
+  { source: 'monish', target: 'symp_fatigue', label: 'REPORTS' },
+  { source: 'monish', target: 'cond_hyper', label: 'DIAGNOSED_WITH' },
+];
+
 export const FamilySimilarityGraph = () => {
-  const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  
   const panelOpacity = useSharedValue(0);
-  const panelScale = useSharedValue(0.95);
-  const nodePulse = useSharedValue(1);
+  const panelTranslateY = useSharedValue(20);
 
-  const centerX = SCREEN_WIDTH / 2;
-  const centerY = 240;
-  const radius = 130;
-
-  const familyNodes = [
-    { 
-      id: 'indresh', 
-      label: 'Indresh', 
-      type: 'self', 
-      gradientColors: ['#0474FC', '#0360D0'], 
-      symptoms: ['Migraine', 'Anxiety', 'Fatigue'], 
-      riskScore: 65, 
-      healthEvents: ['Fever (Day 1)', 'Fever (Day 3)'], 
-      lifestyle: ['Sedentary'] 
-    },
-    { 
-      id: 'father', 
-      label: 'Raj Kumar', 
-      type: 'father', 
-      gradientColors: ['#8B5CF6', '#7C3AED'], 
-      symptoms: ['Hypertension', 'Fatigue', 'Diabetes'], 
-      riskScore: 85, 
-      healthEvents: ['Diabetes Diagnosis'], 
-      lifestyle: ['Moderate Exercise'] 
-    },
-    { 
-      id: 'sister', 
-      label: 'Priya', 
-      type: 'sister', 
-      gradientColors: ['#EC4899', '#DB2777'], 
-      symptoms: ['Headache', 'Anxiety'], 
-      riskScore: 45, 
-      healthEvents: ['Migraine Attack'], 
-      lifestyle: ['Active'] 
-    },
-    { 
-      id: 'mother', 
-      label: 'Sunita', 
-      type: 'mother', 
-      gradientColors: ['#06B6D4', '#0891B2'], 
-      symptoms: ['Arthritis', 'Fatigue'], 
-      riskScore: 70, 
-      healthEvents: ['Arthritis Diagnosis'], 
-      lifestyle: ['Light Exercise'] 
-    },
-  ];
-
-  const sharedSymptoms = [
-    { symptom: 'Anxiety', members: ['indresh', 'sister'], color: COLORS.primary, riskLevel: 'Moderate' },
-    { symptom: 'Fatigue', members: ['indresh', 'father', 'mother'], color: '#F59E0B', riskLevel: 'Elevated' },
-  ];
-
-  const edges = [
-    { source: 'indresh', target: 'sister', symptoms: ['Anxiety'], riskScore: 45 },
-    { source: 'indresh', target: 'father', symptoms: ['Fatigue'], riskScore: 75 },
-    { source: 'father', target: 'mother', symptoms: ['Fatigue'], riskScore: 60 },
-    { source: 'indresh', target: 'mother', symptoms: ['Fatigue'], riskScore: 55 },
-  ];
-
-  const getNodePosition = (index: number, total: number) => {
-    const angle = (index / total) * 2 * Math.PI - Math.PI / 2;
-    return { x: centerX + radius * Math.cos(angle), y: centerY + radius * Math.sin(angle) };
-  };
-
-  const selectedNodeData = familyNodes.find(n => n.id === selectedNode);
+  const selectedNode = graphNodes.find(n => n.id === selectedNodeId);
 
   useEffect(() => {
-    if (selectedNode) {
+    if (selectedNodeId) {
       panelOpacity.value = withTiming(1, { duration: 300 });
-      panelScale.value = withSpring(1, { damping: 15, stiffness: 100 });
-      nodePulse.value = withRepeat(
-        withSequence(
-          withTiming(1.1, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
-          withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) })
-        ),
-        -1,
-        true
-      );
+      panelTranslateY.value = withSpring(0, { damping: 15, stiffness: 100 });
     } else {
       panelOpacity.value = withTiming(0, { duration: 200 });
-      panelScale.value = withTiming(0.95, { duration: 200 });
-      nodePulse.value = 1;
+      panelTranslateY.value = withTiming(20, { duration: 200 });
     }
-  }, [selectedNode]);
+  }, [selectedNodeId]);
 
   const animatedPanelStyle = useAnimatedStyle(() => ({
     opacity: panelOpacity.value,
-    transform: [{ scale: panelScale.value }],
+    transform: [{ translateY: panelTranslateY.value }],
   }));
 
-  const animatedPulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: nodePulse.value }],
-  }));
+  // Helper to render dynamic details based on node type
+  const renderNodeDetails = () => {
+    if (!selectedNode) return null;
+
+    if (selectedNode.type === 'Person') {
+      const riskColor = COLORS.risk[selectedNode.data.risk.toLowerCase() as keyof typeof COLORS.risk] || COLORS.risk.low;
+      return (
+        <View style={styles.detailsBody}>
+          <View style={styles.infoRow}>
+            <View style={styles.infoBox}>
+              <Text style={styles.infoLabel}>Age</Text>
+              <Text style={styles.infoValue}>{selectedNode.data.age} yrs</Text>
+            </View>
+            <View style={styles.infoBox}>
+              <Text style={styles.infoLabel}>Contact</Text>
+              <Text style={styles.infoValue}>{selectedNode.data.phone}</Text>
+            </View>
+          </View>
+          <View style={styles.riskContainer}>
+            <Text style={styles.riskLabel}>AI Health Risk Assessment</Text>
+            <View style={[styles.riskBadge, { backgroundColor: `${riskColor}15` }]}>
+              <View style={[styles.riskDot, { backgroundColor: riskColor }]} />
+              <Text style={[styles.riskText, { color: riskColor }]}>{selectedNode.data.risk} Risk</Text>
+            </View>
+          </View>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.detailsBody}>
+        <Text style={styles.infoLabel}>Severity Level</Text>
+        <Text style={[styles.infoValue, { color: selectedNode.color, marginBottom: 12 }]}>
+          {selectedNode.data.severity}
+        </Text>
+        <Text style={styles.infoLabel}>Observed In</Text>
+        <View style={styles.tagContainer}>
+          {selectedNode.data.connected.map((name: string, i: number) => (
+            <View key={i} style={styles.personTag}>
+              <Text style={styles.personTagText}>{name}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
 
   return (
-    <View style={styles.graphContainer}>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Swasthya Memory Graph</Text>
+        <Text style={styles.subtitle}>Interactive entity mapping and symptom vectors</Text>
+      </View>
+
       <ScrollView 
         horizontal 
         showsHorizontalScrollIndicator={false} 
-        contentContainerStyle={styles.graphScrollContent}
+        contentContainerStyle={styles.scrollContent}
+        // Start scroll position roughly in the middle
+        contentOffset={{ x: (CANVAS_WIDTH - SCREEN_WIDTH) / 2, y: 0 }} 
       >
-        <View style={styles.graphWrapper}>
-          <Svg width={SCREEN_WIDTH * 1.4} height={500}>
-            <Defs>
-              {familyNodes.map(node => (
-                <LinearGradient 
-                  key={`grad-${node.id}`} 
-                  id={`grad-${node.id}`} 
-                  x1="0%" 
-                  y1="0%" 
-                  x2="100%" 
-                  y2="100%"
-                >
-                  <Stop offset="0%" stopColor={node.gradientColors[0]} />
-                  <Stop offset="100%" stopColor={node.gradientColors[1]} />
-                </LinearGradient>
-              ))}
-              <LinearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <Stop offset="0%" stopColor={COLORS.primary} stopOpacity="0.1" />
-                <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
-              </LinearGradient>
-            </Defs>
+        <Svg width={CANVAS_WIDTH} height={520}>
+          <Defs>
+            {/* Soft grid pattern background */}
+            <LinearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor="#F1F5F9" stopOpacity="0.5"/>
+              <Stop offset="1" stopColor="#FFFFFF" stopOpacity="0"/>
+            </LinearGradient>
+          </Defs>
 
-            <Circle cx={centerX} cy={centerY} r={radius + 80} fill="url(#glowGrad)" />
-            {[0, 1, 2, 3].map(i => (
-              <Circle 
-                key={`grid-${i}`} 
-                cx={centerX} 
-                cy={centerY} 
-                r={(radius + 80) * ((i + 1) / 4)} 
-                stroke="#E5E7EB" 
-                strokeWidth="0.5" 
-                fill="none" 
-                strokeDasharray="4,6" 
-              />
-            ))}
+          {/* Draw Edges (Relationships) */}
+          {graphEdges.map((edge, index) => {
+            const source = graphNodes.find(n => n.id === edge.source);
+            const target = graphNodes.find(n => n.id === edge.target);
+            if (!source || !target) return null;
 
-            {edges.map((edge, index) => {
-              const source = familyNodes.find(n => n.id === edge.source);
-              const target = familyNodes.find(n => n.id === edge.target);
-              if (!source || !target) return null;
-              const sourcePos = getNodePosition(familyNodes.indexOf(source), familyNodes.length);
-              const targetPos = getNodePosition(familyNodes.indexOf(target), familyNodes.length);
-              const isHighlighted = selectedNode === edge.source || selectedNode === edge.target;
-              const midX = (sourcePos.x + targetPos.x) / 2;
-              const midY = (sourcePos.y + targetPos.y) / 2;
-              return (
-                <G key={`edge-${index}`}>
-                  <Path 
-                    d={`M ${sourcePos.x} ${sourcePos.y} Q ${centerX} ${centerY} ${targetPos.x} ${targetPos.y}`} 
-                    stroke={isHighlighted ? COLORS.primary : '#CBD5E1'} 
-                    strokeWidth={isHighlighted ? 2.5 : 1.5} 
-                    fill="none" 
-                    strokeDasharray={isHighlighted ? undefined : '5,5'} 
-                  />
-                  {isHighlighted && edge.symptoms.length > 0 && (
-                    <Circle cx={midX} cy={midY - 20} r={4} fill={COLORS.primary} />
-                  )}
-                </G>
-              );
-            })}
+            const isHighlighted = selectedNodeId === source.id || selectedNodeId === target.id;
+            const midX = (source.x + target.x) / 2;
+            const midY = (source.y + target.y) / 2;
 
-            {familyNodes.map((node, index) => {
-              const pos = getNodePosition(index, familyNodes.length);
-              const isSelected = selectedNode === node.id;
-              const nodeRadius = node.type === 'self' ? 36 : 28;
-              return (
-                <G key={node.id} onPress={() => setSelectedNode(isSelected ? null : node.id)}>
-                  {isSelected && (
-                    <Circle cx={pos.x} cy={pos.y} r={nodeRadius + 12} fill={COLORS.primary} opacity={0.15} />
-                  )}
-                  <Circle 
-                    cx={pos.x} 
-                    cy={pos.y} 
-                    r={nodeRadius} 
-                    fill={`url(#grad-${node.id})`} 
-                    stroke={isSelected ? COLORS.primary : '#FFFFFF'} 
-                    strokeWidth={isSelected ? 3 : 2} 
-                  />
-                  <SvgText x={pos.x} y={pos.y + 6} textAnchor="middle" fontSize={16} fontWeight="800" fill="#FFF">
-                    {node.label.charAt(0)}
-                  </SvgText>
-                  <SvgText 
-                    x={pos.x} 
-                    y={pos.y + nodeRadius + 18} 
-                    textAnchor="middle" 
-                    fontSize={12} 
-                    fontWeight="600" 
-                    fill={isSelected ? COLORS.primary : COLORS.text.secondary}
-                  >
-                    {node.label}
-                  </SvgText>
-                  <SvgText x={pos.x} y={pos.y + nodeRadius + 32} textAnchor="middle" fontSize={10} fill={COLORS.text.light}>
-                    {node.type}
-                  </SvgText>
-                  <Circle 
-                    cx={pos.x + nodeRadius + 14} 
-                    cy={pos.y - nodeRadius + 14} 
-                    r={12} 
-                    fill={node.riskScore > 70 ? COLORS.risk.high : node.riskScore > 50 ? COLORS.risk.elevated : COLORS.risk.moderate} 
-                    opacity={0.9} 
-                    stroke="#FFF" 
-                    strokeWidth={1.5} 
-                  />
-                  <SvgText x={pos.x + nodeRadius + 14} y={pos.y - nodeRadius + 18} textAnchor="middle" fontSize={8} fontWeight="700" fill="#FFF">
-                    {node.riskScore}%
-                  </SvgText>
-                </G>
-              );
-            })}
-
-            {sharedSymptoms.map((shared, index) => {
-              const members = shared.members.map(id => familyNodes.find(n => n.id === id)).filter(Boolean);
-              if (members.length < 2) return null;
-              const positions = members.map(m => getNodePosition(familyNodes.indexOf(m), familyNodes.length));
-              const midX = positions.reduce((sum, p) => sum + p.x, 0) / positions.length;
-              const midY = positions.reduce((sum, p) => sum + p.y, 0) / positions.length;
-              const isHighlighted = selectedNode && shared.members.includes(selectedNode);
-              return (
-                <G key={index}>
-                  <Circle 
-                    cx={midX} 
-                    cy={midY} 
-                    r={isHighlighted ? 22 : 18} 
-                    fill={shared.color} 
-                    opacity={isHighlighted ? 0.95 : 0.7} 
-                  />
-                  <Circle 
-                    cx={midX} 
-                    cy={midY} 
-                    r={isHighlighted ? 28 : 22} 
-                    fill="none" 
-                    stroke={shared.color} 
-                    strokeWidth={1.5} 
-                    opacity={isHighlighted ? 0.4 : 0.15} 
-                  />
-                  <SvgText x={midX} y={midY + 4} textAnchor="middle" fontSize={isHighlighted ? 10 : 8} fontWeight="600" fill="#FFF">
-                    {shared.symptom.substring(0, 6)}
-                  </SvgText>
-                  {isHighlighted && (
-                    <SvgText x={midX} y={midY + 18} textAnchor="middle" fontSize={7} fill="#FFF" opacity={0.8}>
-                      {shared.riskLevel}
+            return (
+              <G key={`edge-${index}`}>
+                <Path 
+                  d={`M ${source.x} ${source.y} Q ${midX} ${midY + 20} ${target.x} ${target.y}`} 
+                  stroke={isHighlighted ? COLORS.primary : '#E2E8F0'} 
+                  strokeWidth={isHighlighted ? 2.5 : 1.5} 
+                  fill="none" 
+                  strokeDasharray={edge.label.includes('REPORTS') ? '4,4' : undefined} 
+                />
+                {/* Neo4j Style Relationship Labels */}
+                {isHighlighted && (
+                  <G transform={`translate(${midX}, ${midY})`}>
+                    <Rect x="-40" y="-10" width="80" height="20" rx="10" fill="#FFFFFF" stroke="#E2E8F0" />
+                    <SvgText textAnchor="middle" y="3" fontSize="8" fontWeight="700" fill={COLORS.text.secondary} letterSpacing="0.5">
+                      {edge.label}
                     </SvgText>
-                  )}
-                </G>
-              );
-            })}
-          </Svg>
-        </View>
+                  </G>
+                )}
+              </G>
+            );
+          })}
+
+          {/* Draw Nodes (Entities) */}
+          {graphNodes.map((node) => {
+            const isSelected = selectedNodeId === node.id;
+            const isPerson = node.type === 'Person';
+            const radius = isSelected ? 32 : 28;
+
+            return (
+              <G key={node.id} onPress={() => setSelectedNodeId(isSelected ? null : node.id)}>
+                {isSelected && (
+                  <Circle cx={node.x} cy={node.y} r={radius + 8} fill={node.color} opacity={0.15} />
+                )}
+                <Circle 
+                  cx={node.x} 
+                  cy={node.y} 
+                  r={radius} 
+                  fill="#FFFFFF" 
+                  stroke={node.color} 
+                  strokeWidth={isSelected ? 4 : 2} 
+                />
+                <Circle 
+                  cx={node.x} 
+                  cy={node.y} 
+                  r={radius - 4} 
+                  fill={node.color} 
+                  opacity={0.1} 
+                />
+                <SvgText x={node.x} y={node.y + 6} textAnchor="middle" fontSize="16" fontWeight="800" fill={node.color}>
+                  {node.label.charAt(0)}
+                </SvgText>
+                
+                {/* Node Label Below */}
+                <SvgText 
+                  x={node.x} 
+                  y={node.y + radius + 18} 
+                  textAnchor="middle" 
+                  fontSize="12" 
+                  fontWeight={isSelected ? '700' : '600'} 
+                  fill={COLORS.text.primary}
+                >
+                  {node.label}
+                </SvgText>
+                {/* Node Type Subtitle */}
+                <SvgText x={node.x} y={node.y + radius + 32} textAnchor="middle" fontSize="10" fill={COLORS.text.light}>
+                  {isPerson ? node.role : node.type}
+                </SvgText>
+              </G>
+            );
+          })}
+        </Svg>
       </ScrollView>
 
-      {selectedNodeData && (
+      {/* Floating Details Panel */}
+      {selectedNode && (
         <Animated.View style={[styles.detailsPanel, animatedPanelStyle]}>
           <ExpoLinearGradient
-            colors={selectedNodeData.gradientColors as [string, string]}
+            colors={[`${selectedNode.color}15`, '#FFFFFF']}
             start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.detailsGradient}
+            end={{ x: 0, y: 1 }}
+            style={styles.panelGradient}
           >
-            <View style={styles.detailsHeader}>
-              <View style={styles.detailsIcon}>
-                <Text style={styles.detailsInitial}>{selectedNodeData.label.charAt(0)}</Text>
+            <View style={styles.panelHeader}>
+              <View style={styles.headerLeft}>
+                <View style={[styles.iconWrapper, { backgroundColor: `${selectedNode.color}20` }]}>
+                  <Text style={[styles.iconText, { color: selectedNode.color }]}>
+                    {selectedNode.label.charAt(0)}
+                  </Text>
+                </View>
+                <View>
+                  <Text style={styles.nodeTitle}>{selectedNode.label}</Text>
+                  <View style={styles.nodeTypeBadge}>
+                    <Text style={styles.nodeTypeText}>{selectedNode.type}</Text>
+                  </View>
+                </View>
               </View>
-              <View style={styles.detailsInfo}>
-                <Text style={styles.detailsTitle}>{selectedNodeData.label}</Text>
-                <Text style={styles.detailsType}>{selectedNodeData.type}</Text>
-              </View>
-              <TouchableOpacity onPress={() => setSelectedNode(null)} style={styles.detailsClose}>
-                <Ionicons name="close" size={20} color="#FFFFFF" />
+              <TouchableOpacity onPress={() => setSelectedNodeId(null)} style={styles.closeBtn}>
+                <Ionicons name="close" size={24} color={COLORS.text.light} />
               </TouchableOpacity>
             </View>
+
+            {renderNodeDetails()}
+            
           </ExpoLinearGradient>
-          
-          <View style={styles.detailsBody}>
-            <View style={styles.detailsSection}>
-              <Text style={styles.detailsSectionTitle}>🩺 Symptoms</Text>
-              <View style={styles.detailsTags}>
-                {selectedNodeData.symptoms.map((symptom, i) => (
-                  <View key={i} style={[styles.detailsTag, { backgroundColor: '#E8F1FE' }]}>
-                    <Text style={[styles.detailsTagText, { color: COLORS.primary }]}>{symptom}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.detailsSection}>
-              <Text style={styles.detailsSectionTitle}>📊 Health Timeline</Text>
-              <View style={styles.timelineContainer}>
-                {selectedNodeData.healthEvents.map((event, i) => (
-                  <View key={i} style={styles.timelineItem}>
-                    <View style={[styles.timelineDot, { backgroundColor: COLORS.primary }]} />
-                    {i < selectedNodeData.healthEvents.length - 1 && <View style={styles.timelineLine} />}
-                    <Text style={styles.timelineText}>{event}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.riskSection}>
-              <View style={styles.riskHeader}>
-                <Text style={styles.riskLabel}>Health Risk Score</Text>
-                <Text style={[styles.riskScore, { color: selectedNodeData.riskScore > 70 ? COLORS.risk.high : selectedNodeData.riskScore > 50 ? COLORS.risk.elevated : COLORS.risk.moderate }]}>
-                  {selectedNodeData.riskScore}%
-                </Text>
-              </View>
-              <View style={styles.riskBar}>
-                <Animated.View style={[styles.riskBarFill, { 
-                  width: `${selectedNodeData.riskScore}%`, 
-                  backgroundColor: selectedNodeData.riskScore > 70 ? COLORS.risk.high : selectedNodeData.riskScore > 50 ? COLORS.risk.elevated : COLORS.risk.moderate 
-                }, animatedPulseStyle]} />
-              </View>
-              <Text style={styles.riskNote}>
-                {selectedNodeData.riskScore > 70 ? '⚠️ High risk - Consult a doctor' : 
-                 selectedNodeData.riskScore > 50 ? '⚡ Elevated risk - Monitor closely' : 
-                 '✅ Low risk - Continue healthy habits'}
-              </Text>
-            </View>
-          </View>
         </Animated.View>
       )}
-      <Text style={styles.legendTip}>👆 Tap any family member to view health insights</Text>
+
+      {/* Helper component for SVG Rect to fix missing import in native SVG usually */}
+      <Defs>
+         <Path id="rectMock"/>
+      </Defs>
     </View>
   );
 };
 
+// SVG Rect component declaration since it wasn't imported top-level
+const Rect = ({ x, y, width, height, rx, fill, stroke }: any) => (
+  <Path 
+    d={`M${Number(x)+Number(rx)},${y} h${Number(width)-2*Number(rx)} a${rx},${rx} 0 0 1 ${rx},${rx} v${Number(height)-2*Number(rx)} a${rx},${rx} 0 0 1 -${rx},${rx} h-${Number(width)-2*Number(rx)} a${rx},${rx} 0 0 1 -${rx},-${rx} v-${Number(height)-2*Number(rx)} a${rx},${rx} 0 0 1 ${rx},-${rx} z`} 
+    fill={fill} 
+    stroke={stroke} 
+  />
+);
+
 const styles = StyleSheet.create({
-  graphContainer: { 
-    paddingVertical: 16, 
-    backgroundColor: '#F8FAFC', 
-    borderRadius: 16, 
-    minHeight: 520 
+  container: { 
+    flex: 1,
+    backgroundColor: COLORS.background, 
   },
-  graphScrollContent: { 
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 8,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: COLORS.text.primary,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: COLORS.text.secondary,
+    marginTop: 4,
+  },
+  scrollContent: { 
     flexGrow: 1, 
     alignItems: 'center', 
-    justifyContent: 'center' 
-  },
-  graphWrapper: { 
-    paddingHorizontal: 20, 
-    alignItems: 'center', 
-    justifyContent: 'center' 
-  },
-  legendTip: { 
-    textAlign: 'center', 
-    fontSize: 11, 
-    color: COLORS.text.light, 
-    paddingVertical: 8, 
-    fontStyle: 'italic' 
+    justifyContent: 'center',
+    paddingVertical: 20,
   },
   detailsPanel: { 
-    marginHorizontal: 16, 
-    marginTop: 16, 
+    position: 'absolute',
+    bottom: 24,
+    left: 16,
+    right: 16,
     backgroundColor: COLORS.card, 
-    borderRadius: 16, 
+    borderRadius: 24, 
     overflow: 'hidden', 
-    shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 4 }, 
-    shadowOpacity: 0.1, 
-    shadowRadius: 12, 
-    elevation: 6 
+    shadowColor: '#0F172A', 
+    shadowOffset: { width: 0, height: 12 }, 
+    shadowOpacity: 0.08, 
+    shadowRadius: 24, 
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
-  detailsGradient: { padding: 16 },
-  detailsHeader: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 12 
+  panelGradient: {
+    padding: 20,
   },
-  detailsIcon: { 
-    width: 44, 
-    height: 44, 
-    borderRadius: 22, 
-    backgroundColor: 'rgba(255,255,255,0.2)', 
-    alignItems: 'center', 
-    justifyContent: 'center' 
-  },
-  detailsInitial: { 
-    fontSize: 20, 
-    fontWeight: '700', 
-    color: '#FFFFFF' 
-  },
-  detailsInfo: { flex: 1 },
-  detailsTitle: { 
-    fontSize: 18, 
-    fontWeight: '700', 
-    color: '#FFFFFF' 
-  },
-  detailsType: { 
-    fontSize: 13, 
-    color: 'rgba(255,255,255,0.8)' 
-  },
-  detailsClose: { padding: 4 },
-  detailsBody: { padding: 16 },
-  detailsSection: { marginBottom: 16 },
-  detailsSectionTitle: { 
-    fontSize: 13, 
-    fontWeight: '600', 
-    color: COLORS.text.secondary, 
-    marginBottom: 8 
-  },
-  detailsTags: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
-    gap: 6 
-  },
-  detailsTag: { 
-    paddingHorizontal: 10, 
-    paddingVertical: 5, 
-    borderRadius: 12, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 4 
-  },
-  detailsTagText: { 
-    fontSize: 11, 
-    fontWeight: '500' 
-  },
-  timelineContainer: { paddingLeft: 8 },
-  timelineItem: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingVertical: 4 
-  },
-  timelineDot: { 
-    width: 8, 
-    height: 8, 
-    borderRadius: 4, 
-    marginRight: 10 
-  },
-  timelineLine: { 
-    width: 2, 
-    height: 16, 
-    backgroundColor: '#E5E7EB', 
-    marginLeft: 3, 
-    marginRight: 10 
-  },
-  timelineText: { 
-    fontSize: 12, 
-    color: COLORS.text.secondary 
-  },
-  riskSection: { 
-    marginTop: 8, 
-    padding: 12, 
-    backgroundColor: '#F8FAFC', 
-    borderRadius: 12 
-  },
-  riskHeader: { 
+  panelHeader: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
-    alignItems: 'center', 
-    marginBottom: 8 
+    alignItems: 'flex-start', 
+    marginBottom: 16,
   },
-  riskLabel: { 
-    fontSize: 13, 
-    fontWeight: '500', 
-    color: COLORS.text.secondary 
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
   },
-  riskScore: { 
+  iconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconText: {
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  nodeTitle: { 
     fontSize: 18, 
-    fontWeight: '700' 
+    fontWeight: '800', 
+    color: COLORS.text.primary,
+    marginBottom: 4,
   },
-  riskBar: { 
-    height: 6, 
-    backgroundColor: '#E5E7EB', 
-    borderRadius: 3, 
-    overflow: 'hidden' 
+  nodeTypeBadge: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
   },
-  riskBarFill: { 
-    height: '100%', 
-    borderRadius: 3 
+  nodeTypeText: { 
+    fontSize: 10, 
+    fontWeight: '700',
+    color: COLORS.text.secondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  riskNote: { 
-    fontSize: 11, 
-    color: COLORS.text.secondary, 
-    marginTop: 8 
+  closeBtn: { 
+    padding: 4,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 20,
+  },
+  detailsBody: { 
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    gap: 24,
+    marginBottom: 16,
+  },
+  infoBox: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.text.light,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  infoValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.text.primary,
+  },
+  riskContainer: {
+    backgroundColor: '#F8FAFC',
+    padding: 12,
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  riskLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.text.secondary,
+  },
+  riskBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 6,
+  },
+  riskDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  riskText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  tagContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  personTag: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  personTagText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.text.secondary,
   },
 });
 
