@@ -12,6 +12,8 @@ import {
   Text,
   Modal,
   TouchableWithoutFeedback,
+  Dimensions,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -30,6 +32,9 @@ import {
   QuickEmergencyCard,
   FamilyMembersList,
 } from '@/components/profile';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
 
 const COLORS = {
   background: '#F9FAFB',
@@ -53,7 +58,7 @@ const COLORS = {
   successLight: '#D1FAE5',
 };
 
-const BOTTOM_BAR_HEIGHT = 120;
+const BOTTOM_BAR_HEIGHT = isWeb ? 40 : 120;
 
 // Custom Logout Alert Component
 const LogoutAlert = ({ visible, onConfirm, onCancel }) => {
@@ -328,7 +333,6 @@ export default function ProfileScreen() {
   const handleLogout = () => {
     setLogoutAlertVisible(false);
     console.log('Logging out...');
-    // Add your logout logic here
   };
 
   const profileRiskFactors = [
@@ -362,7 +366,8 @@ export default function ProfileScreen() {
         <ProfileToggle activeTab={activeTab} onTabChange={setActiveTab} />
 
         {activeTab === 'profile' ? (
-          <View key="profile-content">
+          <View key="profile-content" style={styles.contentWrapper}>
+            {/* 1. Profile Header with QR */}
             <ProfileTabContent
               profile={profile}
               qrValue={getQRValue()}
@@ -371,6 +376,7 @@ export default function ProfileScreen() {
               getRiskColor={getRiskColor}
             />
 
+            {/* 2. Risk Score */}
             <RiskScoreCard
               score={58}
               riskLevel="Moderate Risk"
@@ -378,6 +384,7 @@ export default function ProfileScreen() {
               factors={profileRiskFactors}
             />
 
+            {/* 3. Health Stats */}
             <HealthStatsCard
               stats={[
                 { icon: 'medical-outline', label: 'Records', value: '12', color: '#E8F1FE', iconColor: '#0474FC' },
@@ -386,20 +393,25 @@ export default function ProfileScreen() {
               ]}
             />
 
+            {/* 4. Health Network Graph */}
+            <HealthGraphCard />
+
+            {/* 5. AI Insight */}
+            <AIInsightCard summaryText={aiSummary} />
+
+            {/* 6. Medical Information */}
             <MedicalInformationCard initialInfo={medicalInfo} onSave={handleSaveMedicalInfo} />
 
+            {/* 7. Emergency Contacts */}
             <QuickEmergencyCard
               contacts={emergencyContacts}
               onAddContact={handleAddEmergencyContact}
               onDeleteContact={showDeleteAlert}
             />
-
-            <HealthGraphCard />
-
-            <AIInsightCard summaryText={aiSummary} />
           </View>
         ) : (
-          <View key="family-content">
+          <View key="family-content" style={styles.contentWrapper}>
+            {/* 1. Family Header with QR */}
             <FamilyTabContent
               familyData={{ family_name: 'Indresh Family', join_code: '123321cc' }}
               onCopyFamilyCode={handleCopyFamilyCode}
@@ -409,6 +421,7 @@ export default function ProfileScreen() {
               getRiskColor={getRiskColor}
             />
 
+            {/* 2. Risk Score */}
             <RiskScoreCard
               score={45}
               riskLevel="Moderate Risk"
@@ -416,6 +429,7 @@ export default function ProfileScreen() {
               factors={familyRiskFactors}
             />
 
+            {/* 3. Health Stats */}
             <HealthStatsCard
               stats={[
                 { icon: 'people-outline', label: 'Members', value: '4', color: '#E0E7FF', iconColor: '#4F46E5' },
@@ -424,12 +438,15 @@ export default function ProfileScreen() {
               ]}
             />
 
+            {/* 4. Family Members List */}
             <FamilyMembersList members={familyMembers} />
 
+            {/* 5. AI Insight */}
             <AIInsightCard summaryText={familyAISummary} />
           </View>
         )}
 
+        {/* Logout Button */}
         <TouchableOpacity style={styles.logoutButton} onPress={showLogoutAlert}>
           <Ionicons name="log-out-outline" size={22} color="#EF4444" />
           <Text style={styles.logoutText}>Logout</Text>
@@ -475,6 +492,12 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingBottom: 30,
   },
+  contentWrapper: {
+    paddingHorizontal: isWeb ? Math.max(16, (SCREEN_WIDTH - 600) / 2) : 0,
+    maxWidth: isWeb ? 600 : undefined,
+    alignSelf: isWeb ? 'center' : undefined,
+    width: '100%',
+  },
   bottomSpacer: {
     height: BOTTOM_BAR_HEIGHT,
   },
@@ -484,12 +507,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     backgroundColor: '#FEF2F2',
-    marginHorizontal: 16,
+    marginHorizontal: isWeb ? Math.max(16, (SCREEN_WIDTH - 600) / 2) : 16,
     marginTop: 24,
     padding: 16,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: '#FEE2E2',
+    maxWidth: isWeb ? 600 : undefined,
+    alignSelf: isWeb ? 'center' : undefined,
+    width: isWeb ? '100%' : undefined,
   },
   logoutText: {
     fontSize: 16,
@@ -508,6 +534,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 24,
     width: '85%',
+    maxWidth: 400,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },

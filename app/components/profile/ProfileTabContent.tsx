@@ -1,9 +1,21 @@
+// app/components/profile/ProfileTabContent.tsx
 import React, { useRef } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
+import { 
+  StyleSheet, 
+  Text, 
+  TouchableOpacity, 
+  View, 
+  Image, 
+  Dimensions,
+  Platform 
+} from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { Ionicons } from '@expo/vector-icons';
 import ViewShot from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
 
 const COLORS = {
   primary: '#0474FC',
@@ -40,7 +52,6 @@ export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
 }) => {
   const viewShotRef = useRef<any>(null);
 
-  // Demo data for Indresh - using patient data
   const displayName = profile?.name || 'Indresh';
   const displayAge = profile?.age || 20;
   const displayGender = profile?.gender || 'Male';
@@ -125,7 +136,6 @@ export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
         </View>
       </ViewShot>
 
-      {/* Buttons rendered OUTSIDE the ViewShot capture area */}
       <View style={styles.qrButtons}>
         <TouchableOpacity style={styles.qrButton} onPress={handleShare}>
           <Ionicons name="share-outline" size={20} color={COLORS.primary} />
@@ -142,8 +152,8 @@ export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: 16,
     marginTop: 16,
+    // Remove horizontal margin - parent will handle it
   },
   viewShotContainer: {
     borderRadius: 20,

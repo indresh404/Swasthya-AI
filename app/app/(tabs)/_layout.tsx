@@ -4,6 +4,7 @@ import { router, Slot, useSegments } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, TouchableOpacity, View, Easing, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { CheckinProvider } from '../context/CheckinContext';
 
 const FAB_SIZE = 62;
 const PRIMARY_COLOR = '#0474FC';
@@ -176,8 +177,10 @@ export default function TabLayout() {
         </View>
       </View>
 
-      {/* Content */}
-      <Slot />
+      {/* Content wrapped with CheckinProvider for state persistence */}
+      <CheckinProvider>
+        <Slot />
+      </CheckinProvider>
       
       {/* Bottom Navigation Bar */}
       <Animated.View 
