@@ -33,6 +33,70 @@ import {
 
 const CODE_LENGTH = 6;
 
+// Custom Alert Modal Component
+const CustomAlertModal = ({ visible, title, message, onClose, type = 'info' }: any) => {
+  const getIcon = () => {
+    switch (type) {
+      case 'success':
+        return <Ionicons name="checkmark-circle" size={50} color="#10B981" />;
+      case 'error':
+        return <Ionicons name="close-circle" size={50} color="#EF4444" />;
+      case 'warning':
+        return <Ionicons name="warning" size={50} color="#F59E0B" />;
+      default:
+        return <Ionicons name="information-circle" size={50} color="#116acf" />;
+    }
+  };
+
+  const getGradient = () => {
+    switch (type) {
+      case 'success':
+        return ['#10B981', '#059669'];
+      case 'error':
+        return ['#EF4444', '#DC2626'];
+      case 'warning':
+        return ['#F59E0B', '#D97706'];
+      default:
+        return ['#116acf', '#4da0fe'];
+    }
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <TouchableOpacity 
+        style={styles.alertOverlay} 
+        activeOpacity={1} 
+        onPress={onClose}
+      >
+        <View style={styles.alertContainer}>
+          <LinearGradient
+            colors={getGradient()}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.alertIconContainer}
+          >
+            {getIcon()}
+          </LinearGradient>
+          
+          <Text style={styles.alertTitle}>{title}</Text>
+          <Text style={styles.alertMessage}>{message}</Text>
+
+          <TouchableOpacity style={styles.alertButton} onPress={onClose}>
+            <LinearGradient
+              colors={getGradient()}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.alertButtonGradient}
+            >
+              <Text style={styles.alertButtonText}>Got it</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+};
+
 export default function FamilySetupScreen() {
   const router = useRouter();
   const { patientId, phoneNumber, setSessionState } = useAuthStore();
@@ -47,12 +111,25 @@ export default function FamilySetupScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
+  // Alert state
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertType, setAlertType] = useState<'success' | 'error' | 'warning' | 'info'>('info');
+
+  const showAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setAlertType(type);
+    setAlertVisible(true);
+  };
+
   // ── Skip Handler ──────────────────────────────────────────────────────────────
   const handleSkip = () => {
     setSessionState({
       userId: 'skip-user-123',
       patientId: 'skip-patient-123',
-      phoneNumber: '+932447481291 ',
+      phoneNumber: '+932447481291',
       isLoggedIn: true,
       hasProfile: false,
       hasFamilyGroup: true,
@@ -63,11 +140,7 @@ export default function FamilySetupScreen() {
   };
 
   const handleBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/(auth)/welcome' as any);
-    }
+    router.replace('/(auth)/login');
   };
 
   const requirePatient = async (): Promise<PatientRecord> => {
@@ -146,7 +219,7 @@ export default function FamilySetupScreen() {
   // Create family with name and generate code
   const handleCreateFamily = async () => {
     if (!familyName.trim()) {
-      Alert.alert('Error', 'Please enter a family name');
+      showAlert('Error', 'Please enter a family name', 'error');
       return;
     }
 
@@ -166,7 +239,7 @@ export default function FamilySetupScreen() {
       
     } catch (error: any) {
       console.error('Error creating family:', error);
-      Alert.alert('Error', error.message || 'Failed to create family. Please try again.');
+      showAlert('Error', error.message || 'Failed to create family. Please try again.', 'error');
     } finally {
       setIsCreating(false);
     }
@@ -175,7 +248,7 @@ export default function FamilySetupScreen() {
   const handleJoinFlow = async () => {
     const code = codeDigits.join('');
     if (code.length !== CODE_LENGTH) {
-      Alert.alert('Error', 'Please enter a valid 6-digit code');
+      showAlert('Error', 'Please enter a valid 6-digit code', 'error');
       return;
     }
 
@@ -190,17 +263,18 @@ export default function FamilySetupScreen() {
         hasFamilyGroup: true,
       });
 
-      Alert.alert('Success!', `You've successfully joined "${family.family_name}" family!`, [
-        {
-          text: 'Continue',
-          onPress: () => router.push('/(tabs)/home'),
-        },
-      ]);
+      showAlert('Success!', `You've successfully joined "${family.family_name}" family!`, 'success');
 
       setCodeDigits(Array(CODE_LENGTH).fill(''));
+      
+      // Navigate after alert closes
+      setTimeout(() => {
+        router.push('/(tabs)/home');
+      }, 1500);
+      
     } catch (error: any) {
       console.error('Error joining family:', error);
-      Alert.alert('Error', error.message || 'Failed to join family. Please try again.');
+      showAlert('Error', error.message || 'Failed to join family. Please try again.', 'error');
     } finally {
       setIsJoining(false);
     }
@@ -210,7 +284,7 @@ export default function FamilySetupScreen() {
     if (!permission?.granted) {
       const { granted } = await requestPermission();
       if (!granted) {
-        Alert.alert('Permission Required', 'Please grant camera permission to scan QR codes');
+        showAlert('Permission Required', 'Please grant camera permission to scan QR codes', 'warning');
         return;
       }
     }
@@ -244,11 +318,7 @@ export default function FamilySetupScreen() {
       }
       
       if (!code || code.length !== CODE_LENGTH || !/^\d{6}$/.test(code)) {
-        Alert.alert(
-          'Invalid QR Code',
-          'This QR code does not contain a valid 6-digit family join code.\n\nMake sure you\'re scanning a valid Swasthya family QR code.',
-          [{ text: 'Try Again', onPress: () => setShowQRScanner(true) }]
-        );
+        showAlert('Invalid QR Code', 'This QR code does not contain a valid 6-digit family join code.', 'error');
         return;
       }
       
@@ -269,8 +339,7 @@ export default function FamilySetupScreen() {
       }
     } catch (error) {
       console.error('QR scan error:', error);
-      Alert.alert('Error', 'Failed to process QR code. Please try again.');
-      setShowQRScanner(true);
+      showAlert('Error', 'Failed to process QR code. Please try again.', 'error');
     }
   };
 
@@ -311,10 +380,10 @@ export default function FamilySetupScreen() {
     try {
       const Clipboard = require('expo-clipboard');
       await Clipboard.setStringAsync(code);
-      Alert.alert('Copied!', 'Family code copied to clipboard');
+      showAlert('Copied!', 'Family code copied to clipboard', 'success');
     } catch (error) {
       console.error('Copy error:', error);
-      Alert.alert('Family Code', `Your family code is: ${code}`);
+      showAlert('Family Code', `Your family code is: ${code}`, 'info');
     }
   };
 
@@ -338,7 +407,7 @@ export default function FamilySetupScreen() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Header with Skip Button */}
+            {/* Header with Back Button Only */}
             <View style={styles.header}>
               <TouchableOpacity
                 onPress={handleBack}
@@ -348,27 +417,14 @@ export default function FamilySetupScreen() {
                 <Ionicons name="arrow-back" size={24} color="#ffffff" />
               </TouchableOpacity>
               <Text style={styles.headerTitle}>Swasthya AI</Text>
-              <TouchableOpacity
-                onPress={handleSkip}
-                style={styles.skipHeaderButton}
-                activeOpacity={0.8}
-              >
-                <LinearGradient
-                  colors={['#10B981', '#059669']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.skipHeaderGradient}
-                >
-                  <Text style={styles.skipHeaderText}>Skip →</Text>
-                </LinearGradient>
-              </TouchableOpacity>
+              <View style={{ width: 40 }} />
             </View>
 
-            {/* Step Indicator */}
+            {/* Step Indicator - Updated to Step 2 of 4 */}
             <View style={styles.stepContainer}>
-              <Text style={styles.stepText}>Step 3 of 3</Text>
+              <Text style={styles.stepText}>Step 2 of 4</Text>
               <View style={styles.progressBar}>
-                <View style={styles.progressFill} />
+                <View style={[styles.progressFill, { width: '50%' }]} />
               </View>
             </View>
 
@@ -502,6 +558,24 @@ export default function FamilySetupScreen() {
                 </View>
               </View>
             </View>
+
+            {/* Skip Button - At the bottom */}
+            <TouchableOpacity
+              onPress={handleSkip}
+              style={styles.skipButton}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={['#10B981', '#059669']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.skipButtonGradient}
+              >
+                <Ionicons name="arrow-forward" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+                <Text style={styles.skipButtonText}>Skip to Chat</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -664,6 +738,15 @@ export default function FamilySetupScreen() {
           </Text>
         </SafeAreaView>
       </Modal>
+
+      {/* Custom Alert Modal */}
+      <CustomAlertModal
+        visible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        type={alertType}
+        onClose={() => setAlertVisible(false)}
+      />
     </LinearGradient>
   );
 }
@@ -700,27 +783,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     letterSpacing: 0.5,
   },
-  // Skip Header Button
-  skipHeaderButton: {
-    borderRadius: 10,
-    overflow: 'hidden',
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  skipHeaderGradient: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  skipHeaderText: {
-    color: '#FFFFFF',
-    fontFamily: TYPOGRAPHY.fonts.semibold,
-    fontSize: 13,
-    letterSpacing: 0.3,
-  },
 
   // Step Indicator
   stepContainer: {
@@ -741,7 +803,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   progressFill: {
-    width: '100%',
     height: '100%',
     backgroundColor: '#ffffff',
     borderRadius: 2,
@@ -921,6 +982,33 @@ const styles = StyleSheet.create({
   },
   joinButtonTextDisabled: {
     color: '#a0a3b8',
+  },
+
+  // Skip Button - At bottom
+  skipButton: {
+    borderRadius: 14,
+    marginTop: 20,
+    marginBottom: 10,
+    overflow: 'hidden',
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  skipButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 14,
+  },
+  skipButtonText: {
+    fontSize: 16,
+    fontFamily: TYPOGRAPHY.fonts.bold,
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
   },
 
   // Family Name Modal
@@ -1172,5 +1260,64 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     backgroundColor: 'rgba(0,0,0,0.7)',
     paddingVertical: 12,
+  },
+
+  // Custom Alert Modal
+  alertOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  alertContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 24,
+    width: '85%',
+    maxWidth: 340,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  alertIconContainer: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  alertTitle: {
+    fontSize: 20,
+    fontFamily: TYPOGRAPHY.fonts.bold,
+    color: '#1F2937',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  alertMessage: {
+    fontSize: 14,
+    fontFamily: TYPOGRAPHY.fonts.regular,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  alertButton: {
+    width: '100%',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  alertButtonGradient: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  alertButtonText: {
+    fontSize: 16,
+    fontFamily: TYPOGRAPHY.fonts.bold,
+    color: '#FFFFFF',
   },
 });

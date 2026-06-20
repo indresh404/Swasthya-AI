@@ -124,41 +124,41 @@ function InputField({
 }
 
 const input_s = StyleSheet.create({
-  wrapper: { marginBottom: 16 },
+  wrapper: { marginBottom: 10 },
   label: {
     fontFamily: FONT.medium,
-    fontSize: 13,
+    fontSize: 12,
     color: C.text,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: C.inputBg,
     borderWidth: 1.5,
-    borderRadius: 14,
-    height: 54,
-    paddingHorizontal: 14,
+    borderRadius: 12,
+    height: 44,
+    paddingHorizontal: 12,
     shadowColor: C.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
   },
-  icon: { marginRight: 10 },
+  icon: { marginRight: 8 },
   text: {
     flex: 1,
     fontFamily: FONT.regular,
-    fontSize: 15,
+    fontSize: 14,
     color: C.text,
     padding: 0,
   },
   eyeBtn: { padding: 4 },
   error: {
     fontFamily: FONT.regular,
-    fontSize: 12,
+    fontSize: 10,
     color: C.error,
-    marginTop: 4,
+    marginTop: 2,
     marginLeft: 4,
   },
 });
@@ -226,7 +226,7 @@ export default function LoginScreen() {
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
       Animated.spring(slideAnim, { toValue: 0, tension: 60, friction: 9, useNativeDriver: true }),
     ]).start();
     floatOrb(orb1, 0);
@@ -376,21 +376,9 @@ export default function LoginScreen() {
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Floating orbs */}
+      {/* Floating orbs - smaller for compact layout */}
       <Animated.View style={[s.orb, s.orb1, { transform: [{ translateY: orb1Y }, { scale: orb1S }] }]} />
       <Animated.View style={[s.orb, s.orb2, { transform: [{ translateY: orb2Y }, { scale: orb2S }] }]} />
-
-      {/* Skip Button */}
-      <TouchableOpacity style={s.skipButton} onPress={handleSkip} activeOpacity={0.8}>
-        <LinearGradient
-          colors={['#10B981', '#059669']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={s.skipButtonGradient}
-        >
-          <Text style={s.skipButtonText}>Skip →</Text>
-        </LinearGradient>
-      </TouchableOpacity>
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -404,7 +392,15 @@ export default function LoginScreen() {
         >
           <Animated.View style={[s.card, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
 
-            {/* ── Logo / Brand ───────────────────────────────────────────── */}
+            {/* ── Step Indicator ─────────────────────────────────────────── */}
+            <View style={s.stepContainer}>
+              <Text style={s.stepText}>Step 1 of 4</Text>
+              <View style={s.progressBar}>
+                <View style={[s.progressFill, { width: '25%' }]} />
+              </View>
+            </View>
+
+            {/* ── Simplified Brand ───────────────────────────────────────── */}
             <View style={s.brand}>
               <View style={s.logoCircle}>
                 <LinearGradient
@@ -412,14 +408,10 @@ export default function LoginScreen() {
                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                   style={s.logoGrad}
                 >
-                  <Ionicons name="heart-outline" size={28} color={C.white} />
+                  <Ionicons name="heart-outline" size={24} color={C.white} />
                 </LinearGradient>
               </View>
               <Text style={s.brandName}>Swasthya AI</Text>
-              <Text style={s.brandTagline}>Your intelligent health companion</Text>
-              <View style={s.stepBadge}>
-                <Text style={s.stepBadgeText}>Step 1 of 3: Account Setup</Text>
-              </View>
             </View>
 
             {/* ── Tab switcher ───────────────────────────────────────────── */}
@@ -436,9 +428,6 @@ export default function LoginScreen() {
             {/* ── SIGN IN FORM ───────────────────────────────────────────── */}
             {tab === 'signin' && (
               <View style={s.form}>
-                <Text style={s.formHeading}>Welcome back 👋</Text>
-                <Text style={s.formSubtitle}>Sign in to continue your health journey</Text>
-
                 <InputField
                   label="Email Address"
                   placeholder="you@example.com"
@@ -478,7 +467,7 @@ export default function LoginScreen() {
                       ? <ActivityIndicator color={C.white} size="small" />
                       : <>
                         <Text style={s.primaryBtnText}>Sign In</Text>
-                        <Ionicons name="arrow-forward" size={18} color={C.white} style={{ marginLeft: 8 }} />
+                        <Ionicons name="arrow-forward" size={16} color={C.white} style={{ marginLeft: 6 }} />
                       </>
                     }
                   </LinearGradient>
@@ -486,6 +475,19 @@ export default function LoginScreen() {
 
                 <Divider />
                 <GoogleButton label="Sign in with Google" onPress={handleGoogle} disabled={loading} loading={loading} />
+
+                {/* Skip Button */}
+                <TouchableOpacity style={s.skipButton} onPress={handleSkip} activeOpacity={0.8}>
+                  <LinearGradient
+                    colors={['#10B981', '#059669']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={s.skipButtonGradient}
+                  >
+                    <Ionicons name="arrow-forward" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                    <Text style={s.skipButtonText}>Skip to Next Page</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
 
                 <Pressable onPress={() => slideTab('signup')} style={s.switchRow}>
                   <Text style={s.switchText}>{"Don't have an account? "}</Text>
@@ -497,9 +499,6 @@ export default function LoginScreen() {
             {/* ── SIGN UP FORM ───────────────────────────────────────────── */}
             {tab === 'signup' && (
               <View style={s.form}>
-                <Text style={s.formHeading}>Create account ✨</Text>
-                <Text style={s.formSubtitle}>Join Swasthya AI for smarter health insights</Text>
-
                 <InputField
                   label="Full Name"
                   placeholder="Your full name"
@@ -563,7 +562,7 @@ export default function LoginScreen() {
                       ? <ActivityIndicator color={C.white} size="small" />
                       : <>
                         <Text style={s.primaryBtnText}>Continue</Text>
-                        <Ionicons name="arrow-forward" size={18} color={C.white} style={{ marginLeft: 8 }} />
+                        <Ionicons name="arrow-forward" size={16} color={C.white} style={{ marginLeft: 6 }} />
                       </>
                     }
                   </LinearGradient>
@@ -571,6 +570,19 @@ export default function LoginScreen() {
 
                 <Divider />
                 <GoogleButton label="Sign up with Google" onPress={handleGoogle} disabled={loading} loading={loading} />
+
+                {/* Skip Button */}
+                <TouchableOpacity style={s.skipButton} onPress={handleSkip} activeOpacity={0.8}>
+                  <LinearGradient
+                    colors={['#10B981', '#059669']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={s.skipButtonGradient}
+                  >
+                    <Ionicons name="arrow-forward" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                    <Text style={s.skipButtonText}>Skip to Next Page</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
 
                 <Pressable onPress={() => slideTab('signin')} style={s.switchRow}>
                   <Text style={s.switchText}>Already have an account? </Text>
@@ -606,9 +618,9 @@ function Divider() {
 }
 
 const div_s = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', marginVertical: 20 },
+  row: { flexDirection: 'row', alignItems: 'center', marginVertical: 12 },
   line: { flex: 1, height: 1, backgroundColor: C.border },
-  text: { fontFamily: FONT.regular, fontSize: 12, color: C.textMuted, marginHorizontal: 12 },
+  text: { fontFamily: FONT.regular, fontSize: 11, color: C.textMuted, marginHorizontal: 10 },
 });
 
 function GoogleButton({ label, onPress, disabled, loading }: { label: string; onPress: () => void; disabled?: boolean; loading?: boolean }) {
@@ -630,7 +642,7 @@ function GoogleButton({ label, onPress, disabled, loading }: { label: string; on
           <ActivityIndicator color={C.google} size="small" />
         ) : (
           <>
-            <Ionicons name="logo-google" size={20} color={C.google} />
+            <Ionicons name="logo-google" size={18} color={C.google} />
             <Text style={g_s.text}>{label}</Text>
           </>
         )}
@@ -644,9 +656,9 @@ const g_s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    height: 52,
-    borderRadius: 14,
+    gap: 8,
+    height: 44,
+    borderRadius: 12,
     borderWidth: 1.5,
     borderColor: C.border,
     backgroundColor: C.white,
@@ -656,7 +668,7 @@ const g_s = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  text: { fontFamily: FONT.semibold, fontSize: 15, color: C.text },
+  text: { fontFamily: FONT.semibold, fontSize: 14, color: C.text },
 });
 
 // ── Main styles ───────────────────────────────────────────────────────────────
@@ -665,120 +677,146 @@ const s = StyleSheet.create({
   scroll: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 40,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
     minHeight: height,
+  },
+
+  // Step Indicator
+  stepContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  stepText: {
+    fontSize: 12,
+    fontFamily: FONT.medium,
+    color: C.primary,
+    marginBottom: 6,
+    letterSpacing: 0.5,
+  },
+  progressBar: {
+    width: '100%',
+    height: 4,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: C.primary,
+    borderRadius: 2,
   },
 
   // Skip Button
   skipButton: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 30,
-    right: 20,
-    zIndex: 100,
     borderRadius: 12,
+    marginTop: 8,
     overflow: 'hidden',
     shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
-    elevation: 5,
+    elevation: 4,
   },
   skipButtonGradient: {
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 44,
+    paddingHorizontal: 20,
   },
   skipButtonText: {
     fontFamily: FONT.semibold,
     fontSize: 14,
     color: '#FFFFFF',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
 
-  // Orbs
-  orb: { position: 'absolute', borderRadius: 999, opacity: 0.18 },
+  // Orbs - smaller
+  orb: { position: 'absolute', borderRadius: 999, opacity: 0.15 },
   orb1: {
-    width: 260, height: 260,
-    top: -80, right: -60,
+    width: 200, height: 200,
+    top: -60, right: -40,
     backgroundColor: C.primary,
   },
   orb2: {
-    width: 180, height: 180,
-    bottom: 80, left: -60,
+    width: 140, height: 140,
+    bottom: 60, left: -40,
     backgroundColor: '#60A5FA',
   },
 
-  // Card
+  // Card - smaller padding
   card: {
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    borderRadius: 28,
-    padding: 28,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderRadius: 24,
+    padding: 20,
     shadowColor: C.primary,
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 10,
+    shadowOpacity: 0.10,
+    shadowRadius: 20,
+    elevation: 8,
     borderWidth: 1,
-    borderColor: 'rgba(220,234,255,0.8)',
+    borderColor: 'rgba(220,234,255,0.6)',
   },
 
-  // Brand
-  brand: { alignItems: 'center', marginBottom: 28 },
+  // Brand - simplified
+  brand: { 
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    gap: 10,
+  },
   logoCircle: {
-    width: 68, height: 68,
-    borderRadius: 20,
-    marginBottom: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     shadowColor: C.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   logoGrad: {
-    width: 68, height: 68,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
   brandName: {
     fontFamily: FONT.bold,
-    fontSize: 24,
+    fontSize: 20,
     color: C.text,
     letterSpacing: -0.3,
   },
-  brandTagline: {
-    fontFamily: FONT.regular,
-    fontSize: 13,
-    color: C.textMuted,
-    marginTop: 3,
-  },
 
-  // Tab bar
+  // Tab bar - smaller
   tabBar: {
     flexDirection: 'row',
     backgroundColor: '#EDF3FF',
-    borderRadius: 14,
-    padding: 4,
-    marginBottom: 24,
+    borderRadius: 12,
+    padding: 3,
+    marginBottom: 14,
     position: 'relative',
+    height: 40,
   },
   tabIndicator: {
     position: 'absolute',
-    top: 4, bottom: 4,
+    top: 3, bottom: 3,
     width: '47%',
     backgroundColor: C.white,
-    borderRadius: 11,
+    borderRadius: 10,
     shadowColor: C.primary,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOpacity: 0.10,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  tabBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', zIndex: 1 },
+  tabBtn: { flex: 1, paddingVertical: 8, alignItems: 'center', zIndex: 1 },
   tabText: {
     fontFamily: FONT.medium,
-    fontSize: 14,
+    fontSize: 13,
     color: C.textMuted,
   },
   tabTextActive: {
@@ -786,31 +824,18 @@ const s = StyleSheet.create({
     color: C.text,
   },
 
-  // Form
+  // Form - compact
   form: {},
-  formHeading: {
-    fontFamily: FONT.bold,
-    fontSize: 22,
-    color: C.text,
-    marginBottom: 4,
-  },
-  formSubtitle: {
-    fontFamily: FONT.regular,
-    fontSize: 13,
-    color: C.textSub,
-    marginBottom: 22,
-    lineHeight: 19,
-  },
 
-  // Primary button
+  // Primary button - smaller
   primaryBtn: {
-    borderRadius: 14,
+    borderRadius: 12,
     marginTop: 4,
     shadowColor: C.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
     overflow: 'hidden',
   },
   primaryBtnDisabled: { opacity: 0.65 },
@@ -818,42 +843,28 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 54,
-    paddingHorizontal: 24,
+    height: 44,
+    paddingHorizontal: 20,
   },
   primaryBtnText: {
     fontFamily: FONT.semibold,
-    fontSize: 16,
+    fontSize: 14,
     color: C.white,
     letterSpacing: 0.2,
   },
 
-  // Switch row
+  // Switch row - smaller
   switchRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 20,
+    marginTop: 12,
   },
   switchText: {
     fontFamily: FONT.regular,
-    fontSize: 13,
+    fontSize: 12,
     color: C.textMuted,
   },
   switchLink: {
-    fontFamily: FONT.semibold,
-    fontSize: 13,
-    color: C.primary,
-  },
-  stepBadge: {
-    backgroundColor: '#E8F2FF',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: '#DCEAFF',
-  },
-  stepBadgeText: {
     fontFamily: FONT.semibold,
     fontSize: 12,
     color: C.primary,

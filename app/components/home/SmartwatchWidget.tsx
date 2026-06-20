@@ -1,6 +1,6 @@
 // components/home/SmartwatchWidget.tsx
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, memo } from 'react';
 import {
   Animated,
   LayoutAnimation,
@@ -17,7 +17,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-export const SmartwatchWidget: React.FC = () => {
+export const SmartwatchWidget = memo(() => {
   const [healthData, setHealthData] = useState<any>({
     heart_rate: 75,
     bp: "118/76",
@@ -94,7 +94,7 @@ export const SmartwatchWidget: React.FC = () => {
     ).start();
   };
 
-  // Animate when data changes
+  // Animate when data changes - only update internal animations, no parent re-render
   const animateDataChange = () => {
     LayoutAnimation.configureNext({
       duration: 400,
@@ -122,8 +122,8 @@ export const SmartwatchWidget: React.FC = () => {
     ]).start();
   };
 
-  // Update data automatically
-  const updateDataAutomatically = () => {
+  // Update data automatically - this only updates local state
+  const updateDataAutomatically = useRef(() => {
     const newData = generateRandomData();
     
     // Check if status changed
@@ -136,7 +136,7 @@ export const SmartwatchWidget: React.FC = () => {
     
     console.log('🔄 Auto Data:', newData.status, '- Heart:', newData.heart_rate, 'BP:', newData.bp, 'SpO2:', newData.spo2);
     setHealthData(newData);
-  };
+  }).current;
 
   // Try to connect to Python API
   const fetchHealthData = async () => {
@@ -178,14 +178,14 @@ export const SmartwatchWidget: React.FC = () => {
   };
 
   // Start auto-changing mode
-  const startAutoMode = () => {
+  const startAutoMode = useRef(() => {
     if (!autoIntervalRef.current && !isConnected) {
       console.log('🎲 Starting auto data mode (changes every 2-3 seconds)');
       autoIntervalRef.current = setInterval(() => {
         updateDataAutomatically();
       }, Math.random() * 1000 + 2000); // Random interval between 2-3 seconds
     }
-  };
+  }).current;
 
   const retryConnection = () => {
     console.log('🔄 Retrying Python connection...');
@@ -223,25 +223,25 @@ export const SmartwatchWidget: React.FC = () => {
     };
   }, []);
 
-  // Get color based on value ranges
-  const getHeartRateColor = (value: number) => {
+  // Get color based on value ranges - memoized to prevent re-creation
+  const getHeartRateColor = useRef((value: number) => {
     if (value < 60) return '#F59E0B';
     if (value > 100) return '#EF4444';
     return '#10B981';
-  };
+  }).current;
 
-  const getSpO2Color = (value: number) => {
+  const getSpO2Color = useRef((value: number) => {
     if (value < 90) return '#EF4444';
     if (value < 95) return '#F59E0B';
     return '#10B981';
-  };
+  }).current;
 
-  const getBPColor = (bpString: string) => {
+  const getBPColor = useRef((bpString: string) => {
     const systolic = parseInt(bpString.split('/')[0]);
     if (systolic > 140) return '#EF4444';
     if (systolic > 120) return '#F59E0B';
     return '#10B981';
-  };
+  }).current;
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
@@ -333,14 +333,12 @@ export const SmartwatchWidget: React.FC = () => {
             Updated: {new Date(healthData.timestamp).toLocaleTimeString()}
           </Text>
         </View>
-
-        
-
-       
       </View>
     </Animated.View>
   );
-};
+});
+
+SmartwatchWidget.displayName = 'SmartwatchWidget';
 
 const styles = StyleSheet.create({
   container: {
@@ -482,7 +480,4 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#9CA3AF',
   },
- 
-  
-
 });

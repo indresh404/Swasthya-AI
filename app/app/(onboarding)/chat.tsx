@@ -61,9 +61,11 @@ const { width } = Dimensions.get('window');
 export default function OnboardingChatScreen() {
   const { patientId, setSessionState } = useAuthStore();
   const flatListRef = useRef<FlatList>(null);
+  const inputRef = useRef<TextInput>(null);
   const [inputText, setInputText] = useState('');
   const [currentStep, setCurrentStep] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [profileData, setProfileData] = useState<Partial<ProfileData>>({
     full_name: 'Indresh',
     age: 20,
@@ -87,7 +89,7 @@ export default function OnboardingChatScreen() {
       key: 'age_gender',
       question: "Hello! Welcome to Swasthya AI. 👋 Let's configure your health profile. To start, what is your age and gender?",
       placeholder: "e.g., 25 years, Female",
-      chips: ['24, Male', '28, Female', '30, Other', 'Skip this'],
+      chips: ['24, Male', '28, Female', '30, Other'],
       fieldParser: (input) => {
         const ageMatch = input.match(/\d+/);
         const age = ageMatch ? parseInt(ageMatch[0], 10) : 24;
@@ -101,7 +103,7 @@ export default function OnboardingChatScreen() {
       key: 'height_weight',
       question: "Great! Next, could you tell me your height (e.g., in cm) and weight (e.g., in kg)?",
       placeholder: "e.g., 170 cm, 65 kg",
-      chips: ['170 cm, 60 kg', '175 cm, 70 kg', '180 cm, 80 kg', 'Skip this'],
+      chips: ['170 cm, 60 kg', '175 cm, 70 kg', '180 cm, 80 kg'],
       fieldParser: (input) => {
         const heightMatch = input.match(/(\d+)\s*(cm|ft|in)?/i);
         const weightMatch = input.match(/(\d+)\s*(kg|lbs)?/i);
@@ -115,7 +117,7 @@ export default function OnboardingChatScreen() {
       key: 'blood_allergies',
       question: "Understood. What is your Blood Group, and do you have any drug or food allergies?",
       placeholder: "e.g., B+, No allergies",
-      chips: ['O+, No allergies', 'A+, Penicillin allergy', 'B+, None', 'Skip this'],
+      chips: ['O+, No allergies', 'A+, Penicillin allergy', 'B+, None'],
       fieldParser: (input) => {
         const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
         let blood_group = 'O+';
@@ -136,7 +138,7 @@ export default function OnboardingChatScreen() {
       key: 'chronic_meds',
       question: "Do you have any chronic conditions (like Diabetes, Hypertension) or take daily medications?",
       placeholder: "e.g., Hypertension, Metformin 500mg daily",
-      chips: ['None', 'Diabetes, Metformin', 'Hypertension, Amlodipine', 'Skip this'],
+      chips: ['None', 'Diabetes, Metformin', 'Hypertension, Amlodipine'],
       fieldParser: (input) => {
         if (input.toLowerCase().trim() === 'none' || input.toLowerCase().includes('skip')) {
           return { chronic_diseases: 'None', current_medication: 'None' };
@@ -157,7 +159,7 @@ export default function OnboardingChatScreen() {
       key: 'surgeries_vaccinations',
       question: "Lastly, have you had any major surgeries in the past, and are your vaccinations up to date?",
       placeholder: "e.g., Appendectomy in 2024, fully vaccinated",
-      chips: ['No surgeries, up to date', 'No surgeries, missing some', 'Appendectomy, up to date', 'Skip this'],
+      chips: ['No surgeries, up to date', 'No surgeries, missing some', 'Appendectomy, up to date'],
       fieldParser: (input) => {
         let surgeries = 'None';
         let vaccinations = 'Up to date';
@@ -180,6 +182,30 @@ export default function OnboardingChatScreen() {
       timestamp: new Date(),
     },
   ]);
+
+  // Keyboard listeners
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => {
+        setKeyboardVisible(true);
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (patientId) {
@@ -230,7 +256,7 @@ export default function OnboardingChatScreen() {
     const nextStepIndex = currentStep + 1;
     if (nextStepIndex < steps.length) {
       setCurrentStep(nextStepIndex);
-      addBotReply(steps[nextStepIndex].question);
+      setTimeout(() => addBotReply(steps[nextStepIndex].question), 300);
     } else {
       setIsTyping(true);
       setTimeout(() => {
@@ -252,10 +278,6 @@ export default function OnboardingChatScreen() {
         }, 1500);
       }, 800);
     }
-  };
-
-  const handleSkipCurrent = () => {
-    handleSend('Skip this');
   };
 
   const handleSkipAll = () => {
@@ -287,41 +309,49 @@ export default function OnboardingChatScreen() {
     });
   };
 
+  const handleBack = () => {
+    router.back();
+  };
+
   const handleChipPress = (chip: string) => {
-    if (chip === 'Skip this') {
-      handleSkipCurrent();
-    } else {
-      handleSend(chip);
-    }
+    handleSend(chip);
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#07111f" />
       
-      {/* Header */}
+      {/* Header with Back Button and Skip All */}
       <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBack} activeOpacity={0.7}>
+          <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+        </TouchableOpacity>
+        
         <View style={styles.headerTitleContainer}>
           <View style={styles.botIcon}>
             <Ionicons name="medical" size={18} color="#FFFFFF" />
           </View>
           <View style={{ marginLeft: 10 }}>
             <Text style={styles.headerTitle}>Swasthya Assistant</Text>
-            <Text style={styles.headerSubtitle}>Guided Setup</Text>
+            <Text style={styles.headerSubtitle}>Step 3 of 4</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.skipAllBtn} onPress={handleSkipAll}>
+        
+        <TouchableOpacity style={styles.skipAllBtn} onPress={handleSkipAll} activeOpacity={0.7}>
           <Text style={styles.skipAllText}>Skip All</Text>
           <Ionicons name="arrow-forward" size={14} color="#8AA0BC" />
         </TouchableOpacity>
       </View>
 
-      {/* Messages list */}
+      {/* Messages list - with extra padding at bottom when keyboard is visible */}
       <FlatList
         ref={flatListRef}
         data={messages}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          keyboardVisible && styles.listContentWithKeyboard
+        ]}
         renderItem={({ item }) => (
           <View style={[styles.bubbleWrapper, item.isUser ? styles.userWrapper : styles.botWrapper]}>
             {!item.isUser && (
@@ -350,28 +380,48 @@ export default function OnboardingChatScreen() {
         </View>
       )}
 
+      {/* Skip Card Button - Skip and Continue */}
+      <TouchableOpacity style={styles.skipCard} onPress={handleSkipAll} activeOpacity={0.9}>
+        <LinearGradient
+          colors={['#1E293B', '#0F172A']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.skipCardGradient}
+        >
+          <View style={styles.skipCardIcon}>
+            <Ionicons name="arrow-forward-circle" size={24} color="#cb0505" />
+          </View>
+          <View style={styles.skipCardTextContainer}>
+            <Text style={styles.skipCardTitle}>Skip & Continue</Text>
+            <Text style={styles.skipCardSubtitle}>Skip all questions and go to summary</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#e42b1d" />
+        </LinearGradient>
+      </TouchableOpacity>
+
       {/* Suggestions Chips */}
       <View style={styles.chipsContainer}>
         <View style={styles.chipsScroll}>
           {steps[currentStep].chips.map((chip, idx) => (
             <TouchableOpacity
               key={idx}
-              style={[styles.chip, chip === 'Skip this' && styles.skipChip]}
+              style={styles.chip}
               onPress={() => handleChipPress(chip)}
             >
-              <Text style={[styles.chipText, chip === 'Skip this' && styles.skipChipText]}>{chip}</Text>
+              <Text style={styles.chipText}>{chip}</Text>
             </TouchableOpacity>
           ))}
         </View>
       </View>
 
-      {/* Bottom input bar */}
+      {/* Bottom input bar - with proper keyboard handling */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
       >
         <View style={styles.inputContainer}>
           <TextInput
+            ref={inputRef}
             style={styles.input}
             placeholder={steps[currentStep].placeholder}
             placeholderTextColor="#8AA0BC"
@@ -380,7 +430,11 @@ export default function OnboardingChatScreen() {
             onSubmitEditing={() => handleSend()}
             returnKeyType="send"
           />
-          <TouchableOpacity style={styles.sendButton} onPress={() => handleSend()}>
+          <TouchableOpacity 
+            style={styles.sendButton} 
+            onPress={() => handleSend()}
+            activeOpacity={0.8}
+          >
             <Ionicons name="send" size={20} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
@@ -393,7 +447,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#07111f',
-    paddingTop: Platform.OS === 'ios' ? 0 : 30, // Add top padding for Android
+    paddingTop: Platform.OS === 'ios' ? 0 : 30,
   },
   header: {
     flexDirection: 'row',
@@ -407,6 +461,8 @@ const styles = StyleSheet.create({
   headerTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
   },
   botIcon: {
     width: 34,
@@ -426,6 +482,14 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins_400Regular',
     fontSize: 10,
   },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
   skipAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -444,6 +508,9 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 16,
     paddingBottom: 20,
+  },
+  listContentWithKeyboard: {
+    paddingBottom: 120,
   },
   bubbleWrapper: {
     flexDirection: 'row',
@@ -526,13 +593,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins_500Medium',
     fontSize: 12,
   },
-  skipChip: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-  },
-  skipChipText: {
-    color: '#EF4444',
-  },
   inputContainer: {
     flexDirection: 'row',
     padding: 12,
@@ -540,6 +600,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#1E293B',
     alignItems: 'center',
+    paddingBottom: Platform.OS === 'ios' ? 20 : 12,
   },
   input: {
     flex: 1,
@@ -559,5 +620,47 @@ const styles = StyleSheet.create({
     backgroundColor: '#0474FC',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  // Skip Card Styles
+  skipCard: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.2)',
+    shadowColor: '#f25106',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  skipCardGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  skipCardIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  skipCardTextContainer: {
+    flex: 1,
+  },
+  skipCardTitle: {
+    color: '#b91010',
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 14,
+  },
+  skipCardSubtitle: {
+    color: '#8AA0BC',
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 11,
   },
 });

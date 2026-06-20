@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -18,6 +19,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, TYPOGRAPHY } from '@/theme';
 import { useAuthStore } from '@/store/auth.store';
 import { getPatientById, getFamilyByPatientId, savePatientProfile } from '@/services/auth.service';
+
+const { height, width } = Dimensions.get('window');
 
 export default function SummaryScreen() {
   const params = useLocalSearchParams<{ profileData?: string }>();
@@ -108,6 +111,10 @@ export default function SummaryScreen() {
     }
   };
 
+  const handleBack = () => {
+    router.back();
+  };
+
   if (isLoadingData) {
     return (
       <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -121,44 +128,74 @@ export default function SummaryScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#07111f" />
 
+      {/* Header with Back and Continue buttons */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBack} activeOpacity={0.7}>
+          <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+        </TouchableOpacity>
+        
+        <Text style={styles.headerTitle}>Profile Summary</Text>
+        
+        <TouchableOpacity 
+          style={styles.continueButton} 
+          onPress={handleLaunch} 
+          disabled={isSaving}
+          activeOpacity={0.7}
+        >
+          <LinearGradient
+            colors={['#0474FC', '#0284C7']}
+            style={styles.continueButtonGradient}
+          >
+            {isSaving ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <Text style={styles.continueButtonText}>Continue</Text>
+                <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+              </>
+            )}
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        bounces={false}
       >
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Verify Profile Configuration</Text>
-        </View>
-
+        {/* Success Card */}
         <View style={styles.successCard}>
           <View style={styles.successIcon}>
-            <Ionicons name="shield-checkmark" size={44} color="#10B981" />
+            <Ionicons name="shield-checkmark" size={40} color="#10B981" />
           </View>
-          <Text style={styles.successTitle}>Medical Profile Verified</Text>
-          <Text style={styles.successDesc}>
-            Your health baseline is now ready to be securely synchronized with your clinical record.
-          </Text>
+          <View style={styles.successTextContainer}>
+            <Text style={styles.successTitle}>Profile Verified</Text>
+            <Text style={styles.successDesc}>
+              Your health baseline is ready to sync
+            </Text>
+          </View>
         </View>
 
         {/* Personal & Family Information */}
         <View style={styles.summarySection}>
-          <Text style={styles.sectionTitle}>Account Details</Text>
+          <Text style={styles.sectionTitle}>Personal Details</Text>
           <View style={styles.grid}>
             <View style={styles.gridItem}>
-              <Text style={styles.label}>Patient Name</Text>
+              <Text style={styles.label}>Full Name</Text>
               <Text style={styles.val}>{userName || 'Indresh'}</Text>
             </View>
             <View style={styles.gridItem}>
-              <Text style={styles.label}>Email Address</Text>
-              <Text style={styles.val}>{userEmail || 'indresh@example.com'}</Text>
+              <Text style={styles.label}>Email</Text>
+              <Text style={styles.val} numberOfLines={1}>{userEmail || 'indresh@example.com'}</Text>
             </View>
             <View style={styles.gridItem}>
-              <Text style={styles.label}>Phone Number</Text>
+              <Text style={styles.label}>Phone</Text>
               <Text style={styles.val}>{phoneNumber || '+91 9324474812'}</Text>
             </View>
             {familyDetails && (
               <View style={styles.gridItem}>
                 <Text style={styles.label}>Family Group</Text>
-                <Text style={styles.val}>{familyDetails.name} (Code: {familyDetails.code})</Text>
+                <Text style={styles.val} numberOfLines={1}>{familyDetails.name}</Text>
               </View>
             )}
           </View>
@@ -166,7 +203,7 @@ export default function SummaryScreen() {
 
         {/* Baseline Metrics */}
         <View style={styles.summarySection}>
-          <Text style={styles.sectionTitle}>Vitals Baseline</Text>
+          <Text style={styles.sectionTitle}>Vitals & Metrics</Text>
           <View style={styles.grid}>
             <View style={styles.gridItem}>
               <Text style={styles.label}>Age / Gender</Text>
@@ -182,88 +219,114 @@ export default function SummaryScreen() {
             </View>
             <View style={styles.gridItem}>
               <Text style={styles.label}>Allergies</Text>
-              <Text style={styles.val}>{profile.allergies}</Text>
+              <Text style={styles.val} numberOfLines={1}>{profile.allergies || 'None'}</Text>
             </View>
           </View>
         </View>
 
-        {/* Clinical Background */}
+        {/* Clinical Background - 3x3 Grid */}
         <View style={styles.summarySection}>
           <Text style={styles.sectionTitle}>Clinical History</Text>
-
-          <View style={styles.list}>
-            <View style={styles.listItem}>
-              <Ionicons name="medkit-outline" size={18} color="#3B82F6" />
-              <View style={styles.listItemTextContainer}>
-                <Text style={styles.listLabel}>Active Medications</Text>
-                <Text style={styles.listVal}>{profile.current_medication || 'None'}</Text>
+          <View style={styles.clinicalGrid}>
+            {/* Row 1: Medications, Conditions, Surgeries */}
+            <View style={styles.clinicalItem}>
+              <View style={[styles.clinicalIcon, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
+                <Ionicons name="medkit-outline" size={20} color="#3B82F6" />
               </View>
+              <Text style={styles.clinicalLabel}>Medications</Text>
+              <Text style={styles.clinicalVal} numberOfLines={2}>{profile.current_medication || 'None'}</Text>
             </View>
 
-            <View style={styles.listItem}>
-              <Ionicons name="pulse" size={18} color="#8B5CF6" />
-              <View style={styles.listItemTextContainer}>
-                <Text style={styles.listLabel}>Chronic Conditions</Text>
-                <Text style={styles.listVal}>{profile.chronic_diseases || 'None'}</Text>
+            <View style={styles.clinicalItem}>
+              <View style={[styles.clinicalIcon, { backgroundColor: 'rgba(139, 92, 246, 0.15)' }]}>
+                <Ionicons name="pulse" size={20} color="#8B5CF6" />
               </View>
+              <Text style={styles.clinicalLabel}>Conditions</Text>
+              <Text style={styles.clinicalVal} numberOfLines={2}>{profile.chronic_diseases || 'None'}</Text>
             </View>
 
-            <View style={styles.listItem}>
-              <Ionicons name="bandage-outline" size={18} color="#EF4444" />
-              <View style={styles.listItemTextContainer}>
-                <Text style={styles.listLabel}>Past Surgeries</Text>
-                <Text style={styles.listVal}>{profile.surgeries || 'None'}</Text>
+            <View style={styles.clinicalItem}>
+              <View style={[styles.clinicalIcon, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
+                <Ionicons name="bandage-outline" size={20} color="#EF4444" />
               </View>
+              <Text style={styles.clinicalLabel}>Surgeries</Text>
+              <Text style={styles.clinicalVal} numberOfLines={2}>{profile.surgeries || 'None'}</Text>
             </View>
 
-            <View style={styles.listItem}>
-              <Ionicons name="shield-outline" size={18} color="#10B981" />
-              <View style={styles.listItemTextContainer}>
-                <Text style={styles.listLabel}>Vaccination Status</Text>
-                <Text style={styles.listVal}>{profile.vaccinations || 'Up to date'}</Text>
+            {/* Row 2: Vaccinations, Family History, Allergies */}
+            <View style={styles.clinicalItem}>
+              <View style={[styles.clinicalIcon, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+                <Ionicons name="shield-outline" size={20} color="#10B981" />
               </View>
+              <Text style={styles.clinicalLabel}>Vaccinations</Text>
+              <Text style={styles.clinicalVal} numberOfLines={2}>{profile.vaccinations || 'Up to date'}</Text>
             </View>
 
-            <View style={styles.listItem}>
-              <Ionicons name="people-outline" size={18} color="#8B5CF6" />
-              <View style={styles.listItemTextContainer}>
-                <Text style={styles.listLabel}>Family History</Text>
-                <Text style={styles.listVal}>{profile.family_history || 'None'}</Text>
+            <View style={styles.clinicalItem}>
+              <View style={[styles.clinicalIcon, { backgroundColor: 'rgba(139, 92, 246, 0.15)' }]}>
+                <Ionicons name="people-outline" size={20} color="#8B5CF6" />
               </View>
+              <Text style={styles.clinicalLabel}>Family History</Text>
+              <Text style={styles.clinicalVal} numberOfLines={2}>{profile.family_history || 'None'}</Text>
             </View>
 
-            <View style={styles.listItem}>
-              <Ionicons name="alert-circle-outline" size={18} color="#F59E0B" />
-              <View style={styles.listItemTextContainer}>
-                <Text style={styles.listLabel}>Allergies</Text>
-                <Text style={styles.listVal}>{profile.allergies || 'None'}</Text>
+            <View style={styles.clinicalItem}>
+              <View style={[styles.clinicalIcon, { backgroundColor: 'rgba(245, 158, 11, 0.15)' }]}>
+                <Ionicons name="alert-circle-outline" size={20} color="#F59E0B" />
               </View>
+              <Text style={styles.clinicalLabel}>Allergies</Text>
+              <Text style={styles.clinicalVal} numberOfLines={2}>{profile.allergies || 'None'}</Text>
+            </View>
+
+            {/* Row 3: Smoking, Alcohol, Emergency Contact */}
+            <View style={styles.clinicalItem}>
+              <View style={[styles.clinicalIcon, { backgroundColor: 'rgba(236, 72, 153, 0.15)' }]}>
+                <Ionicons name="warning-outline" size={20} color="#EC4899" />
+              </View>
+              <Text style={styles.clinicalLabel}>Smoking</Text>
+              <Text style={styles.clinicalVal} numberOfLines={2}>{profile.smoking || 'Non-smoker'}</Text>
+            </View>
+
+            <View style={styles.clinicalItem}>
+              <View style={[styles.clinicalIcon, { backgroundColor: 'rgba(251, 146, 60, 0.15)' }]}>
+                <Ionicons name="wine-outline" size={20} color="#FB923C" />
+              </View>
+              <Text style={styles.clinicalLabel}>Alcohol</Text>
+              <Text style={styles.clinicalVal} numberOfLines={2}>{profile.alcohol || 'Never'}</Text>
+            </View>
+
+            <View style={styles.clinicalItem}>
+              <View style={[styles.clinicalIcon, { backgroundColor: 'rgba(52, 211, 153, 0.15)' }]}>
+                <Ionicons name="call-outline" size={20} color="#34D399" />
+              </View>
+              <Text style={styles.clinicalLabel}>Emergency</Text>
+              <Text style={styles.clinicalVal} numberOfLines={2}>{profile.emergency_contact || 'None'}</Text>
             </View>
           </View>
         </View>
 
+        {/* Bottom Launch Button */}
         <TouchableOpacity
-          style={[styles.button, isSaving && styles.buttonDisabled]}
+          style={[styles.launchButton, isSaving && styles.launchButtonDisabled]}
           onPress={handleLaunch}
           disabled={isSaving}
           activeOpacity={0.8}
         >
           <LinearGradient
             colors={['#0474FC', '#0284C7']}
-            style={styles.buttonGradient}
+            style={styles.launchButtonGradient}
           >
             {isSaving ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
               <>
-                <Text style={styles.buttonText}>Launch Swasthya AI</Text>
+                <Text style={styles.launchButtonText}>Launch Swasthya AI</Text>
                 <Ionicons name="rocket-outline" size={20} color="#FFFFFF" />
               </>
             )}
           </LinearGradient>
         </TouchableOpacity>
 
-        {/* Bottom padding spacer */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
     </SafeAreaView>
@@ -274,79 +337,107 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#07111f',
-    paddingTop: Platform.OS === 'ios' ? 0 : 8,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#1E293B',
-    alignItems: 'center',
-    marginTop: Platform.OS === 'ios' ? 0 : 8,
+    paddingTop: Platform.OS === 'ios' ? 8 : 52,
   },
   headerTitle: {
     color: '#FFFFFF',
     fontFamily: 'Poppins_600SemiBold',
-    fontSize: 14,
+    fontSize: 16,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  continueButton: {
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  continueButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  continueButtonText: {
+    color: '#FFFFFF',
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 13,
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 40,
-    gap: 16,
+    paddingBottom: 20,
   },
   successCard: {
     backgroundColor: '#1E293B',
-    borderRadius: 20,
+    borderRadius: 16,
     padding: 16,
+    flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#334155',
+    marginBottom: 12,
   },
   successIcon: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: 'rgba(16, 185, 129, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginRight: 14,
+  },
+  successTextContainer: {
+    flex: 1,
   },
   successTitle: {
     color: '#FFFFFF',
     fontFamily: 'Poppins_700Bold',
-    fontSize: 18,
-    marginBottom: 6,
+    fontSize: 17,
+    marginBottom: 2,
   },
   successDesc: {
     color: '#8AA0BC',
     fontFamily: 'Poppins_400Regular',
     fontSize: 12,
-    textAlign: 'center',
-    lineHeight: 18,
   },
   summarySection: {
     backgroundColor: '#0F172A',
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 16,
     borderWidth: 1,
     borderColor: '#1E293B',
+    marginBottom: 12,
   },
   sectionTitle: {
     color: '#0474FC',
     fontFamily: 'Poppins_600SemiBold',
-    fontSize: 12,
+    fontSize: 11,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    rowGap: 12,
-    columnGap: 16,
+    gap: 10,
   },
   gridItem: {
-    width: '46%',
+    width: '47%',
   },
   label: {
     color: '#8AA0BC',
@@ -360,50 +451,65 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 2,
   },
-  list: {
-    gap: 12,
-  },
-  listItem: {
+  clinicalGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  clinicalItem: {
+    width: '31%',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 12,
+    padding: 10,
     alignItems: 'center',
-    gap: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
   },
-  listItemTextContainer: {
-    flex: 1,
+  clinicalIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
   },
-  listLabel: {
+  clinicalLabel: {
     color: '#8AA0BC',
     fontFamily: 'Poppins_500Medium',
-    fontSize: 10,
+    fontSize: 8,
     textTransform: 'uppercase',
+    textAlign: 'center',
   },
-  listVal: {
+  clinicalVal: {
     color: '#FFFFFF',
     fontFamily: 'Poppins_600SemiBold',
-    fontSize: 13,
-    marginTop: 1,
+    fontSize: 10,
+    textAlign: 'center',
+    marginTop: 2,
+    lineHeight: 12,
   },
-  button: {
+  launchButton: {
     borderRadius: 14,
     overflow: 'hidden',
     marginTop: 8,
+    marginBottom: 4,
   },
-  buttonDisabled: {
+  launchButtonDisabled: {
     opacity: 0.6,
   },
-  buttonGradient: {
+  launchButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
     gap: 8,
   },
-  buttonText: {
+  launchButtonText: {
     color: '#FFFFFF',
     fontFamily: 'Poppins_700Bold',
     fontSize: 16,
   },
   bottomSpacer: {
-    height: 40,
+    height: 20,
   },
 });
