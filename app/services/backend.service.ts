@@ -2,6 +2,12 @@ import { API_ENDPOINTS, BACKEND_URL } from '@/config/api';
 import { useAuthStore } from '@/store/auth.store';
 import { supabase } from '@/services/supabaseClient';
 
+const isOfflineId = (id: string | null | undefined): boolean => {
+    if (!id) return true;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return !uuidRegex.test(id);
+};
+
 // Helper to delay response for realistic UI loading states
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -89,6 +95,14 @@ export const backendService = {
     },
 
     endSession: async (patientId: string, log: any[], existingSummary: string) => {
+        if (isOfflineId(patientId)) {
+            return {
+                daily_summary: "Your daily health metrics are stable. Metformin taken on time. Fasting glucose at 110 mg/dL is within control.",
+                urgency: "Normal",
+                key_risks: "None detected",
+                symptoms_today: ["Anxiety"]
+            };
+        }
         try {
             const response = await fetch(`${BACKEND_URL}/health/daily-summary?patient_id=${patientId}`, {
                 method: 'POST',
@@ -249,6 +263,19 @@ export const backendService = {
     getSymptoms: async () => {
         try {
             const patientId = useAuthStore.getState().patientId || 'demo-patient';
+            if (isOfflineId(patientId)) {
+                return [
+                    {
+                        id: 'offline-symptom-1',
+                        symptom_name: 'Anxiety',
+                        first_reported_at: new Date().toISOString(),
+                        last_reported_at: new Date().toISOString(),
+                        duration_days: 1,
+                        status: 'active',
+                        severity: 5
+                    }
+                ];
+            }
             const { data, error } = await supabase
                 .from('symptom_tracker')
                 .select('*')
@@ -273,6 +300,25 @@ export const backendService = {
     getSummaries: async () => {
         try {
             const patientId = useAuthStore.getState().patientId || 'demo-patient';
+            if (isOfflineId(patientId)) {
+                return [
+                    {
+                        id: 'skip-summary-1',
+                        patient_id: patientId,
+                        summary_date: new Date().toISOString().split('T')[0],
+                        summary_text: 'Your health baseline is stable. Metformin adherence is good, blood glucose is 110 mg/dL.',
+                        symptoms_reported: ['Headache', 'Anxiety'],
+                        facts_mentioned: [],
+                        surgeries_mentioned: [],
+                        medications_mentioned: ['Metformin', 'Amlodipine'],
+                        mood_indicator: 'neutral',
+                        data_importance_score: 5,
+                        chat_messages_count: 3,
+                        important_data_found: false,
+                        created_at: new Date().toISOString(),
+                    }
+                ];
+            }
             const { data, error } = await supabase
                 .from('daily_health_summaries')
                 .select('*')

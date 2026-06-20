@@ -30,6 +30,7 @@ import { BACKEND_URL, API_ENDPOINTS } from '@/config/api';
 import Voice from '@react-native-voice/voice';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AgentLog } from '@/components/chatbot/AgentLog';
+import { Camera } from 'expo-camera';
 
 // Enable LayoutAnimation for Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -243,6 +244,17 @@ const VOICE_LOCALES = {
 
 export default function ChatScreen() {
   const isVoiceAvailable = Platform.OS !== 'web' && !!NativeModules.Voice;
+
+  const requestMicPermission = async (): Promise<boolean> => {
+    try {
+      const { granted } = await Camera.requestMicrophonePermissionsAsync();
+      return granted;
+    } catch (err) {
+      console.warn('Failed to request microphone permission:', err);
+      return false;
+    }
+  };
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -253,8 +265,11 @@ export default function ChatScreen() {
   ]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { user } = useAuthStore();
+  const { user, patientId } = useAuthStore();
   const [userName, setUserName] = useState('User');
+  const getLocaleConfig = () => {
+    return (VOICE_LOCALES as any)[voiceLang] || VOICE_LOCALES['en-US'];
+  };
 
   // History states
   const [showHistory, setShowHistory] = useState(false);
@@ -314,6 +329,7 @@ export default function ChatScreen() {
       }
       setIsRecording(false);
     } else {
+      await requestMicPermission();
       setIsRecording(true);
       setInputText('');
       latestVoiceSpeechRef.current = '';
@@ -382,7 +398,7 @@ export default function ChatScreen() {
           if (finalSpeech) {
             processUserVoiceInput(finalSpeech);
           } else {
-            setVoiceSubtitles(VOICE_LOCALES[voiceLang].unheard);
+            setVoiceSubtitles(getLocaleConfig().unheard);
             setTimeout(() => {
               startListeningLoop();
             }, 1500);
@@ -455,7 +471,7 @@ export default function ChatScreen() {
           rec.onerror = (event: any) => {
             console.error('Web speech error:', event);
             if (voiceModeActive && voiceState === 'listening') {
-              setVoiceSubtitles((VOICE_LOCALES as any)[voiceLang].unheard);
+              setVoiceSubtitles(getLocaleConfig().unheard);
               setTimeout(() => { startListeningLoop(); }, 1500);
             }
           };
@@ -467,7 +483,7 @@ export default function ChatScreen() {
               if (finalSpeech) {
                 processUserVoiceInput(finalSpeech);
               } else {
-                setVoiceSubtitles((VOICE_LOCALES as any)[voiceLang].unheard);
+                setVoiceSubtitles(getLocaleConfig().unheard);
                 setTimeout(() => { startListeningLoop(); }, 1500);
               }
             }
@@ -624,7 +640,7 @@ export default function ChatScreen() {
     if (voiceInteractionTimer.current) clearTimeout(voiceInteractionTimer.current);
 
     setVoiceState('speaking');
-    const greeting = (VOICE_LOCALES as any)[voiceLang].greeting;
+    const greeting = getLocaleConfig().greeting;
     setVoiceSubtitles(greeting);
 
     const systemMsg: Message = {
@@ -635,22 +651,43 @@ export default function ChatScreen() {
     };
     setMessages(prev => [...prev, systemMsg]);
 
+    let speakDoneCalled = false;
+    const handleSpeakDone = () => {
+      if (speakDoneCalled) return;
+      speakDoneCalled = true;
+      if (voiceInteractionTimer.current) clearTimeout(voiceInteractionTimer.current);
+      startListeningLoop();
+    };
+
+    const approxDuration = (greeting.length * 85) + 1200;
+    voiceInteractionTimer.current = setTimeout(() => {
+      console.log("Speech.speak greeting safety timeout fired");
+      handleSpeakDone();
+    }, approxDuration);
+
     Speech.speak(greeting, {
       language: voiceLang,
       pitch: 1.0,
       rate: 0.9,
-      onDone: () => { startListeningLoop(); },
+      onDone: () => { handleSpeakDone(); },
       onError: (e) => {
         console.error("Speech error:", e);
-        startListeningLoop();
+        handleSpeakDone();
       }
     });
   };
 
   const startListeningLoop = async () => {
+    const hasMicPermission = await requestMicPermission();
+    if (!hasMicPermission) {
+      setVoiceSubtitles("Microphone permission is required for voice mode. Please enable microphone access in your settings.");
+      setVoiceState('paused');
+      return;
+    }
+
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setVoiceState('listening');
-    setVoiceSubtitles((VOICE_LOCALES as any)[voiceLang].listening);
+    setVoiceSubtitles(getLocaleConfig().listening);
     latestVoiceSpeechRef.current = '';
 
     const voiceStarted = await startVoiceCapture(voiceLang);
@@ -738,14 +775,28 @@ export default function ChatScreen() {
     };
     setMessages(prev => [...prev, aiMessage]);
 
+    let speakDoneCalled = false;
+    const handleSpeakDone = () => {
+      if (speakDoneCalled) return;
+      speakDoneCalled = true;
+      if (voiceInteractionTimer.current) clearTimeout(voiceInteractionTimer.current);
+      startListeningLoop();
+    };
+
+    const approxDuration = (replyText.length * 85) + 1200;
+    voiceInteractionTimer.current = setTimeout(() => {
+      console.log("Speech.speak response safety timeout fired");
+      handleSpeakDone();
+    }, approxDuration);
+
     Speech.speak(replyText, {
       language: voiceLang,
       pitch: 1.0,
       rate: 0.9,
-      onDone: () => { startListeningLoop(); },
+      onDone: () => { handleSpeakDone(); },
       onError: (e) => {
         console.error(e);
-        startListeningLoop();
+        handleSpeakDone();
       }
     });
   };
@@ -1128,7 +1179,7 @@ export default function ChatScreen() {
                       await stopVoiceCapture();
                     } else {
                       // Manual selection fallback
-                      const simulatedUserSayings = (VOICE_LOCALES as any)[voiceLang].suggestions;
+                      const simulatedUserSayings = getLocaleConfig().suggestions;
                       const randomSaying = simulatedUserSayings[Math.floor(Math.random() * simulatedUserSayings.length)];
                       processUserVoiceInput(randomSaying);
                     }
@@ -1160,10 +1211,10 @@ export default function ChatScreen() {
 
             <Text style={styles.voiceStatusText}>
               {voiceState === 'listening'
-                ? (VOICE_LOCALES as any)[voiceLang].statusListening
+                ? getLocaleConfig().statusListening
                 : voiceState === 'thinking'
-                ? (VOICE_LOCALES as any)[voiceLang].thinking
-                : (VOICE_LOCALES as any)[voiceLang].speaking}
+                ? getLocaleConfig().thinking
+                : getLocaleConfig().speaking}
             </Text>
           </View>
 
@@ -1186,7 +1237,7 @@ export default function ChatScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.suggestionsScroll}
               >
-                {(VOICE_LOCALES as any)[voiceLang].suggestions.map((suggestion: string, idx: number) => (
+                {getLocaleConfig().suggestions.map((suggestion: string, idx: number) => (
                   <TouchableOpacity
                     key={idx}
                     onPress={() => {
@@ -1234,7 +1285,7 @@ export default function ChatScreen() {
             <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, textAlign: 'center', paddingHorizontal: 20 }}>
               {voiceState === 'listening' 
                 ? (isVoiceAvailable || Platform.OS === 'web' 
-                    ? (VOICE_LOCALES as any)[voiceLang].instruction 
+                    ? getLocaleConfig().instruction 
                     : "Speech recognition unavailable. Tap a suggestion above or type below.")
                 : ''}
             </Text>
@@ -1264,8 +1315,9 @@ export default function ChatScreen() {
           <Text style={styles.headerTitle}>Swasthya AI Assistant</Text>
           <View style={styles.headerActions}>
             <TouchableOpacity
-              onPress={() => {
+              onPress={async () => {
                 Keyboard.dismiss();
+                await requestMicPermission();
                 LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                 setVoiceModeActive(true);
               }}

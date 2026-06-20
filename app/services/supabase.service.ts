@@ -2,7 +2,9 @@ import { BACKEND_URL, API_ENDPOINTS } from '@/config/api';
 import { supabase } from '@/services/supabaseClient';
 
 const isOfflineId = (id: string | null | undefined): boolean => {
-    return !id || id.startsWith('skip-') || id === 'offline-user' || id === 'offline-patient';
+    if (!id) return true;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return !uuidRegex.test(id);
 };
 
 const safeFetchJson = async (url: string, init?: RequestInit) => {

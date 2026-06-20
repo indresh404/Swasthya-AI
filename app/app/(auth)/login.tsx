@@ -294,44 +294,43 @@ export default function LoginScreen() {
     if (loading) return;
     if (!validateSignIn()) return;
     setLoading(true);
-    setLoading(false);
-    showAlert(
-      'Database Connection Error',
-      'Authentication server timeout. Failed to connect to the user database. [Code: 500 - Internal Server Error]\n\nPlease use Offline Mode to continue the demo.',
-      'confirm',
-      'Use Offline Mode',
-      'Try Again',
-      () => handleSkip()
-    );
+    setTimeout(() => {
+      setLoading(false);
+      showAlert(
+        'Database Connection Error',
+        'Authentication server timeout. Failed to connect to the user database. [Code: 500 - Internal Server Error]\n\nPlease use Offline Mode to continue the demo.',
+        'confirm',
+        'Use Offline Mode',
+        'Try Again',
+        () => handleSkip()
+      );
+    }, 1200);
   };
 
   const handleSignUp = async () => {
     if (loading) return;
     if (!validateSignUp()) return;
     setLoading(true);
-    setLoading(false);
-    showAlert(
-      'Server Registration Failure',
-      'Unable to write new user row to patients database. [Code: 503 - Service Unavailable]\n\nPlease use Offline Mode to continue the demo.',
-      'confirm',
-      'Use Offline Mode',
-      'Try Again',
-      () => handleSkip()
-    );
+    setTimeout(() => {
+      setLoading(false);
+      showAlert(
+        'Server Registration Failure',
+        'Unable to write new user row to patients database. [Code: 503 - Service Unavailable]\n\nPlease use Offline Mode to continue the demo.',
+        'confirm',
+        'Use Offline Mode',
+        'Try Again',
+        () => handleSkip()
+      );
+    }, 1500);
   };
 
   const handleGoogle = async () => {
     if (loading) return;
     setLoading(true);
-    setLoading(false);
-    showAlert(
-      'OAuth Handshake Failed',
-      'The server rejected the Google OAuth request. [Code: 403 - Forbidden]\n\nPlease use Offline Mode to continue the demo.',
-      'confirm',
-      'Use Offline Mode',
-      'Try Again',
-      () => handleSkip()
-    );
+    setTimeout(() => {
+      setLoading(false);
+      handleSkip();
+    }, 1500);
   };
 
   // ── Skip Handler ────────────────────────────────────────────────────────────
