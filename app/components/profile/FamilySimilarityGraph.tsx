@@ -517,7 +517,7 @@ export const FamilySimilarityGraph = () => {
           
           <View style={styles.statsRow}>
             <Text style={styles.statText}>
-              <Text style={{color: '#FFF'}}>{totalSymptoms}</Text> shared symptoms mapped
+              <Text style={{color: '#FFF'}}>{totalSymptoms}</Text> shared symptoms mapped ( Click to view )
             </Text>
             <Ionicons name="git-network" size={16} color={COLORS.nodes.self} />
           </View>
