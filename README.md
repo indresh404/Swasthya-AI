@@ -1,63 +1,154 @@
 # Swasthya AI
 
-A two-sided clinical intelligence platform for continuous patient monitoring and doctor decision support — built for the Indian healthcare context.
+> A multilingual, voice-enabled health memory system. Patients build a connected health graph over time through natural conversation; doctors get instant, explainable context the moment they scan a patient's QR.
 
-## What It Is
+Read [`Swasthya_AI.md`](./Swasthya_AI.md) first for the full idea.
 
-Swasthya AI bridges the gap between patients managing chronic conditions and the care they need between visits. Patients log symptoms, take daily AI check-ins, and track medications on a mobile app. Doctors receive AI-generated morning briefings, scan patient QR codes for instant clinical context, and query an AI assistant grounded in each patient's actual health data.
+---
 
-## Stack
+## What's In This Repo
 
-**Mobile App** — React Native 0.81, Expo 54, TypeScript, Expo Router, Zustand, Supabase JS, Apple HealthKit / Google Health Connect
+| Path | What it is |
+|---|---|
+| `app/` | Patient mobile app — React Native + Expo |
+| `web/` | Doctor dashboard — React + Vite |
+| `backend/` | FastAPI AI backend — agents, routes, services |
+| `database/` | Supabase schema (`schema.sql`) |
+| `docs/` | All product, agent, feature, and track documentation |
 
-**Doctor Dashboard** — React 19, TypeScript, Vite 6, Tailwind CSS v4, Recharts, html5-qrcode, Supabase JS
+---
 
-**Backend** — FastAPI (Python 3.11), Groq LLaMA 3.3 70B, LangChain + FAISS (RAG over medical guidelines), scikit-learn (Isolation Forest + Linear Regression), OpenFDA API, Supabase, N8N automation, Docker
+## Documentation Map
 
-## Core Features
+Start here, then go deeper as needed.
 
-- **AI conversational onboarding** — no forms; multi-turn dialogue collects full health profile
-- **Daily adaptive check-ins** — 2–3 personalised questions generated from conditions, symptoms, and last 24h of wearable data
-- **Body heatmap** — symptom history mapped to anatomical zones with recency decay
-- **Risk score** — deterministic base score + RAG-adjusted by LLM (±15 max, guideline citation required); always shown as a range with confidence band
-- **Drug conflict detection** — synchronous OpenFDA check blocks medicine save until complete
-- **Wearable anomaly detection** — SQI filter → per-patient Isolation Forest + statistical threshold
-- **Deterministic escalation matrix** — 8 critical single-symptom overrides + two-signal combinations; LLM writes the message, never makes the trigger decision
-- **Jan Aushadhi PDF** — printable generic medicine reference mapped from branded prescription
-- **Government scheme matching** — PM-JAY, RAN, PMJAP, and state schemes matched to patient profile
-- **Family health system** — privacy-filtered shared view; sensitive conditions excluded at database query level
-- **Morning briefing** — AI-generated nightly; only flagged patients shown, sorted by urgency
-- **QR scan entry** — individual or family QR → full clinical context in under 3 seconds
-- **Doctor AI assistant** — free-text clinical questions answered from patient data only, with RAG source visibility
-- **Async Q&A loop** — doctor queues questions → patient answers in next check-in → doctor notified
-- **Appointments section** — clinical priority queue based on health flags, not a calendar
-- **Recovery Counter** — objective professional metric; patients recovered under a doctor's care
+```
+docs/
+├── Swasthya_AI.md          → the core idea, read this first
+├── APP.md                  → patient app overview
+├── WEB.md                  → doctor dashboard overview
+├── APP_FEATURES.md         → every app feature, one line each
+├── WEB_FEATURE.md          → every dashboard feature, one line each
+├── AGENTS.md               → all 11 agents, what each one does
+├── ML_MODEL.md             → the prediction model
+├── DATASET.md              → every dataset used and its source
+│
+├── Features/                → one detailed file per major feature
+│   ├── family-qr-system.md
+│   ├── jan-aushadhi-calculator.md
+│   ├── 3d-body-heatmap.md
+│   ├── scheme-eligibility.md
+│   ├── doctor-qna-loop.md
+│   ├── smartwatch-tracking.md
+│   └── doctor-appointment-system.md
+│
+├── Agents/                   → one detailed file per agent
+│   ├── onboarding-agent.md
+│   ├── checkin-agent.md
+│   ├── sarvam-chat-agent.md
+│   ├── escalation-agent.md
+│   ├── family-genetics-agent.md
+│   ├── medical-scan-agent.md
+│   ├── medicine-reminder-agent.md
+│   ├── smartwatch-risk-agent.md
+│   ├── doctor-qa-agent.md
+│   ├── appointment-automation-agent.md
+│   └── daily-workflow-orchestrator.md
+│
+└── Tracks/                    → how the project satisfies each hackathon track
+    ├── EXPO_TRACK.md
+    ├── NEO4J_TRACK.md
+    ├── SARVAM_TRACK.md
+    ├── RENDER_TRACK.md
+    └── BASE44_TRACK.md
+```
 
-## Setup
+---
 
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Patient App | React Native (Expo), TypeScript, Three.js (via WebView, GLB model) |
+| Doctor Dashboard | React, TypeScript, Vite |
+| AI Backend | FastAPI (Python), Groq (LLaMA) |
+| Health Graph | Neo4j AuraDB |
+| Structured Data | Supabase (PostgreSQL) |
+| Voice | Sarvam AI (Speech-to-Text, Text-to-Speech, multilingual) |
+| Orchestration | Render Workflows |
+| Drug Safety | OpenFDA API |
+| Wearables | Google Health Connect / Apple Health |
+
+---
+
+## High-Level Architecture
+
+```
+Patient (voice or text)
+       │
+       ▼
+  React Native App
+       │
+       ▼
+   FastAPI Backend ──────► Render Workflows (orchestrates multi-step agent runs)
+       │
+       ├──► Sarvam AI (voice in/out)
+       ├──► Groq LLaMA (reasoning, extraction, generation)
+       ├──► Neo4j AuraDB (health graph: symptoms, family, patterns)
+       ├──► Supabase (auth, medicines, appointments, schemes)
+       └──► OpenFDA (drug interaction checks)
+       │
+       ▼
+  Doctor Web Dashboard (React + Vite)
+```
+
+---
+
+## Quick Start
+
+### Patient App
 ```bash
-# Backend
-cd backend && pip install -r requirements.txt
-# Add backend/.env (GROQ_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY)
-uvicorn main:app --reload
-
-# Mobile App
-cd app && npm install
-# Add app/.env (EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY, EXPO_PUBLIC_API_BASE_URL)
+cd app
+npm install
 npx expo start
+```
 
-# Doctor Dashboard
-cd web && npm install
-# Add web/.env (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_BASE_URL)
+### Doctor Dashboard
+```bash
+cd web
+npm install
 npm run dev
 ```
 
-Place medical guideline PDFs in `backend/rag/guidelines/` — FAISS index builds automatically on first startup.
+### Backend
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
 
-## Safety Design
+Environment variables (`.env` in `backend/`):
+```
+GROQ_API_KEY=
+NEO4J_URI=
+NEO4J_USER=
+NEO4J_PASSWORD=
+SUPABASE_URL=
+SUPABASE_KEY=
+SARVAM_API_KEY=
+```
 
-All AI outputs are risk indicators, not diagnoses. Escalation logic is a deterministic Python matrix — the LLM cannot override it. Drug conflict detection is a blocking gate. RAG adjustments to risk scores are bounded and require guideline citation. Sensitive conditions (HIV, mental health, cancer, STDs) are filtered at the database query level.
+### Database
+Run `database/schema.sql` against your Supabase project to set up structured tables. Neo4j AuraDB schema/constraints are created on first run via `backend/services/neo4j_service.py`.
 
-## License
+---
 
-MIT
+## Hackathon Tracks
+
+This project is built to satisfy five tracks simultaneously — see [`Tracks/`](./Tracks/) for how each requirement is met:
+
+- **Expo** — the patient app is Expo/React Native end-to-end
+- **Neo4j AuraDB** — the health graph is the core reasoning layer, not a side feature
+- **Sarvam AI** — voice is a primary interaction mode, not a bolt-on
+- **Render Workflows** — multi-stage agent pipelines run as orchestrated workflows
+- **Base44** — early prototype, link pending (see `Tracks/BASE44_TRACK.md`)

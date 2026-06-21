@@ -1,70 +1,51 @@
-# 🔄 Daily Workflow Orchestrator & Agents
+# Daily Workflow Orchestrator
 
 ## Role
 
-The Daily Workflow Orchestrator is a scheduled automation pipeline (triggered daily, e.g., at 11 PM via N8N) that coordinates a multi-agent team to evaluate patient health trends. Rather than utilizing a single generic LLM, it decomposes the analysis into four specialized sub-agents. These sub-agents compile data from chat logs, wearables, and medical scans, then output a consolidated summary on the patient's profile page and feed questions to the Check-In Agent.
+The Render Workflow that ties every other agent together. Runs scheduled and event-triggered multi-stage pipelines reliably, in order, with retry support — so a full patient interaction (voice in → graph update → family risk check → explanation → recommendation → voice out) executes as a supervised sequence instead of one unsupervised LLM call trying to do everything at once.
 
----
+## Why It Exists
 
-## Agent Pipeline Architecture
+A single patient interaction touches seven or more distinct responsibilities — transcription, extraction, graph writing, family risk traversal, pattern matching, explanation, recommendation, and speech synthesis. Running all of that as one giant prompt is fragile: any single failure point (a slow graph query, a timed-out API call) silently breaks the whole response, with no way to know which stage failed or retry just that piece. This orchestrator exists to make the pipeline observable and resilient instead of a black box.
+
+## How It Works
 
 ```
-                       Daily Trigger (11 PM)
-                                │
-                                ▼
-                   Daily Workflow Orchestrator
-                                │
-         ┌──────────────────────┼──────────────────────┐
-         ▼                      ▼                      ▼
-    Chat Summary            Medicine               Medical Info
-   Analyzer Agent       Adherence Agent        Change Tracker Agent
-         │                      │                      │
-         └──────────────────────┼──────────────────────┘
-                                │
-                                ▼
-                   Profile Summarizer Agent
-                                │
-                                ├──► Save consolidated summary to Profile Page
-                                │
-                                ▼
-                       Check-In Q&A Agent
-                 (Build daily check-in questions)
+Voice Input (Sarvam STT)
+        ↓
+Conversation Agent (maintain context)
+        ↓
+Symptom Extraction Agent (detect symptom, severity, duration)
+        ↓
+Graph Agent (write nodes + relationships to Neo4j)
+        ↓
+Family Genetics Agent (traverse family risk)
+        ↓
+Pattern Similarity Agent (compare against known health patterns)
+        ↓
+Explanation Agent (generate grounded reasoning)
+        ↓
+Recommendation Agent (generate next-step guidance)
+        ↓
+Voice Response (Sarvam TTS)
 ```
 
----
+Each stage is an independently executable, retryable step within the Render Workflow — not a function call nested inside another function call. If the Family Genetics Agent's graph traversal is slow or fails, that stage retries without forcing the entire pipeline (including the parts the patient is already waiting on) to restart from scratch.
 
-## The Four Specialized Agents
+## Two Workflow Types
 
-### 1. Chat Summary Analyzer Agent
-- **Role**: Analyzes the conversational transcripts and daily chat summaries compiled by the Sarvam Chatbot.
-- **Objective**: Identifies persistent complaints, worsening symptoms, or recurring issues reported during conversations.
-- **Example finding**: *"User reported severe headache on Monday, Tuesday, and Wednesday. Mentioned sudden fatigue."*
+**Synchronous (within a conversation):** The full pipeline above, running each time a patient's message needs a response — fast enough to feel like a normal conversation, but executed as discrete, monitorable stages.
 
-### 2. Medicine Adherence Tracker Agent
-- **Role**: Audits the medicine tracker database logs and check-in confirmation answers.
-- **Objective**: Evaluates medication compliance over the last 24 hours and detects missed dose streaks.
-- **Example finding**: *"Missed both morning and evening doses of Amlodipine 5mg. Adherence has fallen below 70% this week."*
+**Asynchronous (background):** Triggered by events like an Escalation Agent alert or a queued Doctor Q&A question — these run independently of whether the patient still has the app open, and must complete reliably regardless. See [`Tracks/RENDER_TRACK.md`](../Tracks/RENDER_TRACK.md) for the escalation-specific workflow.
 
-### 3. Medical Info Change Agent
-- **Role**: Tracks structural edits in the profile, new vitals data, or data parsed from medical scans (blood tests, prescriptions) over the day.
-- **Objective**: Flags updates to baseline indicators like blood pressure trends, SpO2 averages, body weight, or blood glucose.
-- **Example finding**: *"Weight registered a 2.5 kg drop over the last 14 days. SpO2 average dropped to 92% overnight."*
+## Why This Matters for Reliability
 
-### 4. Profile Summarizer Agent
-- **Role**: Acts as the compiler agent, taking the structured reports from the Chat Analyzer, Adherence Agent, and Info Change Tracker.
-- **Objective**: Formulates a clear, high-level clinical overview written in natural language, which is displayed directly on the patient's profile dashboard and the doctor's morning briefing card.
-- **Example output**: *"User experiencing headache for three days. The weight has also dropped by 2.5 kg and adherence to Amlodipine is down to 70%."*
+| Without orchestration | With the Daily Workflow Orchestrator |
+|---|---|
+| One failure breaks the entire response | Each stage retries independently |
+| No visibility into which step failed | Every stage is logged and traceable |
+| Background tasks (queued doctor questions) have no durable home | Async workflows run reliably regardless of app state |
 
----
+## What It Coordinates
 
-## Downstream Check-In Generation
-
-The orchestrator forwards the profile summary and flagged issues to the **Check-In Agent**. The Check-In Agent uses this context to design specific, multi-question check-ins (e.g., follow-ups on headaches, medication side effects, or weight loss verification) for the following morning.
-
----
-
-## Safety Rules
-
-- **Deterministic Fallbacks** — If any sub-agent fails to run, the orchestrator defaults to a standard template, logging a warning to prevent the dashboard from displaying stale info.
-- **No Diagnostic Labels** — The Profile Summarizer must only summarize observations (e.g., *"Weight loss and fatigue noted"*), never labeling the pattern as a specific disease (e.g., *"Suggests diabetes"*).
-- **Data Grounding** — Every claim in the profile summary must correspond to a logged symptom, weight entry, or medication log in the database.
+Every other agent in the system passes through this orchestrator at some point — it is the execution engine the rest of the agent architecture runs on top of, not a separate feature alongside them.

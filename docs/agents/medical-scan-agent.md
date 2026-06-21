@@ -1,58 +1,45 @@
-# 🩻 Medical Scan & Record Analyzer Agent
+# Medical Scan Agent
 
 ## Role
 
-The Medical Scan & Record Analyzer Agent processes patient-uploaded medical records, such as blood test reports, lab results, and prescription images. It performs optical character recognition (OCR) and text analysis to structure findings, automatically populating missing metrics in the patient's profile, and populating their digital vaccine report card.
+Reads and verifies uploaded documents — most centrally, income certificates used for government scheme eligibility — extracting the relevant fields and confirming them before they're used anywhere else in the system.
 
----
+## Why It Exists
 
-## Process & Document Flow
+Government scheme eligibility depends on verified income data, not a number the patient types in. Requiring an actual uploaded document, scanned and verified, keeps the scheme-matching feature honest and prevents it from being trivially gamed by entering an arbitrary income figure.
+
+## How It Works
+
+1. The patient photographs or uploads their income certificate through the app (using Expo Camera).
+2. The Medical Scan Agent processes the document — extracting the income figure, the issuing authority, BPL/non-BPL status, and the certificate's validity/date.
+3. Extracted fields are verified for internal consistency (e.g. does the document look like a genuine income certificate format, are the required fields present) before being marked as confirmed.
+4. The verified income category is written to the patient's structured profile (Supabase) and made available to the Scheme Eligibility feature for matching.
+
+## Example Flow
 
 ```
-   Patient Uploads Document (Image/PDF)
-                    │
-                    ▼
-       FastAPI OCR Parsing Layer
- (Extracts text from blood tests/prescriptions)
-                    │
-                    ▼
-       Groq Extraction Engine
-(Extracts structured values, dates, and markers)
-                    │
-         ┌──────────┴──────────┐
-         ▼                     ▼
- Profile Update Logic    Vaccine Report Logic
- (Checks for missing     (Extracts immunisation
-  fields: weight,         records and dates)
-  blood type, etc.)            │
-         │                     ▼
-         │             Auto-add to Vaccine Card
-         │             (Marked as 'Extracted')
-         ▼                     │
-Auto-update Profile            ▼
-(Saves to Supabase)     Patient Reviews/Edits
+Patient uploads: income certificate (photo)
+        ↓
+Medical Scan Agent extracts:
+  - Income: ₹X per annum
+  - Category: BPL / Non-BPL
+  - Issuing authority: [authority name]
+        ↓
+Verified and written to patient profile (Supabase)
+        ↓
+Available to Scheme Eligibility matching
 ```
 
----
+## What It Writes
 
-## Key Capabilities
+| Data | Destination |
+|---|---|
+| Verified income category | Supabase (structured patient profile) |
 
-### 1. Auto-Populating Missing Profile Data
-- If the patient's profile has empty or uncompleted fields (e.g., weight, blood group, height, age):
-- The agent scans uploaded documents for this data (e.g., a blood group card, recent lab test showing weight).
-- Upon detection, the agent automatically updates the database fields and marks them as `source: "medical_scan"`.
-- It logs a notification on the app dashboard: *"We've updated your blood type to O+ and weight to 72 kg based on your uploaded report."*
+## Used By
 
-### 2. Vaccine Report Extraction
-- Scans diagnostic and immunization reports for vaccine history (e.g., COVID-19, Hepatitis B, Influenza, BCG).
-- Extracts vaccine name, batch, dosage, and date administered.
-- Automatically creates entries in the patient's **Vaccine Report Card** database table.
-- **Editable Safeguard**: All parsed vaccine records are marked as "AI-Extracted." The patient can view, edit, delete, or manually add missing vaccines at any time.
+**Scheme Eligibility** feature — the verified income category from this agent is one of the three matching inputs (alongside flagged condition and patient age) used to determine which government schemes a patient qualifies for.
 
----
+## Scope Note
 
-## Safety Rules
-
-- **Conflicting Values** — If a scanned report lists a profile value (e.g., weight) that is different from an existing value, the agent does not overwrite it silently. It prompts the user: *"We detected a new weight of 68 kg in your report. Would you like to update your current profile weight (70 kg)?"*
-- **Privacy Controls** — Scans are processed in memory, and the uploaded file is securely stored in a private Supabase bucket using Row-Level Security (RLS). 
-- **Doctor Verification** — Scans containing critical anomalies (e.g., highly elevated liver enzymes) are flagged directly in the doctor's morning briefing.
+This agent is currently scoped to income certificate verification for scheme matching. The same scan-and-extract approach is designed to extend to other document types (e.g. past prescriptions, lab reports) as the medical record timeline feature grows.

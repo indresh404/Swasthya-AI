@@ -1,61 +1,41 @@
-# 👨‍👩‍👧‍👦 Family Genetics & Similarity Checker Agent
+# Family Genetics Agent
 
 ## Role
 
-The Family Genetics & Similarity Checker Agent is responsible for analyzing health data across a linked family unit (linked via QR codes). It detects shared symptom patterns and potential genetic or household health risks, alerting family members while strictly respecting privacy guidelines.
+Traverses the family branch of the patient's health graph to surface inherited and shared risk — father has diabetes, user shows early signs of the same pattern — and keeps that reasoning fully explainable: which relationship, which condition, why it's relevant.
 
----
+## Why It Exists
 
-## Process & Similarity Logic
+Family history is one of the strongest predictors of risk in conditions like diabetes, hypertension, and cardiac disease, but it's almost never actually used in the moment a doctor is evaluating a patient — it's buried in a verbal history the patient may not think to repeat at every visit. This agent makes family risk a live, queryable part of every relevant interaction instead of a fact mentioned once during onboarding and then forgotten.
 
-1. **Family QR Linkage** — Users link their profiles to a family group by scanning a generated family QR code.
-2. **Genetics & Symptom Tracking** — The agent maintains a background log of non-sensitive chronic conditions (e.g., family history of hypertension, diabetes) and daily symptoms.
-3. **Similarity Checking**:
-   - The agent executes daily cross-checks of symptoms across all members of a family group.
-   - It searches for matching symptom clusters within a overlapping 72-hour window.
-4. **Triggering Similarity Alerts**:
-   - If Member A logs *"loss of taste and smell"* (a common viral symptom like COVID-19).
-   - And Member B logs *"loss of taste and smell"* or *"sudden fever and dry cough"*.
-   - The agent flags a **Family Similarity Alert**: *"2 members of this family are experiencing similar issues (loss of taste/smell). This may suggest a shared household infection."*
-5. **Updating Family Health Summary** — Compiles these findings into the shared Family Dashboard summary.
+## How It Works
 
----
+1. During onboarding, family members and their known conditions are written into the graph as `FamilyMember` nodes connected via `HAS_DISEASE` relationships.
+2. Whenever a risk assessment is needed — during a check-in, a doctor's question, or the ML risk model's feature extraction — the Family Genetics Agent runs a graph traversal:
+   ```cypher
+   MATCH (u:User {id: $userId})-[:RELATED_TO]->(f:FamilyMember)-[:HAS_DISEASE]->(d:Disease)
+   RETURN f.relation, d.name
+   ```
+3. The result is passed to the Explanation Agent as grounded context — never just a flag, always tied to the specific relationship and condition that produced it.
 
-## Privacy Rules & Sensitive Exclusions
-
-The agent is subject to a strict database-level filter to prevent embarrassing or high-stigma medical situations from leaking.
-
-### Excluded from Similarity Analysis & Family Summaries:
-- HIV / STDs
-- Mental Health conditions (e.g., depression, bipolar)
-- Oncology / Cancer diagnoses
-- Specific reproductive health records
-
-*No genetic or symptom tracking is run for these categories. They are stripped before the agent's LLM context is constructed.*
-
-### Anonymity of Alerts:
-- If sharing toggles are set to strict privacy, the warning message defaults to anonymized formatting: *"2 members have similar issues"* rather than naming the individuals.
-
----
-
-## Example Scenario: Viral Spread Alert
+## Example Output
 
 ```
-Member A (Mother) logs: "Loss of taste and smell"
-                                │
-                                ▼
-                       Genetics Database
-                  (No alerts triggered yet)
-                                │
-Member B (Son) logs: "Fever and loss of taste" (24h later)
-                                │
-                                ▼
-               Family Similarity Checker Runs
-                                │
-       Matches "loss of taste" symptom in family group
-                                │
-                                ▼
-                    Family Alert Triggered
-        "2 members have similar issues (loss of taste).
-         Please monitor symptoms and isolate if needed."
+Query: Does this patient have relevant family risk for cardiac issues?
+
+Result: Father — Hypertension
+        Grandfather — Cardiac event (age 58)
+
+Used in explanation: "Risk is elevated in part because of a family history
+of hypertension (father) and a cardiac event in your grandfather."
 ```
+
+## What It Reads
+
+Reads only — does not write new data. Pulls from `FamilyMember` and `Disease` nodes already established during onboarding or later updated through the Family QR system.
+
+## Used By
+
+- **Check-In Agent**, to inform which questions are clinically relevant for this specific patient
+- **Explanation Agent**, to ground risk explanations in specific, named family relationships rather than vague risk language
+- **ML Model**, as one of the structured input features for risk prediction

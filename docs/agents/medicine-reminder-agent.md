@@ -1,48 +1,54 @@
-# 💊 Medicine Reminder & Jan Aushadhi Agent
+# Medicine Reminder Agent
 
 ## Role
 
-The Medicine Reminder & Jan Aushadhi Agent is the central agent for managing medications, ensuring patient adherence, validating drug safety, and improving healthcare affordability. It handles daily reminders, automatically syncs doctor prescriptions, checks for drug conflicts, and powers the Jan Aushadhi Generic Medicine Calculator.
+Owns the patient's medicine list end-to-end: reminders, adherence tracking, and — critically — the synchronous OpenFDA drug interaction check that runs every time a new medicine is added, before it's ever saved.
 
----
+## Why It Exists
 
-## Process & Features
+Medicine management in most health apps is passive — a list with alarms. This agent treats it as an active safety layer: nothing gets added to a patient's regimen without first being checked against everything else they're already taking, because that's the one moment where a warning can actually prevent harm instead of just documenting it afterward.
 
-### 1. Reminders and Scheduling
-- Patients can manually add medications and set alert times.
-- The app schedules local notifications and logs adherence entries daily.
-- When a doctor prescribes a new medication via the dashboard, it is automatically pushed to the patient's active reminders list.
+## How It Works
 
-### 2. Synchronous Drug Conflict Check (OpenFDA)
-- Before saving any new medication (whether added by the patient or recommended by the doctor), the agent calls the OpenFDA drug interaction API.
-- This is a blocking step. It runs a cross-reference matrix of the proposed medicine against all active medicines in the patient's profile.
-- **Conflicts** are categorized by severity:
-  - *Informational*: Mild warning, allows saving.
-  - *Caution*: Warning prompt, requires confirmation.
-  - *Do not take without doctor guidance*: Serious warning. Blocks saving on the patient side. A doctor must log a formal clinical override on the web dashboard to allow it.
+### Adding a Medicine (Conflict Check)
+1. Patient (or doctor, via the dashboard) adds a new medicine.
+2. The agent calls the **OpenFDA API** with the new medicine and the patient's full current medicine list.
+3. If a conflict is found, a plain-language warning is generated (which medicines interact, what it means, severity level) and shown to the patient **before the medicine is saved**.
+4. Only once the check completes — with no conflict, or with the conflict acknowledged — is the medicine actually added to the active list.
 
-### 3. Jan Aushadhi Affordability Engine
-- When a patient's risk score crosses the Elevated threshold (or on-demand from the app), the agent audits their active medication list.
-- **Generic Substitution Lookup**: It matches each branded medication against the Jan Aushadhi generic database.
-- **Cost Calculation**: It extracts name, price, and packaging details, then calculates the monthly and annual cost savings when switching.
-- **PDF Generation & Export**: Generates a clean, print-ready PDF mapping:
-  `Branded Name + Price` ➔ `Generic Alternate + Price (Kendra Rate)`.
-  The patient can print this PDF or show it on their phone at a Jan Aushadhi Kendra to buy low-cost generic equivalents.
+See [`Features/drug-conflict-checker.md`](../Features/drug-conflict-checker.md) for full detail on this flow.
 
----
+### Reminders
+Once a medicine is on the list, the agent schedules reminders based on the prescribed frequency and logs whether each dose was taken on time.
 
-## Affordability Mapping Examples
+### Adherence Tracking
+Missed doses are tracked over time. Patterns of missed adherence for medicines tied to chronic conditions (e.g. consistently missing a diabetes medication) are surfaced to both the patient and, where relevant, flagged on the doctor's dashboard.
 
-| Active Branded Med | Generic Equivalent | Jan Aushadhi Price | Branded Price | Est. Monthly Savings |
-|---|---|---|---|---|
-| **Lipitor (Atorvastatin 10mg)** | Atorvastatin 10mg | ₹12 (strip of 10) | ₹78 (strip of 10) | ₹198 |
-| **Glucophage (Metformin 500mg)** | Metformin 500mg | ₹8 (strip of 10) | ₹32 (strip of 10) | ₹72 |
-| **Amlopress (Amlodipine 5mg)** | Amlodipine 5mg | ₹6 (strip of 10) | ₹28 (strip of 10) | ₹66 |
+## Example Flow
 
----
+```
+Patient adds: Ibuprofen
+        ↓
+Agent checks against active list: [Metformin]
+        ↓
+OpenFDA returns: interaction flagged (kidney stress risk in diabetic patients)
+        ↓
+Plain-language warning shown — "Caution" severity
+        ↓
+Patient acknowledges → medicine saved with flag attached
+        ↓
+Same flag visible on doctor dashboard
+```
 
-## Safety Rules
+## What It Writes
 
-- **Synchronous OpenFDA Call** — Cannot bypass drug checks. An offline queue is maintained if connectivity is lost, but the medication is marked as "Unverified" and warnings are shown until verified.
-- **PDF Disclaimer** — The Jan Aushadhi PDF must prominently display: *"This document is a generic price reference only. Always confirm substitutions with your pharmacist or doctor."*
-- **Auto-Sync** — New doctor prescriptions sync immediately. The user receives a push notification: *"Your doctor has added [Medicine] to your daily reminder. tap to confirm scheduling."*
+| Data | Destination |
+|---|---|
+| Active medicine list | Supabase |
+| Conflict flags | Supabase (visible to both patient and doctor) |
+| Adherence log | Supabase |
+
+## Related Features
+
+- [Drug Conflict Checker](../Features/drug-conflict-checker.md)
+- [Jan Aushadhi Calculator](../Features/jan-aushadhi-calculator.md) — uses this agent's medicine list as its input

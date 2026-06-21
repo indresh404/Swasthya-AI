@@ -1,54 +1,44 @@
-# 📅 Appointment Automation Agent
+# Appointment Automation Agent
 
 ## Role
 
-The Appointment Automation Agent facilitates frictionless booking between patients and doctors. When a patient requests an appointment with a doctor, the agent queries the doctor's real-time schedule, evaluates the patient's priority based on their clinical risk score, identifies the best available slot, and assigns the slot to the patient automatically.
+Matches patients to available doctors and handles booking — either the patient chooses directly, or the agent auto-assigns based on doctor specialty relevance and open time slots — with the booking instantly reflected on the doctor's dashboard, attached to the patient's existing graph context.
 
----
+## Why It Exists
 
-## Scheduling Process
+Booking a doctor's appointment is usually disconnected from everything the platform already knows about the patient. This agent closes that gap on two fronts: it removes the friction of manually browsing for a relevant doctor when the system already knows the patient's flagged conditions, and it ensures the resulting appointment carries the patient's health context with it instead of starting from nothing.
+
+## How It Works
+
+1. The patient either browses the doctor list directly, or requests auto-assignment.
+2. For auto-assignment, the agent matches based on:
+   - Specialty relevance to the patient's flagged conditions (drawn from the health graph)
+   - Doctor availability (open time slots)
+3. The patient confirms a date and time.
+4. The booking is written to Supabase and immediately visible on the doctor's web dashboard.
+5. When the doctor opens the appointment, the patient's graph-derived summary (recent symptoms, family risk context, any pending Doctor Q&A) is attached automatically — see [`Features/doctor-appointment-system.md`](../Features/doctor-appointment-system.md) for the full flow.
+
+## Example Flow
 
 ```
-   Patient clicks "Book Appointment" in mobile app
-                          │
-                          ▼
-            Retrieve Patient Risk Profile
-   (Checks risk score out of 100 & escalation logs)
-                          │
-                          ▼
-        Query Doctor's Calendar Availability
-     (Fetches work hours, existing bookings, slots)
-                          │
-                          ▼
-             Determine Urgency Ranking
-   - High Risk (>70) ──► Slot Reservation Override
-   - Low Risk (<40)  ──► Normal Slot Selection
-                          │
-                          ▼
-          Select Best Available Time Slot
-                          │
-                          ▼
-          Auto-assign Slot & Update Database
-   (Write to Supabase appointments table & block slot)
-                          │
-                          ▼
-    Push Notification & App Booking Confirmation Card
+Patient requests auto-match for: recurring back pain
+        ↓
+Agent matches: orthopedic specialist with an open slot this week
+        ↓
+Patient confirms slot
+        ↓
+Booking written to Supabase
+        ↓
+Appears on doctor's dashboard with attached graph summary:
+"3 reports of lower back pain over 2 weeks, family history of spinal condition (father)"
 ```
 
----
+## What It Writes
 
-## Technical Flow & Priority Logic
+| Data | Destination |
+|---|---|
+| Appointment record (doctor, patient, time, status) | Supabase |
 
-1. **Trigger** — The patient clicks the appointment link on their app or is prompted to book due to an elevated risk score.
-2. **Calendar Audit** — The agent reads the doctor's calendar schedule from `doctor_availability` and filters out blocked or previously booked slots.
-3. **Clinical Priority Sort** — If there are multiple bookings waiting, patients with a higher risk score are allocated priority slots (e.g., morning slots or urgent overrides).
-4. **Auto-Assignment** — Schedules the appointment, books the slot in the database, and issues an OAuth/CalDAV update to the doctor's external calendar if integrated.
-5. **Confirmation** — Sends confirmation messages to both the patient's mobile device and the doctor's dashboard panel.
+## Why Supabase, Not the Graph
 
----
-
-## Safety & Scheduling Rules
-
-- **Cancellation and Rescheduling** — If a patient cancels, the slot is immediately released back to the general availability pool.
-- **Double Booking Guard** — A database lock ensures that a slot cannot be booked by two concurrent agent requests.
-- **Doctor Manual Adjustments** — Doctors can manually block slots, mark appointments as completed, or push reschedule requests, which triggers the agent to recalculate and recommend alternative times.
+Appointments are transactional records — a time slot, a status, two IDs — exactly what a relational table handles well. The graph still supplies the *context* attached to the appointment; this agent just doesn't duplicate that reasoning into the graph itself. See [`Tracks/NEO4J_TRACK.md`](../Tracks/NEO4J_TRACK.md) for the full reasoning behind the Neo4j/Supabase split.

@@ -1,39 +1,39 @@
-# ✅ Check-In Agent
+# Check-In Agent
 
 ## Role
 
-The Check-In Agent generates a personalized set of daily check-in questions for the patient. Unlike generic forms, it dynamically constructs a multiple-choice or short Q&A sequence addressing outstanding health issues, medication status, and unresolved symptoms. Its core goal is to obtain specific, structured follow-up metrics on previously reported symptoms without causing survey fatigue.
+Generates short, adaptive daily check-in conversations — 2 to 3 questions, freshly generated each day from the patient's own graph — and extracts structured data from whatever the patient answers.
 
----
+## Why It Exists
 
-## Process
+A static daily questionnaire ("rate your pain 1-10, did you take your medicine, how did you sleep") becomes ignorable noise within a week. A check-in that visibly remembers what the patient said yesterday — and follows up specifically on it — stays relevant, and surfaces real signal instead of routine box-ticking.
 
-1. **Retrieve Context** — Gathers:
-   - Structured findings from the **Daily Workflow Orchestrator** (e.g., *Headache reported for three days, weight lost*).
-   - Unresolved symptoms from the database (resolution status is `ongoing`).
-   - Smartwatch vitals anomalies logged during the previous 24 hours.
-   - Pending clinical questions queued by the treating physician.
-2. **Identify Unresolved Slots** — Locates gaps in recent reports. For instance, if a headache was reported but its severity change, duration, or onset details are incomplete.
-3. **Generate Question Sequence** — Creates 2 to 3 targeted questions with multiple-choice options.
-   - *Example question*: *"Are you still getting headaches? How long has it been? How severe is the pain on a scale of 1 to 10?"*
-4. **Queue Check-In** — Stores the generated Q&A sequence in `pending_checkin_questions` in Supabase.
-5. **Render & Collect** — The app presents these questions sequentially. When the patient answers, the agent saves their responses to the structured symptom log, updating status tags and recalculating the risk score.
+## How It Works
 
----
+1. Before generating questions, the agent reads the patient's recent graph context: symptoms reported in the last few days, active medicines, family risk flags, and any pending Doctor Q&A questions that need to be asked.
+2. It generates 2-3 personalised questions. If the patient mentioned lower back pain three days ago, one question asks whether it's improved, worsened, or stayed the same.
+3. If a Smartwatch Risk Agent anomaly is on file (e.g. elevated resting heart rate), a relevant question is included — about chest comfort or breathlessness — without the patient bringing it up first.
+4. As the patient answers (by voice or text), each response is passed through symptom extraction, and the result is written to the graph as a new `SymptomEvent`, connected via `RECURRED_AS` if it matches a prior report of the same symptom.
+5. If a Doctor Q&A question is pending for this patient, it's woven naturally into the conversation, and the answer is routed back to notify the doctor once extracted.
 
-## Question Construction Examples
+## Example Interaction
 
-| Scenario | Generated Check-In Q&A | Input Source |
-|---|---|---|
-| Persistent Headache | **Q1: Are you still experiencing a headache?**<br>- Yes, still severe<br>- Yes, but milder<br>- No, resolved<br><br>**Q2: How long has it been present?**<br>- Less than 3 days<br>- 3 to 7 days<br>- More than a week | Daily Chat summary: "Severe headache" |
-| Smartwatch resting heart rate elevated | **Q1: Did you notice any chest discomfort or heart racing last night?**<br>- Yes, chest pain at rest<br>- Yes, racing heart<br>- No, felt normal | Wearable Anomaly Logger |
-| Weight Loss Flagged | **Q1: You've had a minor decrease in body weight. Have you been actively trying to lose weight?**<br>- Yes (diet/exercise)<br>- No (unexplained weight loss) | Medical Info Change Tracker |
+```
+Agent: Yesterday you mentioned your lower back was hurting — how is it today?
+Patient: Still there, maybe a bit worse.
+Agent: Got it, noted. Also — your watch showed your heart rate was a bit higher
+        than usual the last two nights. Any chest discomfort or trouble breathing?
+Patient: No, I feel fine on that front.
+```
 
----
+## What It Writes
 
-## Safety Rules
+| Data | Destination |
+|---|---|
+| New/recurring `SymptomEvent` nodes | Neo4j |
+| Check-in completion log | Supabase |
 
-- **Maximum Survey Length** — Constrained to a maximum of 3 questions per daily session to maintain high patient compliance and engagement.
-- **Tone & Interrogation Prevention** — Rephrases questions conversationally. The patient should feel cared for, not interrogated.
-- **Immediate Escalation Hooks** — If a patient's response to a check-in matches a Tier 1 or Tier 2 escalation trigger (e.g., selecting *"Yes, chest pain at rest"*), the flow halts immediately, and the emergency escalation card is displayed.
-- **Expiration** — Stale check-in questions expire after 24 hours and are replaced by the next day's newly generated queue.
+## Depends On
+
+- **Family Genetics Agent** and **Smartwatch Risk Agent** outputs, for context-aware question generation
+- **Doctor Q&A Agent**, for injecting pending doctor questions into the conversation
