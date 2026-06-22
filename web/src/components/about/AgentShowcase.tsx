@@ -1,7 +1,7 @@
 // src/components/about/AgentShowcase.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Terminal, Activity } from 'lucide-react';
+import { Play, Terminal, Activity, Cpu, CheckCircle2 } from 'lucide-react';
 import Card from '../ui/Card';
 
 interface AgentItem {
@@ -99,7 +99,7 @@ export const AgentShowcase: React.FC = () => {
   const consoleRef = useRef<HTMLDivElement | null>(null);
   const simTimeoutRef = useRef<any>(null);
 
-  // Auto-scroll logs terminal internally
+  // Auto-scroll logs terminal
   useEffect(() => {
     if (consoleRef.current) {
       consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
@@ -113,17 +113,20 @@ export const AgentShowcase: React.FC = () => {
     };
   }, []);
 
+  // Robust Vertical Auto-Scroll Logic
   const scrollToAgent = (agentNum: string) => {
-    const index = AGENTS.findIndex(a => a.num === agentNum);
-    if (index !== -1 && containerRef.current) {
-      const containerWidth = containerRef.current.clientWidth;
-      const cardWidth = 280;
-      const gap = 20;
-      const cardLeft = index * (cardWidth + gap);
-      const scrollLeft = cardLeft + cardWidth / 2 - containerWidth / 2;
+    const container = containerRef.current;
+    const element = document.getElementById(`agent-card-${agentNum}`);
+    
+    if (container && element) {
+      // Calculate exact center of the scroll container
+      const containerCenter = container.clientHeight / 2;
+      // Calculate the center of the target element relative to the container
+      const elementCenter = element.offsetTop + (element.clientHeight / 2);
       
-      containerRef.current.scrollTo({
-        left: scrollLeft,
+      // Scroll to position the element exactly in the middle
+      container.scrollTo({
+        top: elementCenter - containerCenter,
         behavior: 'smooth'
       });
     }
@@ -138,6 +141,7 @@ export const AgentShowcase: React.FC = () => {
     setActiveSim(simId);
     setStreamedLogs([]);
     setActiveAgentNum(null);
+    setSelectedAgent(null);
 
     let currentStep = 0;
 
@@ -146,11 +150,11 @@ export const AgentShowcase: React.FC = () => {
         const step = sim.steps[currentStep];
         
         setActiveAgentNum(step.agentNum);
-        scrollToAgent(step.agentNum);
+        scrollToAgent(step.agentNum); // Triggers auto-scroll to the highlighted agent
         setStreamedLogs(prev => [...prev, step.log]);
         
         currentStep++;
-        simTimeoutRef.current = setTimeout(executeNextStep, 1600); // 1.6s per agent execution
+        simTimeoutRef.current = setTimeout(executeNextStep, 1800);
       } else {
         setActiveAgentNum(null);
         setActiveSim(null);
@@ -161,280 +165,351 @@ export const AgentShowcase: React.FC = () => {
   };
 
   return (
-    <div className="agent-showcase-container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px 60px 24px', width: '100%', boxSizing: 'border-box' }}>
-      <h2 style={{ fontSize: '32px', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 12px 0', textAlign: 'center' }}>
-        The 11-Agent Mesh
-      </h2>
-      <p style={{ fontSize: '16px', color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '40px', maxWidth: '700px', margin: '0 auto 40px auto', lineHeight: 1.6 }}>
-        Instead of a single brittle chatbot, Swasthya AI coordinates 11 dedicated agents. Scroll horizontally to inspect active agents.
-      </p>
+    <div className="agent-showcase-container" style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 24px 80px 24px', width: '100%', boxSizing: 'border-box' }}>
+      
+      {/* Header Section */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '48px' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+          <Cpu size={20} style={{ color: '#0066FF' }} />
+          <span style={{ fontSize: '13px', fontWeight: 800, color: '#0066FF', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            System Architecture
+          </span>
+        </div>
+        <h2 style={{ fontSize: '36px', fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 16px 0', textAlign: 'center', letterSpacing: '-0.5px' }}>
+          The 11-Agent Mesh
+        </h2>
+        <p style={{ fontSize: '17px', color: 'var(--text-secondary)', textAlign: 'center', maxWidth: '750px', margin: 0, lineHeight: 1.6 }}>
+          Instead of a single brittle chatbot, Swasthya AI coordinates 11 dedicated, specialized agents. Select a simulation workflow on the left to watch them coordinate in real-time.
+        </p>
+      </motion.div>
 
-      {/* Horizontally scrollable container */}
+      {/* Main Grid Layout: Left Simulator, Right Agent List */}
       <div 
-        ref={containerRef}
-        className="agent-scroll-container"
+        className="mesh-split-grid"
         style={{ 
-          display: 'flex', 
-          flexDirection: 'row', 
-          overflowX: 'auto', 
-          gap: '20px', 
-          padding: '12px 4px 28px 4px',
-          scrollBehavior: 'smooth',
-          width: '100%',
-          boxSizing: 'border-box'
+          display: 'grid', 
+          gridTemplateColumns: '1.2fr 1fr', 
+          gap: '32px', 
+          alignItems: 'start'
         }}
       >
-        {AGENTS.map((a, idx) => {
-          const isCurrentActiveAgent = activeAgentNum === a.num;
-          const isSelected = selectedAgent === idx;
+        
+        {/* ========================================= */}
+        {/* LEFT COLUMN: SIMULATOR & EXECUTION TERMINAL */}
+        {/* ========================================= */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}
+        >
+          {/* Simulator Triggers Card */}
+          <Card 
+            style={{ 
+              padding: '32px', 
+              backgroundColor: 'var(--surface)', 
+              border: '1px solid var(--border)', 
+              borderRadius: '24px',
+              boxShadow: 'var(--shadow-lg)'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px', flexWrap: 'wrap', gap: '16px' }}>
+              <div>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: '#0066FF', textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: '6px' }}>
+                  Orchestrator Sandbox
+                </span>
+                <h3 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                  Live Workflow Simulator
+                </h3>
+                <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '8px 0 0 0', maxWidth: '400px' }}>
+                  Trigger a core background workflow to watch specialized agents execute tasks.
+                </p>
+              </div>
+              
+              {/* Status Indicator */}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '8px 14px', backgroundColor: activeSim ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-secondary)', borderRadius: '99px', border: activeSim ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid var(--border)', transition: 'all 0.3s ease' }}>
+                <Activity size={16} style={{ color: activeSim ? '#10B981' : 'var(--text-tertiary)', animation: activeSim ? 'pulse 2s infinite' : 'none' }} />
+                <span style={{ fontSize: '12px', fontWeight: 700, color: activeSim ? '#10B981' : 'var(--text-secondary)' }}>
+                  {activeSim ? 'Streaming Output...' : 'System Idle'}
+                </span>
+              </div>
+            </div>
 
-          return (
-            <div 
-              key={idx} 
-              className="agent-card-wrapper"
-              style={{ 
-                flex: '0 0 280px',
-                boxSizing: 'border-box'
-              }}
-            >
-              <Card
-                hoverable
-                onClick={() => setSelectedAgent(selectedAgent === idx ? null : idx)}
-                style={{
-                  padding: '24px',
-                  // Highlight card fully in blue background when performing
-                  backgroundColor: isCurrentActiveAgent ? '#0066FF' : 'var(--surface)',
-                  border: isCurrentActiveAgent 
-                    ? '1.5px solid #0066FF' 
-                    : (isSelected ? '1.5px solid var(--accent)' : '1px solid var(--border)'),
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '12px',
-                  height: '100%',
-                  color: isCurrentActiveAgent ? '#FFFFFF' : 'var(--text-primary)',
-                  boxShadow: (isSelected || isCurrentActiveAgent) ? '0 10px 25px rgba(0, 102, 255, 0.25)' : 'var(--shadow)',
-                  transform: (isSelected || isCurrentActiveAgent) ? 'translateY(-6px)' : 'none',
-                  boxSizing: 'border-box',
-                  transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ 
-                    fontSize: '24px', 
-                    fontWeight: 900, 
-                    color: isCurrentActiveAgent ? '#FFFFFF' : 'var(--accent-light)', 
-                    backgroundImage: isCurrentActiveAgent ? 'none' : 'linear-gradient(135deg, var(--accent) 0%, transparent 100%)', 
-                    WebkitBackgroundClip: isCurrentActiveAgent ? 'unset' : 'text', 
-                    WebkitTextFillColor: isCurrentActiveAgent ? '#FFFFFF' : 'transparent' 
-                  }}>
-                    {a.num}
-                  </span>
-                  <span 
-                    style={{ 
-                      fontSize: '9px', 
-                      fontWeight: 800, 
-                      padding: '2px 8px', 
-                      borderRadius: '6px', 
-                      backgroundColor: isCurrentActiveAgent ? 'rgba(255, 255, 255, 0.2)' : 'var(--accent-light)', 
-                      color: isCurrentActiveAgent ? '#FFFFFF' : 'var(--accent)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
+            {/* Triggers 2x2 Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+              {SIMULATIONS.map((sim) => {
+                const isActive = activeSim === sim.id;
+                return (
+                  <motion.button
+                    key={sim.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => runSimulation(sim.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '16px',
+                      borderRadius: '16px',
+                      border: isActive ? '1.5px solid #0066FF' : '1px solid var(--border)',
+                      backgroundColor: isActive ? 'rgba(0, 102, 255, 0.05)' : 'var(--bg-secondary)',
+                      color: 'var(--text-primary)',
+                      cursor: 'pointer',
+                      boxShadow: isActive ? '0 8px 20px rgba(0, 102, 255, 0.15)' : 'none',
+                      textAlign: 'left',
+                      position: 'relative',
+                      transition: 'border 0.3s ease, background-color 0.3s ease',
+                      overflow: 'hidden'
                     }}
                   >
-                    {isCurrentActiveAgent ? 'Performing' : 'Agentic Node'}
-                  </span>
-                </div>
-                <h3 style={{ fontSize: '16px', fontWeight: 800, color: isCurrentActiveAgent ? '#FFFFFF' : 'var(--text-primary)', margin: 0 }}>
-                  {a.name}
-                </h3>
-                <p style={{ fontSize: '13px', color: isCurrentActiveAgent ? 'rgba(255,255,255,0.85)' : 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
-                  {a.role}
-                </p>
-              </Card>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span style={{ fontSize: '18px' }}>{sim.icon}</span>
+                      <span style={{ fontSize: '14px', fontWeight: 700, color: isActive ? '#0066FF' : 'var(--text-primary)' }}>{sim.name}</span>
+                    </div>
+                    {isActive ? (
+                      <motion.div animate={{ opacity: [1, 0.4, 1] }} transition={{ repeat: Infinity, duration: 1.2 }} style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#0066FF' }} />
+                    ) : (
+                      <Play size={14} style={{ color: 'var(--text-tertiary)' }} />
+                    )}
+                  </motion.button>
+                );
+              })}
             </div>
-          );
-        })}
-      </div>
+          </Card>
 
-      {/* Simulator Widget */}
-      <Card 
-        style={{ 
-          marginTop: '40px', 
-          padding: '28px', 
-          backgroundColor: 'var(--surface)', 
-          border: '1.5px solid var(--border)', 
-          borderRadius: '20px',
-          boxShadow: 'var(--shadow-lg)'
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-          <div>
-            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-              Orchestrator Sandbox
-            </span>
-            <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', margin: '4px 0 0 0' }}>
-              Live Multi-Agent Workflow Simulator
-            </h3>
-          </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <Activity size={16} style={{ color: '#10B981', animation: activeSim ? 'ping 1.5s infinite' : 'none' }} />
-            <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
-              {activeSim ? 'Streaming Agent Output...' : 'Select a workflow below'}
-            </span>
-          </div>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '28px' }} className="simulator-grid">
-          {/* Left Column: Workflow triggers */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 8px 0' }}>
-              Trigger one of the core multi-agent background workflows to see which specialized agents wake up, coordinate tasks, and log data.
-            </p>
-            
-            {SIMULATIONS.map((sim) => {
-              const isActive = activeSim === sim.id;
-              return (
-                <button
-                  key={sim.id}
-                  type="button"
-                  onClick={() => runSimulation(sim.id)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '14px 20px',
-                    borderRadius: '12px',
-                    border: isActive ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
-                    backgroundColor: isActive ? 'var(--accent-light)' : 'var(--bg-secondary)',
-                    color: 'var(--text-primary)',
-                    fontWeight: 800,
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    textAlign: 'left'
-                  }}
-                  className="sim-trigger-btn"
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '16px' }}>{sim.icon}</span>
-                    <span>{sim.name}</span>
-                  </div>
-                  <Play size={12} fill="currentColor" style={{ opacity: isActive ? 1 : 0.5 }} />
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Right Column: Simulated Agent Logs */}
-          <div 
+          {/* Execution Terminal Window */}
+          <Card 
             style={{ 
-              backgroundColor: '#0A0A0C', 
-              border: '1.5px solid var(--border)', 
-              borderRadius: '16px',
-              padding: '20px 24px',
-              fontFamily: 'Courier New, monospace',
+              backgroundColor: '#09090B', 
+              border: '1px solid #27272A', 
+              borderRadius: '24px',
+              padding: '24px',
+              fontFamily: '"Fira Code", "JetBrains Mono", Courier New, monospace',
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: 'space-between',
-              minHeight: '260px',
-              boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.8)'
+              boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.5)',
+              minHeight: '360px',
+              height: '100%'
             }}
           >
             {/* Terminal Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #27272a', paddingBottom: '10px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #27272a', paddingBottom: '16px', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Terminal size={14} style={{ color: '#38bdf8' }} />
-                <span style={{ color: '#e4e4e7', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Render Workflow Logs
+                <Terminal size={16} style={{ color: '#38bdf8' }} />
+                <span style={{ color: '#A1A1AA', fontSize: '12px', fontWeight: 600, letterSpacing: '0.5px' }}>
+                  swasthya-mesh ~ % ./tail-logs
                 </span>
               </div>
-              <div style={{ display: 'flex', gap: '5px' }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ef4444' }} />
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#fbbf24' }} />
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }} />
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#ef4444' }} />
+                <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#fbbf24' }} />
+                <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#10b981' }} />
               </div>
             </div>
 
             {/* Logs Body */}
-            <div ref={consoleRef} style={{ flex: 1, overflowY: 'auto', maxHeight: '180px', display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '10px' }}>
-              <AnimatePresence>
+            <div ref={consoleRef} className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '10px', paddingRight: '8px' }}>
+              <AnimatePresence initial={false}>
                 {streamedLogs.length === 0 ? (
-                  <span style={{ color: '#52525b', fontSize: '11px', fontStyle: 'italic' }}>
-                    // Click a workflow pipeline to stream active execution logs.
-                  </span>
+                  <motion.span 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    style={{ color: '#52525b', fontSize: '13px', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <CheckCircle2 size={14} /> Waiting for orchestrator initialization...
+                  </motion.span>
                 ) : (
                   streamedLogs.map((log, idx) => {
                     const isSuccess = log.includes('[Success]');
                     const isAlert = log.includes('[Escalation') || log.includes('Warning') || log.includes('Risk');
-                    let color = '#a1a1aa';
-                    if (isSuccess) color = '#10b981';
-                    else if (isAlert) color = '#f87171';
-                    else if (log.includes('[Orchestrator]')) color = '#38bdf8';
+                    let color = '#D4D4D8';
+                    if (isSuccess) color = '#34D399';
+                    else if (isAlert) color = '#F87171';
+                    else if (log.includes('[Orchestrator]')) color = '#38BDF8';
+                    else if (log.includes('[Family Genetics Agent]')) color = '#C084FC';
 
                     return (
                       <motion.div
                         key={idx}
-                        initial={{ opacity: 0, x: -6 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.25 }}
-                        style={{ color: color, fontSize: '11px', lineHeight: 1.4, whiteSpace: 'pre-wrap' }}
+                        layout
+                        initial={{ opacity: 0, x: -10, filter: 'blur(4px)' }}
+                        animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                        transition={{ duration: 0.3, type: 'spring', stiffness: 200, damping: 20 }}
+                        style={{ color: color, fontSize: '13px', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
                       >
+                        <span style={{ opacity: 0.5, marginRight: '10px' }}>{`>`}</span>
                         {log}
                       </motion.div>
                     );
                   })
                 )}
               </AnimatePresence>
+              
+              {/* Blinking Cursor */}
+              {activeSim && (
+                <motion.div
+                  layout
+                  animate={{ opacity: [1, 0, 1] }}
+                  transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
+                  style={{ width: '8px', height: '16px', backgroundColor: '#38bdf8', marginTop: '6px' }}
+                />
+              )}
             </div>
+          </Card>
+        </motion.div>
+
+        {/* ========================================= */}
+        {/* RIGHT COLUMN: 1-COLUMN AGENT LIST */}
+        {/* ========================================= */}
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          style={{ display: 'flex', flexDirection: 'column', height: '80%', maxHeight: '780px' }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', padding: '0 8px' }}>
+            <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>Specialized Nodes</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', backgroundColor: 'var(--bg-secondary)', padding: '4px 10px', borderRadius: '12px' }}>11 Agents Total</span>
           </div>
-        </div>
-      </Card>
+
+          <div 
+            ref={containerRef}
+            className="custom-scrollbar"
+            style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '16px', 
+              overflowY: 'auto', 
+              paddingRight: '12px',
+              paddingBottom: '24px',
+              position: 'relative' // Required for accurate .offsetTop calculation
+            }}
+          >
+            {AGENTS.map((a, idx) => {
+              const isCurrentActiveAgent = activeAgentNum === a.num;
+              const isSelected = selectedAgent === idx;
+
+              return (
+                <motion.div 
+                  key={idx} 
+                  id={`agent-card-${a.num}`} // ID used for auto-scroll targeting
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-20px" }}
+                  transition={{ duration: 0.3, delay: idx * 0.05 }}
+                  style={{ flexShrink: 0 }}
+                >
+                  <Card
+                    onClick={() => setSelectedAgent(isSelected ? null : idx)}
+                    style={{
+                      padding: '20px',
+                      backgroundColor: isCurrentActiveAgent ? '#0066FF' : 'var(--surface)',
+                      border: isCurrentActiveAgent 
+                        ? '1px solid #4D94FF' 
+                        : (isSelected ? '1px solid #0066FF' : '1px solid var(--border)'),
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '16px',
+                      cursor: 'pointer',
+                      color: isCurrentActiveAgent ? '#FFFFFF' : 'var(--text-primary)',
+                      boxShadow: isCurrentActiveAgent 
+                        ? '0 10px 24px rgba(0, 102, 255, 0.3), inset 0 1px 1px rgba(255,255,255,0.2)' 
+                        : (isSelected ? '0 4px 12px rgba(0, 102, 255, 0.1)' : 'var(--shadow)'),
+                      transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                      transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      borderRadius: '16px'
+                    }}
+                  >
+                    {/* Active Background Glow */}
+                    {isCurrentActiveAgent && (
+                      <motion.div 
+                        animate={{ scale: [1, 1.2], opacity: [0.2, 0] }}
+                        transition={{ repeat: Infinity, duration: 1.5, ease: "easeOut" }}
+                        style={{ position: 'absolute', top: '50%', left: '10%', transform: 'translate(-50%, -50%)', width: '80px', height: '80px', borderRadius: '50%', backgroundColor: '#FFFFFF', pointerEvents: 'none' }}
+                      />
+                    )}
+
+                    {/* Agent Number Badge */}
+                    <div style={{ 
+                      width: '48px', 
+                      height: '48px', 
+                      borderRadius: '12px', 
+                      backgroundColor: isCurrentActiveAgent ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      border: isCurrentActiveAgent ? 'none' : '1px solid var(--border)'
+                    }}>
+                      <span style={{ 
+                        fontSize: '18px', 
+                        fontWeight: 900, 
+                        color: isCurrentActiveAgent ? '#FFFFFF' : '#0066FF', 
+                        fontFamily: 'monospace'
+                      }}>
+                        {a.num}
+                      </span>
+                    </div>
+
+                    {/* Agent Details */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', zIndex: 1, width: '100%' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3 style={{ fontSize: '15px', fontWeight: 800, margin: 0, color: isCurrentActiveAgent ? '#FFFFFF' : 'var(--text-primary)' }}>
+                          {a.name}
+                        </h3>
+                        {isCurrentActiveAgent && (
+                          <span style={{ fontSize: '9px', fontWeight: 800, padding: '2px 8px', borderRadius: '12px', backgroundColor: '#FFFFFF', color: '#0066FF', textTransform: 'uppercase' }}>
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <p style={{ fontSize: '13px', color: isCurrentActiveAgent ? 'rgba(255,255,255,0.9)' : 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+                        {a.role}
+                      </p>
+                    </div>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+      </div>
 
       <style>{`
-        .agent-scroll-container {
-          scrollbar-width: thin;
-          scrollbar-color: var(--accent) transparent;
-          -webkit-overflow-scrolling: touch;
+        /* Beautiful Custom Scrollbar for Terminal & Agent List */
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
         }
-        
-        .agent-scroll-container::-webkit-scrollbar {
-          height: 6px;
-        }
-        
-        .agent-scroll-container::-webkit-scrollbar-track {
+        .custom-scrollbar::-webkit-scrollbar-track {
           background: transparent;
         }
-        
-        .agent-scroll-container::-webkit-scrollbar-thumb {
-          background-color: var(--accent);
-          border-radius: 99px;
-          opacity: 0.3;
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: var(--border);
+          border-radius: 10px;
         }
-        
-        [data-theme="dark"] .agent-scroll-container::-webkit-scrollbar-thumb {
-          background-color: rgba(255, 255, 255, 0.2);
+        .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+          background-color: var(--text-tertiary);
         }
 
-        .sim-trigger-btn:hover {
-          border-color: var(--accent) !important;
-          background-color: var(--bg-secondary) !important;
-          transform: translateX(4px);
-        }
-
-        @media (max-width: 768px) {
-          .agent-showcase-container {
-            padding: 0 16px 40px 16px !important;
-          }
-          .agent-scroll-container {
-            width: 100% !important;
-            max-width: 100% !important;
-          }
-          .agent-card-wrapper {
-            flex: 0 0 250px !important;
-          }
-          .simulator-grid {
+        /* Stack layout vertically on smaller screens */
+        @media (max-width: 1024px) {
+          .mesh-split-grid {
             grid-template-columns: 1fr !important;
-            gap: 20px !important;
+            gap: 40px !important;
+          }
+          /* Cap height of agent list on mobile so it doesn't take over the entire screen */
+          .agent-showcase-container .custom-scrollbar {
+            max-height: 500px !important;
           }
         }
       `}</style>
