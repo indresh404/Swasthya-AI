@@ -48,7 +48,7 @@ export const Footer: React.FC = () => {
             onClick={() => navigate('/about')}
             style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: 0 }}
           >
-            About Platform
+            About Swasthya AI
           </button>
           <button
             onClick={() => navigate('/auth')}

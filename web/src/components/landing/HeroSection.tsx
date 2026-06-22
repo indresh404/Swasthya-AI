@@ -73,16 +73,16 @@ export const HeroSection: React.FC = () => {
 
       <p
         style={{
-          fontSize: '20px',
+          fontSize: '22px',
           color: 'var(--text-secondary)',
           lineHeight: 1.5,
           margin: '0 0 40px 0',
           maxWidth: '650px',
-          fontWeight: 500
+          fontWeight: 600
         }}
         className="hero-subtitle-responsive"
       >
-        An intelligent, node-connected clinical dashboard helping practitioners map genetic risks, verify patient files, and answer medical inquiries securely.
+        The Complete Picture Before Every Prescription.
       </p>
 
       {/* Actions */}

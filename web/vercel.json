@@ -1,0 +1,9 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/((?!api/|assets/|static/|_next/|_vercel/|[\\w-]+\\.\\w+).*)$",
+      "destination": "/index.html"
+    }
+  ]
+}

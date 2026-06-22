@@ -7,7 +7,8 @@ import {
   Activity, 
   Users, 
   ShieldAlert, 
-  DollarSign 
+  DollarSign,
+  FileText
 } from 'lucide-react';
 import Card from '../ui/Card';
 
@@ -46,6 +47,11 @@ const FEATURES = [
     icon: <DollarSign size={22} style={{ color: 'var(--accent)' }} />,
     name: "Jan Aushadhi Savings",
     description: "Cross-checks branded prescriptions against the government generic medicine index, calculating savings and exporting generic alternatives."
+  },
+  {
+    icon: <FileText size={22} style={{ color: 'var(--accent)' }} />,
+    name: "Government Scheme Matcher",
+    description: "Verifies income certificates and documents, automatically matching eligible low-income patients with Ayushman Bharat and state insurance schemes."
   }
 ];
 
@@ -66,17 +72,15 @@ export const FeatureShowcase: React.FC = () => {
 
       <div 
         style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', 
-          gap: '24px', 
           boxSizing: 'border-box' 
         }} 
-        className="features-grid-responsive"
+        className="clinical-modules-grid"
       >
         {FEATURES.map((f, idx) => (
           <Card
             key={idx}
             hoverable
+            className="clinical-module-card"
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -114,11 +118,35 @@ export const FeatureShowcase: React.FC = () => {
       </div>
 
       <style>{`
+        .clinical-modules-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 24px;
+        }
+
+        .clinical-module-card {
+          border: 1.5px solid var(--border) !important;
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+
+        .clinical-module-card:hover {
+          border-color: #0066FF !important;
+          background-color: rgba(0, 102, 255, 0.04) !important;
+          box-shadow: 0 10px 25px rgba(0, 102, 255, 0.1) !important;
+          transform: translateY(-4px);
+        }
+
+        @media (max-width: 1024px) {
+          .clinical-modules-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+        }
+
         @media (max-width: 768px) {
           .features-showcase-container {
             padding: 0 16px 40px 16px !important;
           }
-          .features-grid-responsive {
+          .clinical-modules-grid {
             grid-template-columns: 1fr !important;
             gap: 16px !important;
           }

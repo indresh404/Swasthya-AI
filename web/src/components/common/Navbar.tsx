@@ -103,7 +103,7 @@ export const Navbar: React.FC = () => {
               padding: '4px 8px'
             }}
           >
-            About Platform
+            About Swasthya AI
           </button>
         </div>
 
@@ -191,7 +191,7 @@ export const Navbar: React.FC = () => {
               textAlign: 'left'
             }}
           >
-            About Platform
+            About Swasthya AI
           </button>
           <div style={{ borderBottom: '1px solid var(--border)', margin: '4px 0' }} />
           <Button
