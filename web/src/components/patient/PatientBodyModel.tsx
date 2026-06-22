@@ -15,6 +15,38 @@ export interface HeatPoint {
 
 const SHADER_POINTS_COUNT = 10;
 
+// ADJUST 3D MODEL POSITION HERE: [x, y, z]
+// x: left(-)/right(+) | y: down(-)/up(+) | z: closer(-)/further(+)
+export const DEFAULT_MODEL_OFFSET: [number, number, number] = [0, 0, 0];
+
+const LoadingSpinner: React.FC = () => {
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '12px',
+      color: '#38bdf8',
+      fontFamily: 'system-ui, sans-serif',
+      pointerEvents: 'none',
+      width: '180px',
+    }}>
+      <div style={{
+        width: '36px',
+        height: '36px',
+        border: '3px solid rgba(56, 189, 248, 0.1)',
+        borderTop: '3px solid #38bdf8',
+        borderRadius: '50%',
+        animation: 'cursorSpin 1s linear infinite'
+      }} />
+      <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', textShadow: '0 0 8px rgba(56, 189, 248, 0.5)' }}>
+        Loading 3D Model...
+      </span>
+    </div>
+  );
+};
+
 // Custom shader material with normal vectors for realistic 3D lighting, blending, and sci-fi fresnel rim glow
 class HeatmapShaderMaterial extends THREE.ShaderMaterial {
   constructor() {
@@ -145,9 +177,21 @@ const MannequinFallback: React.FC<{
   heatPoints: HeatPoint[];
   onZoneClick: (hp: HeatPoint) => void;
   selectedZoneLabel?: string;
-}> = ({ heatPoints, onZoneClick, selectedZoneLabel }) => {
+  setCursorState: (state: 'default' | 'grabbing' | 'pointer') => void;
+  positionOffset: [number, number, number];
+}> = ({ heatPoints, onZoneClick, selectedZoneLabel, setCursorState, positionOffset }) => {
   const materialRef = useRef<any>(null);
   const groupRef = useRef<THREE.Group>(null);
+
+  const [isMobile, setIsMobile] = useState(false);
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Model base color is ALWAYS white
   const baseColor = useMemo(() => new THREE.Color('#f8fafc'), []);
@@ -197,17 +241,18 @@ const MannequinFallback: React.FC<{
     const hp = heatPoints.find(p => p.label === selectedZoneLabel);
     if (!hp) return null;
     const point = new THREE.Vector3(...hp.position);
+    // Lock x and z to 0 to keep the highlight fixed in the middle of the screen horizontally
     point.x = 0;
     point.z = 0;
     return { hp, localPos: point };
   }, [selectedZoneLabel, heatPoints]);
 
   return (
-    <group position={[0, -0.9, 0]}>
+    <group position={[positionOffset[0], positionOffset[1] - 0.9, positionOffset[2]]}>
       {/* Rotating meshes group */}
       <group ref={groupRef}>
         {/* Head */}
-        <mesh material={material} position={[0, 0, 0]}>
+        <mesh material={material} position={[0, -100, 0]}>
           <sphereGeometry args={[1, 160, 16]} />
         </mesh>
         {/* Neck */}
@@ -271,11 +316,11 @@ const MannequinFallback: React.FC<{
             onPointerDown={(e) => handlePointerDown(e, hp)}
             onPointerOver={(e) => {
               e.stopPropagation();
-              document.body.style.cursor = 'pointer';
+              setCursorState('pointer');
             }}
             onPointerOut={(e) => {
               e.stopPropagation();
-              document.body.style.cursor = 'grab';
+              setCursorState('default');
             }}
           >
             <sphereGeometry args={[0.25, 8, 8]} />
@@ -316,42 +361,46 @@ const MannequinFallback: React.FC<{
             }} />
             
             {/* Arrow line pointing to the dot */}
-            <div style={{
-              position: 'absolute',
-              bottom: '6px',
-              left: '6px',
-              width: '45px',
-              height: '30px',
-              borderLeft: `2px solid ${activeSelectedPoint.hp.color}`,
-              borderBottom: `2px solid ${activeSelectedPoint.hp.color}`,
-              transform: 'rotate(-45deg)',
-              transformOrigin: 'bottom left',
-              zIndex: 0,
-            }} />
+            {!isMobile && (
+              <div style={{
+                position: 'absolute',
+                bottom: '6px',
+                left: '6px',
+                width: '45px',
+                height: '30px',
+                borderLeft: `2px solid ${activeSelectedPoint.hp.color}`,
+                borderBottom: `2px solid ${activeSelectedPoint.hp.color}`,
+                transform: 'rotate(-45deg)',
+                transformOrigin: 'bottom left',
+                zIndex: 0,
+              }} />
+            )}
             
             {/* Floating details tooltip box */}
-            <div style={{
-              position: 'absolute',
-              left: '42px',
-              bottom: '30px',
-              backgroundColor: 'rgba(15, 23, 42, 0.95)',
-              border: `1.5px solid ${activeSelectedPoint.hp.color}`,
-              borderRadius: '8px',
-              padding: '8px 12px',
-              width: '180px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
-              color: '#FFFFFF',
-              fontFamily: 'system-ui, sans-serif',
-              pointerEvents: 'auto',
-              zIndex: 3,
-            }}>
-              <div style={{ fontWeight: 800, fontSize: '11px', color: activeSelectedPoint.hp.color, textTransform: 'uppercase', marginBottom: '3px' }}>
-                {activeSelectedPoint.hp.label} Zone
+            {!isMobile && (
+              <div style={{
+                position: 'absolute',
+                left: '42px',
+                bottom: '30px',
+                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                border: `1.5px solid ${activeSelectedPoint.hp.color}`,
+                borderRadius: '8px',
+                padding: '8px 12px',
+                width: '180px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
+                color: '#FFFFFF',
+                fontFamily: 'system-ui, sans-serif',
+                pointerEvents: 'auto',
+                zIndex: 3,
+              }}>
+                <div style={{ fontWeight: 800, fontSize: '11px', color: activeSelectedPoint.hp.color, textTransform: 'uppercase', marginBottom: '3px' }}>
+                  {activeSelectedPoint.hp.label} Zone
+                </div>
+                <div style={{ fontSize: '10px', color: '#cbd5e1', lineHeight: 1.3 }}>
+                  {activeSelectedPoint.hp.description}
+                </div>
               </div>
-              <div style={{ fontSize: '10px', color: '#cbd5e1', lineHeight: 1.3 }}>
-                {activeSelectedPoint.hp.description}
-              </div>
-            </div>
+            )}
           </div>
         </Html>
       )}
@@ -365,9 +414,21 @@ const ModelWrapper: React.FC<{
   centerOffsetRef: React.MutableRefObject<THREE.Vector3>;
   modelScaleRef: React.MutableRefObject<number>;
   selectedZoneLabel?: string;
-}> = ({ heatPoints, onZoneClick, centerOffsetRef, modelScaleRef, selectedZoneLabel }) => {
+  setCursorState: (state: 'default' | 'grabbing' | 'pointer') => void;
+  positionOffset: [number, number, number];
+}> = ({ heatPoints, onZoneClick, centerOffsetRef, modelScaleRef, selectedZoneLabel, setCursorState, positionOffset }) => {
   const { scene } = useGLTF("/model.glb");
   const shaderRef = useRef<any>(null);
+
+  const [isMobile, setIsMobile] = useState(false);
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Clone the loaded scene to avoid shared mutation scaling corruption
   const clonedScene = useMemo(() => {
@@ -466,6 +527,7 @@ const ModelWrapper: React.FC<{
     if (!hp) return null;
     const point = new THREE.Vector3(...hp.position);
     point.sub(centerOffsetRef.current).multiplyScalar(modelScaleRef.current);
+    // Lock x and z to 0 to keep the highlight fixed in the middle of the screen horizontally
     point.x = 0;
     point.z = 0;
     return { hp, localPos: point };
@@ -477,7 +539,7 @@ const ModelWrapper: React.FC<{
       - Change the position={[x, y, z]} values below to translate the model's location on the screen.
       - E.g. Increasing the middle 'y' value (e.g. to -0.5) moves the model upward; decreasing it (e.g. to -1.0) moves it downward.
     */
-    <group position={[0, 0, 0]}>
+    <group position={positionOffset}>
       <group ref={groupRef}>
         <primitive 
           object={clonedScene} 
@@ -497,11 +559,11 @@ const ModelWrapper: React.FC<{
               }}
               onPointerOver={(e) => {
                 e.stopPropagation();
-                document.body.style.cursor = 'pointer';
+                setCursorState('pointer');
               }}
               onPointerOut={(e) => {
                 e.stopPropagation();
-                document.body.style.cursor = 'grab';
+                setCursorState('default');
               }}
             >
               <sphereGeometry args={[0.25, 8, 8]} />
@@ -542,42 +604,46 @@ const ModelWrapper: React.FC<{
             }} />
             
             {/* Arrow line pointing to the dot */}
-            <div style={{
-              position: 'absolute',
-              bottom: '6px',
-              left: '6px',
-              width: '45px',
-              height: '30px',
-              borderLeft: `2px solid ${activeSelectedPoint.hp.color}`,
-              borderBottom: `2px solid ${activeSelectedPoint.hp.color}`,
-              transform: 'rotate(-45deg)',
-              transformOrigin: 'bottom left',
-              zIndex: 0,
-            }} />
+            {!isMobile && (
+              <div style={{
+                position: 'absolute',
+                bottom: '6px',
+                left: '6px',
+                width: '45px',
+                height: '30px',
+                borderLeft: `2px solid ${activeSelectedPoint.hp.color}`,
+                borderBottom: `2px solid ${activeSelectedPoint.hp.color}`,
+                transform: 'rotate(-45deg)',
+                transformOrigin: 'bottom left',
+                zIndex: 0,
+              }} />
+            )}
             
             {/* Floating details tooltip box */}
-            <div style={{
-              position: 'absolute',
-              left: '42px',
-              bottom: '30px',
-              backgroundColor: 'rgba(15, 23, 42, 0.95)',
-              border: `1.5px solid ${activeSelectedPoint.hp.color}`,
-              borderRadius: '8px',
-              padding: '8px 12px',
-              width: '180px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
-              color: '#FFFFFF',
-              fontFamily: 'system-ui, sans-serif',
-              pointerEvents: 'auto',
-              zIndex: 3,
-            }}>
-              <div style={{ fontWeight: 800, fontSize: '11px', color: activeSelectedPoint.hp.color, textTransform: 'uppercase', marginBottom: '3px' }}>
-                {activeSelectedPoint.hp.label} Zone
+            {!isMobile && (
+              <div style={{
+                position: 'absolute',
+                left: '42px',
+                bottom: '30px',
+                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                border: `1.5px solid ${activeSelectedPoint.hp.color}`,
+                borderRadius: '8px',
+                padding: '8px 12px',
+                width: '180px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
+                color: '#FFFFFF',
+                fontFamily: 'system-ui, sans-serif',
+                pointerEvents: 'auto',
+                zIndex: 3,
+              }}>
+                <div style={{ fontWeight: 800, fontSize: '11px', color: activeSelectedPoint.hp.color, textTransform: 'uppercase', marginBottom: '3px' }}>
+                  {activeSelectedPoint.hp.label} Zone
+                </div>
+                <div style={{ fontSize: '10px', color: '#cbd5e1', lineHeight: 1.3 }}>
+                  {activeSelectedPoint.hp.description}
+                </div>
               </div>
-              <div style={{ fontSize: '10px', color: '#cbd5e1', lineHeight: 1.3 }}>
-                {activeSelectedPoint.hp.description}
-              </div>
-            </div>
+            )}
           </div>
         </Html>
       )}
@@ -590,19 +656,26 @@ interface PatientBodyModelProps {
   height?: string;
   selectedZoneLabel?: string;
   onSelectZone?: (hp: HeatPoint | null) => void;
+  positionOffset?: [number, number, number];
 }
 
 export const PatientBodyModel: React.FC<PatientBodyModelProps> = ({ 
   heatPoints, 
   height = '400px',
   selectedZoneLabel,
-  onSelectZone
+  onSelectZone,
+  positionOffset = DEFAULT_MODEL_OFFSET
 }) => {
   const [localSelectedZone, setLocalSelectedZone] = useState<HeatPoint | null>(null);
 
   const activeSelectedZone = selectedZoneLabel
     ? (heatPoints.find(hp => hp.label === selectedZoneLabel) || null)
     : localSelectedZone;
+
+  const [cursorState, setCursorState] = useState<'default' | 'grabbing' | 'pointer'>('default');
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const handleSelect = (hp: HeatPoint | null) => {
     if (onSelectZone) {
@@ -619,13 +692,25 @@ export const PatientBodyModel: React.FC<PatientBodyModelProps> = ({
     return heatPoints.slice(0, SHADER_POINTS_COUNT);
   }, [heatPoints]);
 
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    setMousePos({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    });
+  };
+
   return (
     <div 
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
       onMouseEnter={() => {
-        document.body.style.cursor = 'grab';
+        setIsHovering(true);
+        setCursorState('default');
       }}
       onMouseLeave={() => {
-        document.body.style.cursor = 'auto';
+        setIsHovering(false);
       }}
       style={{ 
         position: 'relative', 
@@ -635,7 +720,7 @@ export const PatientBodyModel: React.FC<PatientBodyModelProps> = ({
         borderRadius: 'var(--radius-lg)', 
         border: '1px solid rgba(255, 255, 255, 0.08)', // subtle dark border
         overflow: 'hidden',
-        cursor: 'grab'
+        cursor: 'none' // Hide standard cursor
       }}
     >
       <Canvas camera={{ position: [0, 0.2, 5.0], fov: 42 }}>
@@ -650,31 +735,106 @@ export const PatientBodyModel: React.FC<PatientBodyModelProps> = ({
             heatPoints={activeHeatpoints} 
             onZoneClick={handleSelect} 
             selectedZoneLabel={activeSelectedZone?.label}
+            setCursorState={setCursorState}
+            positionOffset={positionOffset}
           />
         }>
-          <ModelWrapper 
-            heatPoints={activeHeatpoints} 
-            onZoneClick={handleSelect}
-            centerOffsetRef={centerOffsetRef}
-            modelScaleRef={modelScaleRef}
-            selectedZoneLabel={activeSelectedZone?.label}
-          />
+          <React.Suspense fallback={<Html center><LoadingSpinner /></Html>}>
+            <ModelWrapper 
+              heatPoints={activeHeatpoints} 
+              onZoneClick={handleSelect}
+              centerOffsetRef={centerOffsetRef}
+              modelScaleRef={modelScaleRef}
+              selectedZoneLabel={activeSelectedZone?.label}
+              setCursorState={setCursorState}
+              positionOffset={positionOffset}
+            />
+          </React.Suspense>
         </GLTFErrorBoundary>
         
         <OrbitControls 
           enablePan={false}
-          minDistance={3.0}
+          minDistance={6.0}
           maxDistance={5.0}
           maxPolarAngle={Math.PI / 2 + 0.2}
           minPolarAngle={Math.PI / 2 - 0.2}
+          target={positionOffset}
           onStart={() => {
-            document.body.style.cursor = 'grabbing';
+            setCursorState('grabbing');
           }}
           onEnd={() => {
-            document.body.style.cursor = 'grab';
+            setCursorState('default');
           }}
         />
       </Canvas>
+
+      {/* Custom Follower Cursor */}
+      {isHovering && (
+        <div 
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            width: '100%',
+            height: '100%',
+            pointerEvents: 'none',
+            zIndex: 9999,
+          }}
+        >
+          {/* Custom Cursor Outer Ring Container */}
+          <div 
+            style={{
+              position: 'absolute',
+              left: mousePos.x,
+              top: mousePos.y,
+              transform: 'translate(-50%, -50%)',
+              width: cursorState === 'grabbing' ? '18px' : cursorState === 'pointer' ? '44px' : '28px',
+              height: cursorState === 'grabbing' ? '18px' : cursorState === 'pointer' ? '44px' : '28px',
+              transition: 'width 0.25s cubic-bezier(0.25, 1, 0.5, 1), height 0.25s cubic-bezier(0.25, 1, 0.5, 1)',
+              pointerEvents: 'none',
+            }}
+          >
+            <div 
+              style={{
+                width: '100%',
+                height: '100%',
+                borderRadius: '50%',
+                border: cursorState === 'grabbing' 
+                  ? '2px solid #2dd4bf' 
+                  : cursorState === 'pointer' 
+                  ? '1.5px dashed #f472b6' 
+                  : '1.5px solid #38bdf8',
+                boxShadow: cursorState === 'grabbing'
+                  ? '0 0 12px rgba(45, 212, 191, 0.6)'
+                  : cursorState === 'pointer'
+                  ? '0 0 15px rgba(244, 114, 182, 0.8)'
+                  : '0 0 8px rgba(56, 189, 248, 0.4)',
+                transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                animation: cursorState === 'pointer' ? 'cursorSpin 6s linear infinite' : undefined,
+              }}
+            />
+          </div>
+          {/* Custom Cursor Inner Dot */}
+          <div 
+            style={{
+              position: 'absolute',
+              left: mousePos.x,
+              top: mousePos.y,
+              transform: 'translate(-50%, -50%)',
+              borderRadius: '50%',
+              pointerEvents: 'none',
+              transition: 'width 0.25s cubic-bezier(0.25, 1, 0.5, 1), height 0.25s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.2s ease',
+              width: cursorState === 'grabbing' ? '4px' : cursorState === 'pointer' ? '8px' : '6px',
+              height: cursorState === 'grabbing' ? '4px' : cursorState === 'pointer' ? '8px' : '6px',
+              backgroundColor: cursorState === 'grabbing' 
+                ? '#2dd4bf' 
+                : cursorState === 'pointer' 
+                ? '#f472b6' 
+                : '#38bdf8',
+            }}
+          />
+        </div>
+      )}
 
       {/* Raycast Callout Overlay */}
       {activeSelectedZone ? (
@@ -693,7 +853,8 @@ export const PatientBodyModel: React.FC<PatientBodyModelProps> = ({
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            animation: 'fadeIn 0.2s ease-out'
+            animation: 'fadeIn 0.2s ease-out',
+            cursor: 'auto' // Restore default cursor for text interactions
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -728,6 +889,10 @@ export const PatientBodyModel: React.FC<PatientBodyModelProps> = ({
         @keyframes ping {
           0% { transform: scale(0.6); opacity: 1; }
           100% { transform: scale(1.8); opacity: 0; }
+        }
+        @keyframes cursorSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
       `}</style>
     </div>

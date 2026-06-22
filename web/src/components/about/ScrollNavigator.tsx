@@ -32,18 +32,17 @@ export const ScrollNavigator: React.FC = () => {
       
       const totalHeight = scrollHeight - clientHeight;
       if (totalHeight > 0) {
-        setScrollProgress(scrollTop / totalHeight);
+        // Clamp between 0 and 1
+        setScrollProgress(Math.min(Math.max(scrollTop / totalHeight, 0), 1));
       } else {
         setScrollProgress(0);
       }
 
-      // Check which section is in viewport
       let currentSection = SECTIONS[0].id;
       for (const section of SECTIONS) {
         const el = document.getElementById(section.id);
         if (el) {
           const rect = el.getBoundingClientRect();
-          // If the top of the section is in the top 45% of the screen
           if (rect.top <= window.innerHeight * 0.45) {
             currentSection = section.id;
           }
@@ -55,7 +54,6 @@ export const ScrollNavigator: React.FC = () => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     document.addEventListener('scroll', handleScroll, { passive: true });
     
-    // Run once on mount and also set a slight delay to ensure layout is complete
     handleScroll();
     const timeoutId = setTimeout(handleScroll, 200);
     
@@ -88,26 +86,30 @@ export const ScrollNavigator: React.FC = () => {
       }}
       className="scroll-navigator-fixed"
     >
-      {/* Scroll timeline connecting line */}
+      {/* Background Track */}
       <div 
         style={{
           position: 'absolute',
-          top: '12px',
-          bottom: '12px',
-          right: '4px',
+          top: '10px',
+          bottom: '10px',
+          right: '6px', // Aligned perfectly with the center of the 14px dots
           width: '2px',
-          backgroundColor: 'var(--border)',
+          backgroundColor: 'var(--border, rgba(150, 150, 150, 0.2))',
+          borderRadius: '4px',
           zIndex: 0
         }}
       >
-        {/* Filled blue color line */}
+        {/* Animated Progress Line (Hardware Accelerated) */}
         <div 
           style={{
             width: '100%',
-            height: `${scrollProgress * 100}%`,
+            height: '100%',
             backgroundColor: '#0066FF',
-            boxShadow: '0 0 8px #0066FF',
-            transition: 'height 0.1s ease-out'
+            borderRadius: '4px',
+            transformOrigin: 'top',
+            transform: `scaleY(${scrollProgress})`,
+            boxShadow: '0 0 10px rgba(0, 102, 255, 0.6)',
+            transition: 'transform 0.1s linear'
           }}
         />
       </div>
@@ -126,7 +128,6 @@ export const ScrollNavigator: React.FC = () => {
       >
         {SECTIONS.map((sec, idx) => {
           const isActive = activeSection === sec.id;
-          // Node is reached/filled if it's the active one or before it in the list
           const sectionIndex = SECTIONS.findIndex(s => s.id === activeSection);
           const isFilled = idx <= sectionIndex;
 
@@ -139,57 +140,84 @@ export const ScrollNavigator: React.FC = () => {
                 justifyContent: 'flex-end',
                 position: 'relative',
                 cursor: 'pointer',
-                width: '180px' // hover area width
+                width: '180px',
+                height: '24px' // Gives a slightly taller hit-area for clicking
               }}
               onClick={() => handleScrollTo(sec.id)}
-              className="scroll-nav-node-wrapper"
+              className="scroll-nav-node-wrapper group"
             >
               {/* Tooltip Label */}
               <span 
                 className="scroll-nav-label"
                 style={{
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  color: isActive ? '#FFFFFF' : 'var(--text-secondary)',
-                  marginRight: '12px',
-                  backgroundColor: isActive ? '#0066FF' : 'var(--surface)',
-                  border: isActive ? '1px solid #0066FF' : '1px solid var(--border)',
-                  padding: '4px 10px',
-                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  letterSpacing: '0.3px',
+                  color: isActive ? '#FFFFFF' : 'var(--text-secondary, #888)',
+                  marginRight: '16px',
+                  backgroundColor: isActive ? 'rgba(0, 102, 255, 0.95)' : 'var(--surface, rgba(255, 255, 255, 0.8))',
+                  backdropFilter: 'blur(8px)',
+                  border: isActive ? '1px solid rgba(255,255,255,0.1)' : '1px solid var(--border, #eaeaea)',
+                  padding: '5px 12px',
+                  borderRadius: '8px',
                   opacity: isActive ? 1 : 0,
-                  transform: isActive ? 'translateX(0)' : 'translateX(8px)',
-                  transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                  transform: isActive ? 'translateX(0) scale(1)' : 'translateX(10px) scale(0.95)',
+                  transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)', // Spring-like easing
                   pointerEvents: 'none',
-                  boxShadow: isActive ? '0 4px 12px rgba(0, 102, 255, 0.25)' : 'none',
+                  boxShadow: isActive ? '0 4px 14px rgba(0, 102, 255, 0.3)' : '0 2px 8px rgba(0,0,0,0.05)',
                   whiteSpace: 'nowrap'
                 }}
               >
                 {sec.label}
               </span>
 
-              {/* Node Dot Circle */}
-              <div 
-                style={{
-                  width: isActive ? '14px' : '10px',
-                  height: isActive ? '14px' : '10px',
-                  borderRadius: '50%',
-                  backgroundColor: isFilled ? '#0066FF' : 'var(--surface)',
-                  border: isFilled ? '2px solid #0066FF' : '2px solid var(--border)',
-                  boxShadow: isActive ? '0 0 10px #0066FF' : 'none',
-                  transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                  marginRight: isActive ? '-2px' : '0px',
-                  flexShrink: 0
-                }}
-              />
+              {/* Node Dot Container (keeps dot centered during scale) */}
+              <div style={{
+                width: '14px', 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center',
+                flexShrink: 0
+              }}>
+                {/* Node Dot */}
+                <div 
+                  className={isActive ? 'active-pulse' : ''}
+                  style={{
+                    width: isActive ? '12px' : '8px',
+                    height: isActive ? '12px' : '8px',
+                    borderRadius: '50%',
+                    backgroundColor: isFilled ? '#0066FF' : 'var(--surface, #fff)',
+                    border: isFilled ? 'none' : '2px solid var(--border, #ccc)',
+                    transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  }}
+                />
+              </div>
             </div>
           );
         })}
       </div>
 
       <style>{`
+        /* Hover state for non-active labels */
         .scroll-nav-node-wrapper:hover .scroll-nav-label {
           opacity: 1 !important;
-          transform: translateX(0) !important;
+          transform: translateX(0) scale(1) !important;
+        }
+        
+        /* Click interaction scale */
+        .scroll-nav-node-wrapper:active {
+          transform: scale(0.96);
+          transition: transform 0.1s ease;
+        }
+
+        /* Subtle pulse for the active dot */
+        @keyframes pulse-ring {
+          0% { box-shadow: 0 0 0 0 rgba(0, 102, 255, 0.6); }
+          100% { box-shadow: 0 0 0 8px rgba(0, 102, 255, 0); }
+        }
+        
+        .active-pulse {
+          animation: pulse-ring 2s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
         }
 
         @media (max-width: 1024px) {

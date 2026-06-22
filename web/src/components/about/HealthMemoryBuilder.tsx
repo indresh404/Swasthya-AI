@@ -539,13 +539,14 @@ const PatientMemoryGraph: React.FC = () => {
                   return (
                     <g key={link.id}>
                       <motion.line
-                        x1={400} y1={325} x2={400} y2={325}
+                        x1={x1} y1={y1} x2={x1} y2={y1}
                         stroke={isHovered ? '#38bdf8' : linkColor}
                         strokeWidth={isHovered ? 3.5 : 2.5}
                         strokeDasharray={isCross ? "5,5" : undefined}
-                        initial={{ x1: 400, y1: 325, x2: 400, y2: 325 }}
+                        initial={{ x2: x1, y2: y1 }}
                         animate={{
-                          x1: x1, y1: y1, x2: x2, y2: y2,
+                          x1: x1, y1: y1,
+                          x2: x2, y2: y2,
                           stroke: isHovered ? '#38bdf8' : linkColor,
                           strokeWidth: isHovered ? 3.5 : 2.5,
                           opacity: dim ? 0.15 : (isHovered ? 1.0 : 0.35)
@@ -960,12 +961,13 @@ const FamilyGeneticsGraph: React.FC = () => {
                   return (
                     <g key={link.id}>
                       <motion.line
-                        x1={400} y1={325} x2={400} y2={325}
+                        x1={x1} y1={y1} x2={x1} y2={y1}
                         stroke={isHovered ? '#fbbf24' : linkColor}
                         strokeWidth={isHovered ? 3.5 : 2.5}
-                        initial={{ x1: 400, y1: 325, x2: 400, y2: 325 }}
+                        initial={{ x2: x1, y2: y1 }}
                         animate={{
-                          x1: x1, y1: y1, x2: x2, y2: y2,
+                          x1: x1, y1: y1,
+                          x2: x2, y2: y2,
                           stroke: isHovered ? '#fbbf24' : linkColor,
                           strokeWidth: isHovered ? 3.5 : 2.5,
                           opacity: dim ? 0.15 : (isHovered ? 1.0 : 0.6)

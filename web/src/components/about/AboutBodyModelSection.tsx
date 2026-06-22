@@ -7,19 +7,17 @@ import { Brain, Heart, HelpCircle, AlertTriangle, Layers } from 'lucide-react';
 
 /* 
   --- 3D ANATOMICAL COORDINATE PLACEMENTS ---
-  Use these values to adjust the position of hotspots on the 3D rotating mannequin:
-  - Head: [0, 1.8, 0] (Cranial zone)
-  - Neck: [0, 1.5, 0] (Thyroid / vocal tract zone)
-  - Heart: [0.02, 1.25, 0.12] (Left thoracic chest cavity)
-  - Stomach: [0, 0.9, 0.12] (Core abdominal cavity)
-  - Knee: [-0.1, 0.4, 0.12] (Left patella joint)
+  Adjust the position of hotspots on the 3D mannequin using [x, y, z]:
+  - x: Left (-)/Right (+)
+  - y: Down (-)/Up (+)
+  - z: Back (-)/Front (+)
 */
 const ANATOMICAL_POINTS: HeatPoint[] = [
   {
     id: "head",
     label: "Head",
     description: "Migraine headache issues from the past 1 week (elevated risk due to sleep deprivation).",
-    position: [0, 1.2, 0],
+    position: [0, 175, 0], // Head/cranial zone
     color: "#EF4444", // Glowing red
     intensity: 0.95
   },
@@ -27,7 +25,7 @@ const ANATOMICAL_POINTS: HeatPoint[] = [
     id: "neck",
     label: "Neck",
     description: "Dry cough and throat irritation (risk of viral exposure or respiratory strain).",
-    position: [0, 1.2, 0],
+    position: [0, 155, 0], // Neck zone
     color: "#F59E0B", // Glowing amber
     intensity: 0.8
   },
@@ -35,7 +33,7 @@ const ANATOMICAL_POINTS: HeatPoint[] = [
     id: "heart",
     label: "Heart",
     description: "Borderline tachycardia (heart rate fluctuating between 90-104 bpm, smartwatch alert).",
-    position: [0, 1.2, 0],
+    position: [0.02, 135, 0.12], // Left chest/heart zone
     color: "#EF4444", // Glowing red
     intensity: 0.95
   },
@@ -43,7 +41,7 @@ const ANATOMICAL_POINTS: HeatPoint[] = [
     id: "stomach",
     label: "Stomach",
     description: "Visceral abdominal cramps and acid reflux (lifestyle factor: low water intake).",
-    position: [0, 1.2, 0],
+    position: [0, 110, 0.12], // Abdomen/stomach zone
     color: "#10B981", // Glowing green
     intensity: 0.7
   },
@@ -51,7 +49,7 @@ const ANATOMICAL_POINTS: HeatPoint[] = [
     id: "knee",
     label: "Knee",
     description: "Joint pain and stiffness (mild chronic inflammation, recorded in lifestyle logs).",
-    position: [0, 1.2, 0],
+    position: [-0.1, 40, 0.12], // Knee/patella joint zone
     color: "#A78BFA", // Glowing violet
     intensity: 0.75
   }
@@ -59,6 +57,16 @@ const ANATOMICAL_POINTS: HeatPoint[] = [
 
 export const AboutBodyModelSection: React.FC = () => {
   const [selectedPoint, setSelectedPoint] = useState<string>("Head");
+  const [modelHeight, setModelHeight] = useState<string>("750px");
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setModelHeight(window.innerWidth < 768 ? "420px" : "750px");
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const activePointDetails = ANATOMICAL_POINTS.find(p => p.label === selectedPoint);
 
@@ -172,7 +180,7 @@ export const AboutBodyModelSection: React.FC = () => {
         <div>
           <PatientBodyModel 
             heatPoints={ANATOMICAL_POINTS} 
-            height="800px" 
+            height={modelHeight} 
             selectedZoneLabel={selectedPoint}
             onSelectZone={(hp) => {
               if (hp) setSelectedPoint(hp.label);
