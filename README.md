@@ -4,9 +4,9 @@
 
 Read [`Swasthya_AI.md`](docs/Swasthya_AI.md) first for the full idea.
 
-🌐 Live Demo: [Swasthya AI About Page](https://swasthya-ai-sage.vercel.app/about)
+🌐 Live Web Demo: [Swasthya AI About Page](https://swasthya-ai-sage.vercel.app/about)
 
-🌐 Live Demo: [Swasthya AI Base-44](https://swasthya-smart-care.base44.app)
+🌐 Live App Prototype: [Swasthya AI Base-44](https://swasthya-smart-care.base44.app)
 
 ---
 
@@ -17,7 +17,7 @@ Read [`Swasthya_AI.md`](docs/Swasthya_AI.md) first for the full idea.
 | `app/` | Patient mobile app — React Native + Expo |
 | `web/` | Doctor dashboard — React + Vite |
 | `backend/` | FastAPI AI backend — agents, routes, services |
-| `database/` | Supabase schema (`schema.sql`) |
+| `docs/database/` | Supabase schema (`schema.sql`) |
 | `docs/` | All product, agent, feature, and track documentation |
 
 ---
