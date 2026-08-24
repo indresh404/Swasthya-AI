@@ -35,10 +35,10 @@ export const AboutHero: React.FC = () => {
     >
 
       <h1 style={{ fontSize: '48px', fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-1.5px', lineHeight: 1.15 }}>
-        Swasthya AI Platform Architecture
+        Swasthya AI
       </h1>
-      <p style={{ fontSize: '20px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 10px 0', fontWeight: 600, maxWidth: '680px' }}>
-        The Complete Picture Before Every Prescription.
+      <p style={{ fontSize: '20px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 10px 0', fontWeight: 500, maxWidth: '680px' }}>
+        <strong>स्वास्थ्य (Swasthya)</strong> — Sanskrit for "health." A platform built on the belief that healthcare should remember you, not just react to you.
       </p>
 
       <style>{`

@@ -16,42 +16,42 @@ const FEATURES = [
   {
     icon: <MessageSquare size={22} style={{ color: 'var(--accent)' }} />,
     name: "Conversational Onboarding",
-    description: "Multi-turn natural dialogue that replaces long medical forms, extracting initial conditions, medication records, allergies, and family history into node structures."
+    description: "Multi-turn natural dialogue that replaces long medical forms, extracting initial conditions, medication records, allergies, and family history into the graph."
   },
   {
     icon: <Mic size={22} style={{ color: 'var(--accent)' }} />,
     name: "Voice-Enabled Chatbot",
-    description: "Multilingual dialogue engine (Hindi, Marathi, English) powered by Sarvam AI. Transcribes patient voices, extracts symptoms, and maps them to past health patterns."
+    description: "Multilingual dialogue engine (Hindi, Marathi, English) via Sarvam AI. Transcribes patient voices, extracts symptoms, and maps them to past health patterns."
   },
   {
     icon: <Calendar size={22} style={{ color: 'var(--accent)' }} />,
     name: "Daily Adaptive Check-In",
-    description: "Tailored check-in routines generating 2-3 dynamic questions based on current medications, active symptoms, and hereditary genetic risks on the graph."
+    description: "Tailored check-in routines generating 2-3 dynamic questions based on current medications, active symptoms, and hereditary genetic risks."
   },
   {
     icon: <Activity size={22} style={{ color: 'var(--accent)' }} />,
     name: "3D Body Heatmap",
-    description: "A 3D silhouette model highlighting active symptoms and pain zones dynamically based on check-in logs, helping practitioners trace historical patterns."
+    description: "A 3D model highlighting active symptoms and pain zones dynamically based on check-in logs, helping practitioners trace historical patterns."
   },
   {
     icon: <Users size={22} style={{ color: 'var(--accent)' }} />,
-    name: "Family Genetics Graph",
-    description: "Aggregates family health histories under a unified parent node to map genetic risks (e.g. maternal prediabetes) without exposing individual patient IDs."
+    name: "Family Health Graph",
+    description: "Traverses relationships in the graph (e.g. father -> diabetes -> user's elevated risk) without exposing any individual patient's private record."
   },
   {
     icon: <ShieldAlert size={22} style={{ color: 'var(--accent)' }} />,
     name: "Drug Interaction Check",
-    description: "Performs synchronous OpenFDA checks before any medication reminder is saved, alerting the practitioner about critical conflicts immediately."
+    description: "Performs synchronous OpenFDA checks before any medication reminder is saved, alerting the user about critical conflicts immediately."
   },
   {
     icon: <DollarSign size={22} style={{ color: 'var(--accent)' }} />,
     name: "Jan Aushadhi Savings",
-    description: "Cross-checks branded prescriptions against the government generic medicine index, calculating savings and exporting generic alternatives."
+    description: "Cross-checks branded prescriptions against the government generic medicine index, calculating savings and exporting generic alternatives for pharmacists."
   },
   {
     icon: <FileText size={22} style={{ color: 'var(--accent)' }} />,
     name: "Government Scheme Matcher",
-    description: "Verifies income certificates and documents, automatically matching eligible low-income patients with Ayushman Bharat and state insurance schemes."
+    description: "Verifies income certificates and matches eligible low-income patients automatically with Ayushman Bharat and state insurance schemes."
   }
 ];
 

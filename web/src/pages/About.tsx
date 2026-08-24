@@ -7,10 +7,11 @@ import HealthMemoryBuilder from '../components/about/HealthMemoryBuilder';
 import FeatureShowcase from '../components/about/FeatureShowcase';
 import AgentShowcase from '../components/about/AgentShowcase';
 import TechStackSection from '../components/about/TechStackSection';
-import TrackCards from '../components/about/TrackCards';
 import FAQSection from '../components/about/FAQSection';
 import Footer from '../components/common/Footer';
 import ScrollNavigator from '../components/about/ScrollNavigator';
+import KahaniVaaniSection from '../components/about/KahaniVaaniSection';
+import ModelSection from '../components/about/ModelSection';
 
 export const About: React.FC = () => {
   return (
@@ -78,9 +79,16 @@ export const About: React.FC = () => {
 
       <div style={{ borderBottom: '1px solid var(--border)', width: '100%', margin: '20px 0' }} />
 
-      {/* Track Cards Section */}
-      <section id="tracks-section">
-        <TrackCards />
+      {/* Kahani Vaani Section */}
+      <section id="kahanivaani-section">
+        <KahaniVaaniSection />
+      </section>
+
+      <div style={{ borderBottom: '1px solid var(--border)', width: '100%', margin: '20px 0' }} />
+
+      {/* Model Section */}
+      <section id="model-section">
+        <ModelSection />
       </section>
 
       <div style={{ borderBottom: '1px solid var(--border)', width: '100%', margin: '20px 0' }} />
