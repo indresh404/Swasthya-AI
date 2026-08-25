@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import storyVideo from '../../assets/story_animation.mp4';
+import storyGif from '../../assets/story_animation.gif';
 
 const KahaniVaaniSection: React.FC = () => {
   return (
@@ -57,12 +57,9 @@ const KahaniVaaniSection: React.FC = () => {
               position: 'relative'
             }}
           >
-            <video
-              src={storyVideo}
-              autoPlay
-              loop
-              muted
-              playsInline
+            <img
+              src={storyGif}
+              alt="Story Animation"
               style={{
                 width: '100%',
                 height: '100%',
