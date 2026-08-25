@@ -72,13 +72,6 @@ export const About: React.FC = () => {
 
       <div style={{ borderBottom: '1px solid var(--border)', width: '100%', margin: '20px 0' }} />
 
-      {/* Tech Stack Section */}
-      <section id="techstack-section">
-        <TechStackSection />
-      </section>
-
-      <div style={{ borderBottom: '1px solid var(--border)', width: '100%', margin: '20px 0' }} />
-
       {/* Kahani Vaani Section */}
       <section id="kahanivaani-section">
         <KahaniVaaniSection />
@@ -89,6 +82,13 @@ export const About: React.FC = () => {
       {/* Model Section */}
       <section id="model-section">
         <ModelSection />
+      </section>
+
+      <div style={{ borderBottom: '1px solid var(--border)', width: '100%', margin: '20px 0' }} />
+
+      {/* Tech Stack Section */}
+      <section id="techstack-section">
+        <TechStackSection />
       </section>
 
       <div style={{ borderBottom: '1px solid var(--border)', width: '100%', margin: '20px 0' }} />
