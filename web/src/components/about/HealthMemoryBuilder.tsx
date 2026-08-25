@@ -347,15 +347,7 @@ const PatientMemoryGraph: React.FC = () => {
     setCurrentStep(0);
   }, [buildStepByStep]);
 
-  useEffect(() => {
-    let animFrame: number;
-    const tick = () => {
-      setTime(prev => prev + 0.025);
-      animFrame = requestAnimationFrame(tick);
-    };
-    animFrame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(animFrame);
-  }, []);
+
 
   const nextStep = () => {
     if (currentStep < PATIENT_STEPS.length) {
@@ -389,13 +381,11 @@ const PatientMemoryGraph: React.FC = () => {
     ? PATIENT_LINKS.filter(l => getPatientStepForNode(l.sourceId) <= currentStep && getPatientStepForNode(l.targetId) <= currentStep)
     : PATIENT_LINKS;
 
+  // Fluid drifting disabled to prevent framer-motion glitching
   const getDriftedPosition = (node: NodeItem) => {
-    const strength = node.id === 'Indresh' ? 1.0 : 2.5;
-    const driftX = Math.sin(time + node.id.charCodeAt(0)) * strength;
-    const driftY = Math.cos(time + (node.id.charCodeAt(1) || 0)) * strength;
     return {
-      x: node.x + driftX,
-      y: node.y + driftY
+      x: node.x,
+      y: node.y
     };
   };
 

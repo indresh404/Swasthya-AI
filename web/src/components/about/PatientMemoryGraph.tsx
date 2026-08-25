@@ -37,22 +37,6 @@ export const PatientMemoryGraph: React.FC = () => {
     setCurrentStep(0);
   }, [buildStepByStep]);
 
-  // Smoother animation loop for graph drifting
-  useEffect(() => {
-    let animFrame: number;
-    let lastTime = performance.now();
-    
-    const tick = (currentTime: number) => {
-      const deltaTime = (currentTime - lastTime) / 1000;
-      setTime(prev => prev + deltaTime * 0.8); // Adjusted speed for elegance
-      lastTime = currentTime;
-      animFrame = requestAnimationFrame(tick);
-    };
-    
-    animFrame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(animFrame);
-  }, []);
-
   const nextStep = () => {
     if (currentStep < PATIENT_STEPS.length) {
       setCurrentStep(prev => prev + 1);
@@ -85,14 +69,11 @@ export const PatientMemoryGraph: React.FC = () => {
     ? PATIENT_LINKS.filter(l => getPatientStepForNode(l.sourceId) <= currentStep && getPatientStepForNode(l.targetId) <= currentStep)
     : PATIENT_LINKS;
 
-  // Fluid drifting math
+  // Fluid drifting disabled to prevent framer-motion glitching
   const getDriftedPosition = (node: NodeItem) => {
-    const strength = node.id === 'Indresh' ? 0.5 : 3.0; // Central node drifts less
-    const driftX = Math.sin(time + node.id.charCodeAt(0)) * strength;
-    const driftY = Math.cos(time + (node.id.charCodeAt(node.id.length - 1) || 0)) * strength;
     return {
-      x: node.x + driftX,
-      y: node.y + driftY
+      x: node.x,
+      y: node.y
     };
   };
 
