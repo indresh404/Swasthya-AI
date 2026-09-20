@@ -42,25 +42,25 @@ const TECH_CATEGORIES: TechCategory[] = [
     ]
   },
   {
-    title: '3. ML Predictor',
-    description: 'Dedicated symptom-risk estimation model providing auditable, repeatable clinical scores.',
+    title: '3. Risk Modeling',
+    description: 'Explainable ML models for cognitive risk prioritization and risk boundary extraction.',
     icon: <BrainCircuit size={22} strokeWidth={2.5} />,
     color: '#10B981', // Emerald Green
     items: [
-      { name: 'Random Forest', role: 'Risk Classifier', details: 'Trained on type, duration, severity, and family flags.' },
-      { name: 'scikit-learn', role: 'Model Engine', details: 'Chosen for explaining non-linear features without overfitting.' },
-      { name: 'Feature Flags', role: 'Explainable AI', details: 'Outputs top driving factors to the Explanation Agent.' }
+      { name: 'scikit-learn', role: 'Model Engine', details: 'Logistic Regression, Random Forest, SVM, and XGBoost used for calibrated probability.' },
+      { name: 'OASIS Dataset', role: 'Training Data', details: 'Cross-sectional clinical and MRI-derived features with patient-level splitting.' },
+      { name: 'SHAP', role: 'Explainable AI', details: 'Extracts factors driving prioritization (e.g. MMSE, nWBV) for the clinician view.' }
     ]
   },
   {
     title: '4. AI Orchestration',
-    description: 'A mesh of 11 cooperative agents managing task isolation and natural interface rendering.',
+    description: 'A mesh of 12 cooperative agents managing task isolation and natural interface rendering.',
     icon: <Cpu size={22} strokeWidth={2.5} />,
     color: '#EC4899', // Vibrant Pink
     items: [
-      { name: 'Groq + LLaMA-3', role: 'Core Reasoning', details: 'Super-fast inference engine for onboarding and doctor Q&A.' },
-      { name: 'Sarvam AI', role: 'Local Speech', details: 'Translates natural audio check-ins in Hindi and Marathi.' },
-      { name: 'Render', role: 'Orchestrator', details: 'Manages asynchronous agent pipelines and background routing.' }
+      { name: 'Groq + LLaMA', role: 'Core Reasoning', details: 'Super-fast inference engine for extraction and generation.' },
+      { name: 'Sarvam AI', role: 'Local Speech', details: 'Translates natural audio check-ins and Kahani-Vaani in Hindi and Marathi.' },
+      { name: 'Render', role: 'Orchestrator', details: 'Manages asynchronous background pipelines and event loops.' }
     ]
   }
 ];

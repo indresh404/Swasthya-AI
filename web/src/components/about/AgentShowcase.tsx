@@ -11,17 +11,18 @@ interface AgentItem {
 }
 
 const AGENTS: AgentItem[] = [
-  { num: "01", name: "Onboarding Agent", role: "Extracts chronic conditions, allergies, and family history, writing the initial nodes." },
-  { num: "02", name: "Check-In Agent", role: "Constructs 2–3 adaptive daily questions from patient graph histories, logging outcomes." },
-  { num: "03", name: "Sarvam Chat Agent", role: "Voice layer providing Marathi, Hindi, and English STT/TTS speech processing." },
-  { num: "04", name: "Escalation Agent", role: "Triggers emergency checks on critical danger combinations using deterministic thresholds." },
-  { num: "05", name: "Family Genetics Agent", role: "Traverses family branches using Cypher to identify inherited risk propagation paths." },
-  { num: "06", name: "Medical Scan Agent", role: "Verifies medical documents and income certificates for government insurance eligibility." },
-  { num: "07", name: "Medicine Reminder Agent", role: "Schedules dose alerts and checks drug-drug conflict warnings using OpenFDA." },
-  { num: "08", name: "Smartwatch Risk Agent", role: "Ingests heart rate, SpO2, and BP anomalies from wearables directly into graphs." },
-  { num: "09", name: "Doctor Q&A Agent", role: "Answers doctor queries grounded in Neo4j logs, or queues patient prompts." },
-  { num: "10", name: "Appointment Automation Agent", role: "Coordinates schedule matches, auto-assigning physicians based on logs." },
-  { num: "11", name: "Daily Workflow Orchestrator", role: "Orchestrates multi-stage background pipelines with event retry support." }
+  { num: "01", name: "Onboarding Agent", role: "Extracts chronic conditions, allergies, and family history through natural back-and-forth." },
+  { num: "02", name: "Check-In Agent", role: "Generates 2–3 adaptive daily questions from the patient's own graph." },
+  { num: "03", name: "Sarvam Chat Agent", role: "Handles speech-to-text and text-to-speech via Sarvam AI in Hindi, Marathi, or English." },
+  { num: "04", name: "Escalation Agent", role: "Watches extracted symptoms for danger combinations and triggers immediate doctor notification." },
+  { num: "05", name: "Family Genetics Agent", role: "Traverses the family branch to surface inherited risk and keeps reasoning explainable." },
+  { num: "06", name: "Medical Scan Agent", role: "Reads and verifies uploaded documents, extracting fields for scheme eligibility." },
+  { num: "07", name: "Medicine Reminder Agent", role: "Manages reminders, adherence tracking, and synchronous OpenFDA conflict checks." },
+  { num: "08", name: "Smartwatch Risk Agent", role: "Pulls vitals from wearables to prompt check-ins even before patients notice symptoms." },
+  { num: "09", name: "Doctor Q&A Agent", role: "Answers doctor free-text questions from graph data or queues them for the patient." },
+  { num: "10", name: "Appointment Automation Agent", role: "Matches patients to available doctors and handles booking automatically." },
+  { num: "11", name: "Memory & Cognitive Recall Agent", role: "Runs Kahani-Vaani, generates recall prompts, evaluates answers, and stores memory trends." },
+  { num: "12", name: "Daily Workflow Orchestrator", role: "Ties everything together running multi-stage pipelines reliably with retry support." }
 ];
 
 interface SimStep {
@@ -42,12 +43,12 @@ const SIMULATIONS: Simulation[] = [
     name: '1. Onboarding Flow',
     icon: '👤',
     steps: [
-      { agentNum: '11', log: '[Orchestrator] Initiating onboarding flow webhook event.' },
+      { agentNum: '12', log: '[Orchestrator] Initiating onboarding flow webhook event.' },
       { agentNum: '03', log: '[Sarvam Chat] Hindi voice input captured: "मेरा नाम इन्द्रेश है, 20 वर्ष का हूँ..."' },
       { agentNum: '03', log: '[Sarvam Chat] Transcribed payload: "Name: Indresh, Age: 20, Gender: Male."' },
       { agentNum: '01', log: '[Onboarding Agent] Analyzing conversation. Extracted Patient profile details.' },
-      { agentNum: '11', log: '[Orchestrator] Executing Cypher merge: MERGE (u:User {name: "Indresh", age: 20})' },
-      { agentNum: '11', log: '[Success] Onboarding complete! Initial graph nodes saved.' }
+      { agentNum: '12', log: '[Orchestrator] Executing Cypher merge: MERGE (u:User {name: "Indresh", age: 20})' },
+      { agentNum: '12', log: '[Success] Onboarding complete! Initial graph nodes saved.' }
     ]
   },
   {
@@ -55,11 +56,11 @@ const SIMULATIONS: Simulation[] = [
     name: '2. Check-In Assessment',
     icon: '📋',
     steps: [
-      { agentNum: '11', log: '[Orchestrator] Starting scheduled daily check-in sequence.' },
+      { agentNum: '12', log: '[Orchestrator] Starting scheduled daily check-in sequence.' },
       { agentNum: '08', log: '[Smartwatch Agent] Ingesting wearable logs: SpO2=95%, HeartRate=72bpm.' },
       { agentNum: '02', log: '[Check-In Agent] Running graph traversal... Found active family risk: Monish is positive.' },
       { agentNum: '02', log: '[Check-In Agent] Generated adaptive question: "Monish has COVID. Do you have dry cough or fever?"' },
-      { agentNum: '11', log: '[Success] Patient check-in response successfully logged to graph.' }
+      { agentNum: '12', log: '[Success] Patient check-in response successfully logged to graph.' }
     ]
   },
   {
@@ -67,11 +68,11 @@ const SIMULATIONS: Simulation[] = [
     name: '3. Risk Scan & Escalation',
     icon: '🚨',
     steps: [
-      { agentNum: '11', log: '[Orchestrator] Scan event triggered: Active symptoms updated.' },
+      { agentNum: '12', log: '[Orchestrator] Scan event triggered: Active symptoms updated.' },
       { agentNum: '05', log: '[Family Genetics Agent] Querying family history: MATCH (u)-[:RELATED_TO]->(f)-[:HAS_DISEASE]->(d)' },
       { agentNum: '05', log: '[Family Genetics Agent] Found exposure vector: Child Monish has active COVID-19.' },
       { agentNum: '04', log: '[Escalation Agent] Match rule check: Fever + Cough + SpO2 (95%) + Exposure = High COVID-19 Risk.' },
-      { agentNum: '11', log: '[Success] Patient profile flagged as Elevated Risk. Pulsing dashboard alert.' }
+      { agentNum: '12', log: '[Success] Patient profile flagged as Elevated Risk. Pulsing dashboard alert.' }
     ]
   },
   {
@@ -79,10 +80,10 @@ const SIMULATIONS: Simulation[] = [
     name: '4. Pulmonology Scheduler',
     icon: '🗓️',
     steps: [
-      { agentNum: '11', log: '[Orchestrator] Referral received from Escalation Agent.' },
+      { agentNum: '12', log: '[Orchestrator] Referral received from Escalation Agent.' },
       { agentNum: '10', log: '[Appointment Agent] Scanning Pulmonology calendars for Dr. Sharma...' },
       { agentNum: '10', log: '[Appointment Agent] Slot matched: Pulmonologist Dr. Sharma (Tomorrow 10:00 AM).' },
-      { agentNum: '11', log: '[Success] Relationship saved: (u)-[:APPOINTED_WITH]->(Doctor Dr. Sharma).' }
+      { agentNum: '12', log: '[Success] Relationship saved: (u)-[:APPOINTED_WITH]->(Doctor Dr. Sharma).' }
     ]
   }
 ];
@@ -182,10 +183,10 @@ export const AgentShowcase: React.FC = () => {
           </span>
         </div>
         <h2 style={{ fontSize: '36px', fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 16px 0', textAlign: 'center', letterSpacing: '-0.5px' }}>
-          The 11-Agent Mesh
+          The 12-Agent Mesh
         </h2>
         <p style={{ fontSize: '17px', color: 'var(--text-secondary)', textAlign: 'center', maxWidth: '750px', margin: 0, lineHeight: 1.6 }}>
-          Instead of a single brittle chatbot, Swasthya AI coordinates 11 dedicated, specialized agents. Select a simulation workflow on the left to watch them coordinate in real-time.
+          Instead of a single brittle chatbot, Swasthya AI coordinates 12 dedicated, specialized agents. Select a simulation workflow on the left to watch them coordinate in real-time.
         </p>
       </motion.div>
 
@@ -377,7 +378,7 @@ export const AgentShowcase: React.FC = () => {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', padding: '0 8px' }}>
             <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>Specialized Nodes</span>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', backgroundColor: 'var(--bg-secondary)', padding: '4px 10px', borderRadius: '12px' }}>11 Agents Total</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', backgroundColor: 'var(--bg-secondary)', padding: '4px 10px', borderRadius: '12px' }}>12 Agents Total</span>
           </div>
 
           <div 

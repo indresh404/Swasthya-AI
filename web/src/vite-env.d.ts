@@ -24,3 +24,13 @@ declare module '*.jpeg' {
   const content: string;
   export default content;
 }
+declare module '*.glsl' {
+  const value: string;
+  export default value;
+}
+
+declare module '*.glb' {
+  const src: string;
+  export default src;
+}
+
