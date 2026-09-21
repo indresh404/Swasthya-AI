@@ -138,7 +138,7 @@ export const Profile: React.FC = () => {
       <div className="profile-wrapper" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 120px)', padding: '24px' }}>
         <div className="profile-not-logged-in">
           <div className="lock-icon-wrapper">
-            <svg width="40" height="70" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
@@ -173,6 +173,12 @@ export const Profile: React.FC = () => {
               </div>
               <span className="profile-status-dot" title="Online Practitioner" />
             </div>
+
+            <div className="profile-hero-actions">
+              <button className="logout-action-btn" onClick={logout}>
+                Sign Out
+              </button>
+            </div>
           </div>
 
           <div className="profile-hero-details">
@@ -185,12 +191,6 @@ export const Profile: React.FC = () => {
                   </svg>
                   Verified Doctor
                 </span>
-              </div>
-
-              <div className="profile-hero-actions">
-                <button className="logout-action-btn" onClick={logout}>
-                  Sign Out
-                </button>
               </div>
             </div>
 

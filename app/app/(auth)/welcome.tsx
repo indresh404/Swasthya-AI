@@ -167,7 +167,12 @@ export default function WelcomeScreen() {
 
   return (
     <GestureHandlerRootView style={styles.container}>
-      <View style={[StyleSheet.absoluteFillObject, { backgroundColor: COLORS.primary }]} />
+      <LinearGradient
+        colors={['#2596be', '#116acf', '#0a83af']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.8, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
       
       <Animated.View 
         entering={FadeInDown.delay(200).springify()}
@@ -404,18 +409,21 @@ const SlideView: React.FC<{ slide: any; index: number; isActive: boolean }> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#116acf',
   },
   slideContainer: {
     width,
-    justifyContent: 'center',
+    height,
+    paddingTop: Platform.OS === 'ios' ? 100 : (StatusBar.currentHeight || 24) + 65,
   },
   slideContent: {
-    paddingHorizontal: SPACING.md,
-    paddingTop: height * 0.05,
-    paddingBottom: height * 0.05,
+    flex: 1,
+    paddingHorizontal: SPACING.xl,
+    paddingBottom: Platform.OS === 'ios' ? 85 : 70,
+    justifyContent: 'space-between',
   },
   tagContainer: {
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.xs,
   },
   tagGradient: {
     flexDirection: 'row',
@@ -428,39 +436,27 @@ const styles = StyleSheet.create({
   },
   tagText: {
     color: COLORS.white,
-    fontSize: TYPOGRAPHY.sizes.sm,
-    fontFamily: TYPOGRAPHY.fonts.accent,
-    letterSpacing: 0.5,
+    fontSize: TYPOGRAPHY.sizes.xs,
+    fontFamily: TYPOGRAPHY.fonts.bold,
+    letterSpacing: 1.2,
   },
   headline: {
-    fontSize: 42,
+    fontSize: 34,
     fontFamily: TYPOGRAPHY.fonts.bold,
     color: COLORS.white,
-    lineHeight: 50,
-    letterSpacing: -0.5,
-    marginBottom: 5,
-    textShadowColor: 'rgba(0,0,0,0.1)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 4,
-  },
-  subtitleText: {
-    fontSize: 18,
-    fontFamily: TYPOGRAPHY.fonts.accent,
-    color: 'rgba(255,255,255,0.95)',
-    marginBottom: SPACING.sm,
-    letterSpacing: 0.5,
-    textShadowColor: 'rgba(0,0,0,0.05)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    lineHeight: 42,
+    letterSpacing: -0.3,
+    marginBottom: 4,
   },
   bodyContainer: {
+    minHeight: 68,
     marginBottom: SPACING.sm,
   },
   bodyText: {
     fontSize: TYPOGRAPHY.sizes.md,
-    fontFamily: TYPOGRAPHY.fonts.accent,
+    fontFamily: TYPOGRAPHY.fonts.regular,
     color: 'rgba(255,255,255,0.85)',
-    lineHeight: 24,
+    lineHeight: 22,
   },
   cursor: {
     fontSize: TYPOGRAPHY.sizes.md,
@@ -471,25 +467,27 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   counterGradient: {
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.xs,
     borderRadius: 20,
   },
   counterText: {
     color: 'rgba(255,255,255,0.7)',
     fontSize: TYPOGRAPHY.sizes.xs,
-    fontFamily: TYPOGRAPHY.fonts.accent,
+    fontFamily: TYPOGRAPHY.fonts.semibold,
     letterSpacing: 0.8,
   },
   lottieWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: SPACING.xs,
+    flex: 1,
+    maxHeight: height * 0.32,
   },
   lottieContainer: {
-    width: width * 0.9,
-    height: width * 0.8,
-    borderRadius: 40,
+    width: width * 0.75,
+    height: '100%',
+    maxHeight: Math.min(width * 0.75, height * 0.28),
+    borderRadius: 35,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
@@ -522,7 +520,7 @@ const styles = StyleSheet.create({
   },
   topBar: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 40,
+    top: Platform.OS === 'ios' ? 48 : (StatusBar.currentHeight || 24) + 4,
     left: 0,
     right: 0,
     zIndex: 20,
@@ -531,7 +529,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.xs,
   },
   logoContainer: {

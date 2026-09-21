@@ -8,7 +8,6 @@ import {
   TextInput,
   LayoutAnimation,
   Platform,
-  UIManager,
   Pressable,
 } from 'react-native';
 import { Svg, Circle, G, Text as SvgText, Defs, LinearGradient, Stop } from 'react-native-svg';
@@ -20,13 +19,8 @@ import Animated, {
   withSequence,
   withDelay,
   Easing,
-  interpolateColor,
-} from 'react-native-reanimated';
+  interpolateColor} from 'react-native-reanimated';
 
-// Enable LayoutAnimation on Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const { width } = Dimensions.get('window');
 const SIZE = Math.min(width * 0.35, 150); // Slightly larger for better readability
@@ -43,14 +37,12 @@ const COLORS = {
   text: {
     primary: '#111827',
     secondary: '#4B5563', // Darkened slightly for better contrast
-    light: '#9CA3AF',
-  },
+    light: '#9CA3AF'},
   risk: {
     low: '#10B981',
     moderate: '#F59E0B',
     elevated: '#F97316',
-    high: '#EF4444',
-  },
+    high: '#EF4444'},
   track: '#F3F4F6', // Softer track color
 };
 
@@ -87,8 +79,7 @@ export const RiskScoreCard: React.FC<RiskScoreCardProps> = ({
   onLongPress,
   timestamp = 'Last updated: Today, 2:30 PM',
   nextAssessment = 'Next assessment: In 14 days',
-  trend = 'stable',
-}) => {
+  trend = 'stable'}) => {
   const [showDetails, setShowDetails] = useState(false);
 
   // Reanimated Shared Values
@@ -128,33 +119,28 @@ export const RiskScoreCard: React.FC<RiskScoreCardProps> = ({
   // UI-Thread Text Animation (Eliminates setInterval completely)
   const animatedTextProps = useAnimatedProps(() => {
     return {
-      text: `${Math.round(progress.value)}`,
-    } as any; // Cast to any to bypass strict TS type for the 'text' prop trick on TextInput
+      text: `${Math.round(progress.value)}`} as any; // Cast to any to bypass strict TS type for the 'text' prop trick on TextInput
   });
 
   const progressAnimatedProps = useAnimatedProps(() => {
     const currentProgress = (progress.value / 100) * SEMI_CIRCUMFERENCE;
     return {
-      strokeDashoffset: SEMI_CIRCUMFERENCE - currentProgress,
-    };
+      strokeDashoffset: SEMI_CIRCUMFERENCE - currentProgress};
   });
 
   const glowDotProps = useAnimatedProps(() => {
     const angleRad = ((START_ANGLE + (progress.value / 100) * 180) * Math.PI) / 180;
     return {
       cx: CENTER + RADIUS * Math.cos(angleRad),
-      cy: CENTER + RADIUS * Math.sin(angleRad),
-    };
+      cy: CENTER + RADIUS * Math.sin(angleRad)};
   });
 
   const pulseAnimatedProps = useAnimatedProps(() => ({
     opacity: pulseValue.value > 1 ? 0.2 : 0,
-    r: RADIUS + (pulseValue.value - 1) * 20,
-  }));
+    r: RADIUS + (pulseValue.value - 1) * 20}));
 
   const animatedCardStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scaleValue.value }],
-  }));
+    transform: [{ scale: scaleValue.value }]}));
 
   const handlePressIn = () => {
     scaleValue.value = withTiming(0.97, { duration: 150 });
@@ -317,29 +303,22 @@ const styles = StyleSheet.create({
         shadowColor: '#111827',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.06,
-        shadowRadius: 16,
-      },
+        shadowRadius: 16},
       android: {
-        elevation: 4,
-      },
-    }),
-  },
+        elevation: 4}})},
   contentRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 16,
-  },
+    gap: 16},
   gaugeWrapper: {
     alignItems: 'center',
-    width: SIZE,
-  },
+    width: SIZE},
   scoreTextContainer: {
     position: 'absolute',
     top: SIZE * 0.25,
     alignItems: 'center',
     justifyContent: 'center',
-    width: '100%',
-  },
+    width: '100%'},
   scoreText: {
     fontSize: 28,
     fontWeight: '800',
@@ -347,93 +326,74 @@ const styles = StyleSheet.create({
     padding: 0,
     margin: 0,
     includeFontPadding: false,
-    textAlign: 'center',
-  },
+    textAlign: 'center'},
   scoreLabel: {
     fontSize: 10,
     fontWeight: '700',
     color: COLORS.text.light,
     letterSpacing: 1,
-    marginTop: -2,
-  },
+    marginTop: -2},
   badgeContainer: {
-    marginTop: -4,
-  },
+    marginTop: -4},
   riskBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
-    gap: 6,
-  },
+    gap: 6},
   riskDot: {
     width: 6,
     height: 6,
-    borderRadius: 3,
-  },
+    borderRadius: 3},
   riskBadgeText: {
     fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.3,
-  },
+    letterSpacing: 0.3},
   trendIcon: {
     fontSize: 12,
-    fontWeight: '800',
-  },
+    fontWeight: '800'},
   detailsWrapper: {
     flex: 1,
-    paddingTop: 4,
-  },
+    paddingTop: 4},
   descriptionText: {
     fontSize: 13,
     color: COLORS.text.secondary,
     lineHeight: 18,
-    marginBottom: 12,
-  },
+    marginBottom: 12},
   factorsList: {
-    gap: 6,
-  },
+    gap: 6},
   factorItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-  },
+    gap: 8},
   factorDot: {
     width: 6,
     height: 6,
-    borderRadius: 3,
-  },
+    borderRadius: 3},
   factorText: {
     fontSize: 12,
     color: COLORS.text.secondary,
-    flex: 1,
-  },
+    flex: 1},
   moreText: {
     fontSize: 11,
     fontWeight: '600',
     color: COLORS.text.light,
     marginTop: 2,
-    marginLeft: 14,
-  },
+    marginLeft: 14},
   footer: {
-    marginTop: 16,
-  },
+    marginTop: 16},
   divider: {
     height: 1,
     backgroundColor: COLORS.track,
-    marginBottom: 12,
-  },
+    marginBottom: 12},
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-  },
+    alignItems: 'center'},
   metadataText: {
     fontSize: 11,
     color: COLORS.text.light,
-    fontWeight: '500',
-  },
-});
+    fontWeight: '500'}});
 
 export default RiskScoreCard;

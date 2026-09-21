@@ -4,18 +4,11 @@ import React, { useEffect, useRef, useState, memo } from 'react';
 import {
   Animated,
   LayoutAnimation,
-  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
-  UIManager,
   View,
 } from 'react-native';
-
-// Enable LayoutAnimation for Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 export const SmartwatchWidget = memo(() => {
   const [healthData, setHealthData] = useState<any>({
