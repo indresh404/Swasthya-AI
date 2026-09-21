@@ -1,14 +1,13 @@
-// app/(tabs)/meds/index.tsx
-
 import { SkeletonMedsScreen } from '@/components/ui/SkeletonLoader';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSegments, router } from 'expo-router';
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  SafeAreaView, ScrollView, StatusBar, StyleSheet,
-  Text, TouchableOpacity, View, Alert, Modal, TextInput, Animated, Platform, ActivityIndicator
+  ScrollView, StatusBar, StyleSheet,
+  Text, TouchableOpacity, View, Alert, Modal, TextInput, Animated, Platform, ActivityIndicator, Share
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getMedicines, logMedAdherence, addMedicine } from '@/services/supabase.service';
 import { backendService } from '@/services/backend.service';
 import { useAuthStore } from '@/store/auth.store';
@@ -208,6 +207,7 @@ const AIAnalysisPanel = ({ visible, onClose, medName, activeMeds = [] }: { visib
 };
 
 import { BACKEND_URL } from '@/config/api';
+import { JAN_AUSHADHI_ALL_STORES, JanAushadhiStore } from '@/data/janAushadhiStores';
 
 export default function MedsScreen() {
   const segments = useSegments();
@@ -225,10 +225,11 @@ export default function MedsScreen() {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  const [userLocation, setUserLocation] = useState<{ lat: number, lon: number } | null>(null);
-  const [nearbyStores, setNearbyStores] = useState<any[]>([]);
+  const [userLocation, setUserLocation] = useState<{ lat: number, lon: number }>({ lat: 19.0760, lon: 72.8777 });
+  const [nearbyStores, setNearbyStores] = useState<any[]>(JAN_AUSHADHI_ALL_STORES);
   const [isMapVisible, setIsMapVisible] = useState(false);
   const [findingStore, setFindingStore] = useState(false);
+  const [shareModalVisible, setShareModalVisible] = useState(false);
 
   const { user, patientId: storePatientId } = useAuthStore();
   const patientId = user?.id || storePatientId || 'patient-123';
@@ -280,41 +281,67 @@ export default function MedsScreen() {
     return () => clearTimeout(delayDebounce);
   }, [newMedName]);
 
-  useEffect(() => { loadData(); }, [patientId]);
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return (R * c).toFixed(1);
+  };
+
+  const syncStoresForLocation = (lat: number, lon: number) => {
+    setUserLocation({ lat, lon });
+    const sorted = JAN_AUSHADHI_ALL_STORES.map(s => ({
+      ...s,
+      distance_km: calculateDistance(lat, lon, s.latitude, s.longitude)
+    })).sort((a, b) => parseFloat(a.distance_km) - parseFloat(b.distance_km));
+    setNearbyStores(sorted);
+  };
+
+  useEffect(() => {
+    loadData();
+    syncStoresForLocation(19.0760, 72.8777);
+    // Non-blocking background GPS check
+    (async () => {
+      try {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const last = await Location.getLastKnownPositionAsync();
+          if (last?.coords) {
+            syncStoresForLocation(last.coords.latitude, last.coords.longitude);
+          }
+        }
+      } catch {}
+    })();
+  }, [patientId]);
 
   const openDirections = (store: any) => {
     const url = `https://www.google.com/maps/dir/?api=1&destination=${store.latitude},${store.longitude}&travelmode=driving`;
     Linking.openURL(url);
   };
 
-  const handleFindNearestStore = async () => {
-    setFindingStore(true);
-    try {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission to access location was denied');
-        setFindingStore(false);
-        return;
-      }
+  const handleFindNearestStore = () => {
+    // 1. Immediately open map modal without ANY lag or network blocking
+    setIsMapVisible(true);
 
-      let location = await Location.getCurrentPositionAsync({});
-      const lat = location.coords.latitude;
-      const lon = location.coords.longitude;
-      setUserLocation({ lat, lon });
-
-      const res = await backendService.getNearestStores(lat, lon);
-      if (res && res.status === 'success') {
-        setNearbyStores(res.stores);
-        setIsMapVisible(true);
-      } else {
-        Alert.alert('Error', 'Could not fetch nearby stores.');
+    // 2. Fetch fresh GPS coordinates in the background
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
+          if (loc?.coords) {
+            syncStoresForLocation(loc.coords.latitude, loc.coords.longitude);
+          }
+        }
+      } catch (err) {
+        console.log('Background GPS error (using cached):', err);
       }
-    } catch (e) {
-      console.error(e);
-      Alert.alert('Error', 'Could not connect to store locator service.');
-    } finally {
-      setFindingStore(false);
-    }
+    })();
   };
 
   const recalculateSavings = (medsList: any[]) => {
@@ -386,91 +413,429 @@ export default function MedsScreen() {
     setTakenToday(prev => ({ ...prev, [medName]: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }));
   };
 
+  const generatePrescriptionHtml = () => {
+    const currentCost = genericAlts.reduce((sum, item) => sum + (item.market_price || 0), 0) || 1840;
+    const janCost = genericAlts.reduce((sum, item) => sum + (item.jan_aushadhi_price || 0), 0) || 210;
+    const savings = Math.max(currentCost - janCost, 0);
+    const annualSavings = savings * 12;
+    const patientDisplayName = user?.user_metadata?.full_name || 'Indresh Suresh';
+    const todayDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    const rxNumber = `PMBJP-SW-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Jan Aushadhi Generic Prescription - Swasthya AI</title>
+          <style>
+            @page { size: A4; margin: 15mm; }
+            * { box-sizing: border-box; }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+              margin: 0;
+              padding: 24px;
+              color: #1e293b;
+              background: #ffffff;
+              line-height: 1.5;
+            }
+            .header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              border-bottom: 3px solid #0284c7;
+              padding-bottom: 16px;
+              margin-bottom: 20px;
+            }
+            .header-left h1 {
+              margin: 0 0 4px 0;
+              color: #0369a1;
+              font-size: 22px;
+              font-weight: 800;
+              letter-spacing: -0.5px;
+            }
+            .header-left p {
+              margin: 0;
+              color: #0284c7;
+              font-size: 13px;
+              font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            .header-right {
+              text-align: right;
+            }
+            .badge {
+              display: inline-block;
+              background: #e0f2fe;
+              color: #0369a1;
+              font-weight: 700;
+              font-size: 11px;
+              padding: 4px 10px;
+              border-radius: 9999px;
+              border: 1px solid #bae6fd;
+              margin-bottom: 4px;
+            }
+            .rx-code {
+              font-family: monospace;
+              font-size: 12px;
+              color: #64748b;
+            }
+            .patient-card {
+              background: #f8fafc;
+              border: 1px solid #e2e8f0;
+              border-radius: 8px;
+              padding: 12px 16px;
+              margin-bottom: 20px;
+              display: grid;
+              grid-template-columns: repeat(4, 1fr);
+              gap: 10px;
+            }
+            .patient-field span {
+              display: block;
+              font-size: 11px;
+              color: #64748b;
+              text-transform: uppercase;
+              font-weight: 600;
+            }
+            .patient-field strong {
+              font-size: 13px;
+              color: #0f172a;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 20px;
+            }
+            thead th {
+              background: #0284c7;
+              color: #ffffff;
+              text-align: left;
+              padding: 10px 12px;
+              font-size: 12px;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            tbody td {
+              padding: 10px 12px;
+              border-bottom: 1px solid #e2e8f0;
+              font-size: 13px;
+            }
+            tbody tr:nth-child(even) {
+              background: #f8fafc;
+            }
+            .brand-name {
+              font-weight: 700;
+              color: #1e293b;
+            }
+            .generic-name {
+              color: #0284c7;
+              font-weight: 600;
+            }
+            .mrp {
+              color: #ef4444;
+              text-decoration: line-through;
+              font-size: 12px;
+            }
+            .pmbjp-price {
+              color: #16a34a;
+              font-weight: 800;
+              font-size: 14px;
+            }
+            .savings-tag {
+              display: inline-block;
+              background: #dcfce7;
+              color: #15803d;
+              font-size: 11px;
+              font-weight: 700;
+              padding: 2px 6px;
+              border-radius: 4px;
+            }
+            .summary-grid {
+              display: grid;
+              grid-template-columns: 2fr 1fr;
+              gap: 16px;
+              margin-bottom: 20px;
+            }
+            .kendra-box {
+              background: #f0f9ff;
+              border: 1px solid #bae6fd;
+              border-radius: 8px;
+              padding: 12px 16px;
+            }
+            .kendra-box h4 {
+              margin: 0 0 6px 0;
+              color: #0369a1;
+              font-size: 13px;
+            }
+            .kendra-box p {
+              margin: 0 0 4px 0;
+              font-size: 12px;
+              color: #334155;
+            }
+            .savings-box {
+              background: #f0fdf4;
+              border: 1px solid #bbf7d0;
+              border-radius: 8px;
+              padding: 12px 16px;
+              text-align: right;
+            }
+            .savings-box .save-title {
+              font-size: 11px;
+              color: #166534;
+              font-weight: 600;
+              text-transform: uppercase;
+            }
+            .savings-box .save-amount {
+              font-size: 20px;
+              font-weight: 800;
+              color: #15803d;
+              margin: 2px 0;
+            }
+            .savings-box .annual {
+              font-size: 11px;
+              color: #166534;
+            }
+            .instructions {
+              border-left: 3px solid #0284c7;
+              padding-left: 12px;
+              margin-bottom: 24px;
+              font-size: 12px;
+              color: #475569;
+            }
+            .footer {
+              border-top: 1px dashed #cbd5e1;
+              padding-top: 14px;
+              display: flex;
+              justify-content: space-between;
+              font-size: 11px;
+              color: #94a3b8;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="header-left">
+              <h1>Swasthya AI • Health Suite</h1>
+              <p>Pradhan Mantri Bhartiya Janaushadhi Pariyojana (PMBJP) Generic Equivalent</p>
+            </div>
+            <div class="header-right">
+              <div class="badge">Generic Rx Ready</div>
+              <div class="rx-code">${rxNumber}</div>
+            </div>
+          </div>
+
+          <div class="patient-card">
+            <div class="patient-field">
+              <span>Patient Name</span>
+              <strong>${patientDisplayName}</strong>
+            </div>
+            <div class="patient-field">
+              <span>Patient ID</span>
+              <strong>SW-8942-IND</strong>
+            </div>
+            <div class="patient-field">
+              <span>Date</span>
+              <strong>${todayDate}</strong>
+            </div>
+            <div class="patient-field">
+              <span>Eligible Scheme</span>
+              <strong>PM-JAY (Ayushman)</strong>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Prescribed Brand</th>
+                <th>Jan Aushadhi Generic Equivalent</th>
+                <th>Market Price</th>
+                <th>Jan Aushadhi Price</th>
+                <th>Savings</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${genericAlts.length > 0 ? genericAlts.map(item => `
+                <tr>
+                  <td>
+                    <span class="brand-name">${item.brand_name}</span>
+                  </td>
+                  <td>
+                    <span class="generic-name">${item.generic_name}</span>
+                  </td>
+                  <td>
+                    <span class="mrp">₹${item.market_price}</span>
+                  </td>
+                  <td>
+                    <span class="pmbjp-price">₹${item.jan_aushadhi_price}</span>
+                  </td>
+                  <td>
+                    <span class="savings-tag">-${item.savings_percent || Math.round(((item.market_price - item.jan_aushadhi_price)/item.market_price)*100)}%</span>
+                  </td>
+                </tr>
+              `).join('') : `
+                <tr>
+                  <td><span class="brand-name">Glycomet 500mg</span></td>
+                  <td><span class="generic-name">Metformin HCl 500mg</span></td>
+                  <td><span class="mrp">₹52.00</span></td>
+                  <td><span class="pmbjp-price">₹9.20</span></td>
+                  <td><span class="savings-tag">-82%</span></td>
+                </tr>
+                <tr>
+                  <td><span class="brand-name">Amlokind 5mg</span></td>
+                  <td><span class="generic-name">Amlodipine Besylate 5mg</span></td>
+                  <td><span class="mrp">₹48.00</span></td>
+                  <td><span class="pmbjp-price">₹5.50</span></td>
+                  <td><span class="savings-tag">-88%</span></td>
+                </tr>
+                <tr>
+                  <td><span class="brand-name">Calcirol 60k</span></td>
+                  <td><span class="generic-name">Cholecalciferol 60,000 IU</span></td>
+                  <td><span class="mrp">₹65.00</span></td>
+                  <td><span class="pmbjp-price">₹12.00</span></td>
+                  <td><span class="savings-tag">-81%</span></td>
+                </tr>
+              `}
+            </tbody>
+          </table>
+
+          <div class="summary-grid">
+            <div class="kendra-box">
+              <h4>🏥 Verified Jan Aushadhi Kendra</h4>
+              <p><strong>Jan Aushadhi Dadar (West)</strong> (1.2 km away)</p>
+              <p>Shop No. 4, Bethlehem Apartments, Dadar West, Mumbai 400028</p>
+              <p>Phone: 022-24381020 • Hours: 08:00 AM – 10:00 PM</p>
+            </div>
+            <div class="savings-box">
+              <div class="save-title">Total Monthly Savings</div>
+              <div class="save-amount">₹${(savings > 0 ? savings : 1155).toLocaleString('en-IN')}</div>
+              <div class="annual">Annual Savings: <strong>₹${((savings > 0 ? savings : 1155) * 12).toLocaleString('en-IN')}</strong></div>
+            </div>
+          </div>
+
+          <div class="instructions">
+            <strong>Instructions for Pharmacist / Patient:</strong> Present this sheet at any Pradhan Mantri Bhartiya Janaushadhi Kendra. The pharmacist will dispense the exact bio-equivalent generic drug formulated with WHO-GMP standards.
+          </div>
+
+          <div class="footer">
+            <span>Generated digitally via Swasthya AI Clinical Support Engine</span>
+            <span>Valid across all PMBJP Kendras in India</span>
+          </div>
+        </body>
+      </html>
+    `;
+  };
+
   const handleExportJanAushadhiPDF = async () => {
     try {
-      const currentCost = genericAlts.reduce((sum, item) => sum + item.market_price, 0) || 1840;
-      const janCost = genericAlts.reduce((sum, item) => sum + item.jan_aushadhi_price, 0) || 210;
-      const savings = currentCost - janCost;
-
-      const htmlContent = `
-        <html>
-          <head>
-            <style>
-              body { font-family: 'Helvetica', sans-serif; padding: 40px; color: #1f2937; }
-              .header { text-align: center; border-bottom: 2px solid #0ea5e9; padding-bottom: 20px; margin-bottom: 30px; }
-              .title { font-size: 24px; color: #0369a1; margin-bottom: 5px; font-weight: bold; }
-              .subtitle { font-size: 14px; color: #6b7280; }
-              .divider { border-bottom: 1px solid #e5e7eb; margin: 20px 0; }
-              table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-              th { text-align: left; background-color: #f0f9ff; color: #0369a1; padding: 12px; border-bottom: 1px solid #bae6fd; font-weight: bold; }
-              td { padding: 12px; border-bottom: 1px solid #f3f4f6; }
-              .brand { font-weight: 500; color: #4b5563; }
-              .generic { font-weight: bold; color: #0ea5e9; }
-              .jan-price { font-weight: bold; color: #10b981; }
-              .summary-box { background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 16px; border-radius: 8px; margin-bottom: 20px; }
-              .summary-text { font-size: 16px; font-weight: bold; color: #166534; margin: 0; }
-              .store-info { font-size: 14px; color: #374151; margin-top: 8px; }
-              .footer { margin-top: 50px; font-size: 12px; text-align: center; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 20px; font-style: italic; }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <div class="title">SWASTHYA AI — JAN AUSHADHI READY PRESCRIPTION</div>
-              <div class="subtitle">Patient: Indresh Suresh | Date: ${new Date().toLocaleDateString('en-GB')}</div>
-            </div>
-            <p style="font-weight: bold; color: #374151;">Your Doctor's Prescription → Jan Aushadhi Generic</p>
-            <table>
-              <thead>
-                <tr>
-                  <th>Doctor's Brand</th>
-                  <th>Generic Equivalent</th>
-                  <th>Jan Aushadhi Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${genericAlts.length > 0 ? genericAlts.map(item => `
-                  <tr>
-                    <td><span class="brand">${item.brand_name}</span> <span style="color: #9ca3af; font-size: 12px;">(${item.generic_name})</span></td>
-                    <td><span class="generic">${item.generic_name}</span></td>
-                    <td class="jan-price">&#8377;${item.jan_aushadhi_price}/mo</td>
-                  </tr>
-                `).join('') : `
-                  <tr>
-                    <td><span class="brand">Glycomet 500mg</span> <span style="color: #9ca3af; font-size: 12px;">(Metformin)</span></td>
-                    <td><span class="generic">Metformin 500mg</span></td>
-                    <td class="jan-price">&#8377;9.20/mo</td>
-                  </tr>
-                  <tr>
-                    <td><span class="brand">Amlokind 5mg</span> <span style="color: #9ca3af; font-size: 12px;">(Amlodipine)</span></td>
-                    <td><span class="generic">Amlodipine 5mg</span></td>
-                    <td class="jan-price">&#8377;5.50/mo</td>
-                  </tr>
-                  <tr>
-                    <td><span class="brand">Vitamin D3</span> <span style="color: #9ca3af; font-size: 12px;">(Vitamin D3)</span></td>
-                    <td><span class="generic">Vitamin D3</span></td>
-                    <td class="jan-price">&#8377;12.00/mo</td>
-                  </tr>
-                `}
-              </tbody>
-            </table>
-            <div class="summary-box">
-              <p class="summary-text">Total monthly savings: &#8377;${savings > 0 ? savings : 1155}</p>
-              <p class="store-info">Nearest Jan Aushadhi Kendra: Dadar West, 1.2 km</p>
-            </div>
-            <p style="font-weight: bold; color: #111827;">Show this to the Jan Aushadhi pharmacist.</p>
-            <div class="footer">
-              NOTE: This is not a medical prescription. Consult your doctor before switching any medication.
-            </div>
-          </body>
-        </html>
-      `;
-
-      const { uri } = await Print.printToFileAsync({ html: htmlContent });
-      await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+      const htmlContent = generatePrescriptionHtml();
+      await Print.printAsync({ html: htmlContent });
     } catch (error) {
-      console.error(error);
-      Alert.alert('Error', 'Could not generate report.');
+      console.error('PDF Export Error:', error);
+      Alert.alert('Prescription', 'Could not open print/PDF dialog. Please try again.');
     }
+  };
+
+  const generateShareTextMessage = () => {
+    const patientDisplayName = user?.user_metadata?.full_name || user?.name || 'Indresh Suresh';
+    const medsList = (genericAlts.length > 0 ? genericAlts : [
+      { brand_name: 'Glycomet 500mg', generic_name: 'Metformin HCl 500mg', market_price: 52, jan_aushadhi_price: 9.20, savings_percent: 82 },
+      { brand_name: 'Amlokind 5mg', generic_name: 'Amlodipine Besylate 5mg', market_price: 48, jan_aushadhi_price: 5.50, savings_percent: 88 },
+      { brand_name: 'Calcirol 60k', generic_name: 'Cholecalciferol 60,000 IU', market_price: 65, jan_aushadhi_price: 12.00, savings_percent: 81 },
+    ]);
+
+    const medsLines = medsList.map((m, i) => `${i + 1}. *${m.brand_name}* ➔ *${m.generic_name}*\n   • MRP: ₹${m.market_price} | Jan Aushadhi: ₹${m.jan_aushadhi_price} (Save ${m.savings_percent || 80}%)`).join('\n\n');
+
+    const nearest = nearbyStores[0] || { store_name: 'PMBJP Kendra - Dadar West', address: 'Shop 4, Bethlehem Apts, Dadar West, Mumbai', phone: '022-24381020', latitude: 19.0178, longitude: 72.8478, distance_km: '1.2' };
+
+    return `🏥 *Swasthya AI — Jan Aushadhi Generic Prescription*
+👤 *Patient:* ${patientDisplayName} (ID: SW-8942-IND)
+📅 *Date:* ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+💰 *Monthly Savings:* Up to 85% with PMBJP generics
+
+📋 *Recommended Generic Equivalents:*
+${medsLines}
+
+📍 *Nearest Verified Kendra:*
+*${nearest.store_name}* (${nearest.distance_km || '1.2'} km away)
+${nearest.address}
+📞 Phone: ${nearest.phone || '022-24381020'}
+🧭 Navigate: https://www.google.com/maps/dir/?api=1&destination=${nearest.latitude},${nearest.longitude}
+
+_Generated digitally via Swasthya AI Clinical Support Engine._`;
+  };
+
+  const handleShareWhatsApp = async () => {
+    try {
+      const msg = generateShareTextMessage();
+      const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(msg)}`;
+      const webUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+      
+      const canOpen = await Linking.canOpenURL(whatsappUrl).catch(() => false);
+      if (canOpen) {
+        await Linking.openURL(whatsappUrl);
+      } else {
+        await Linking.openURL(webUrl);
+      }
+      setShareModalVisible(false);
+    } catch (err) {
+      console.log('WhatsApp share error:', err);
+      handleShareSystem();
+    }
+  };
+
+  const handleShareSystem = async () => {
+    try {
+      const msg = generateShareTextMessage();
+      if (Platform.OS === 'web' && navigator.share) {
+        try {
+          await navigator.share({
+            title: 'Jan Aushadhi Generic Prescription - Swasthya AI',
+            text: msg,
+          });
+          setShareModalVisible(false);
+          return;
+        } catch { /* skip */ }
+      }
+      
+      await Share.share({
+        message: msg,
+        title: 'Jan Aushadhi Generic Prescription',
+      });
+      setShareModalVisible(false);
+    } catch (err) {
+      console.log('System share error:', err);
+      Alert.alert('Share Prescription', 'Could not open share sheet on this device.');
+    }
+  };
+
+  const handleSharePDFFile = async () => {
+    try {
+      const htmlContent = generatePrescriptionHtml();
+      const { uri } = await Print.printToFileAsync({ html: htmlContent });
+      const isShareAvailable = await Sharing.isAvailableAsync();
+      if (isShareAvailable) {
+        await Sharing.shareAsync(uri, {
+          UTI: '.pdf',
+          mimeType: 'application/pdf',
+          dialogTitle: 'Share Jan Aushadhi Prescription PDF',
+        });
+      } else {
+        await Print.printAsync({ html: htmlContent });
+      }
+      setShareModalVisible(false);
+    } catch (err) {
+      console.log('PDF file share fallback:', err);
+      try {
+        await Print.printAsync({ html: generatePrescriptionHtml() });
+      } catch {}
+      setShareModalVisible(false);
+    }
+  };
+
+  const handleSharePrescription = () => {
+    setShareModalVisible(true);
   };
 
   const handleSelectSuggestion = (suggestion: any) => {
@@ -579,8 +944,11 @@ export default function MedsScreen() {
               <Text style={styles.subtitle}>Track your daily adherence</Text>
             </View>
             <View style={styles.headerActions}>
-              <TouchableOpacity style={styles.exportBtn} onPress={handleExportJanAushadhiPDF}>
+              <TouchableOpacity style={styles.exportBtn} onPress={handleExportJanAushadhiPDF} accessibilityLabel="Download / Print PDF">
                 <Ionicons name="download-outline" size={20} color="#0474FC" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.exportBtn} onPress={handleSharePrescription} accessibilityLabel="Share Prescription">
+                <Ionicons name="share-social-outline" size={20} color="#0474FC" />
               </TouchableOpacity>
               <TouchableOpacity style={styles.addBtn} onPress={() => setAddModalVisible(true)}>
                 <Ionicons name="add" size={20} color="#FFFFFF" />
@@ -681,26 +1049,49 @@ export default function MedsScreen() {
                 {genericAlts.map((item, idx) => (
                   <View key={idx} style={styles.genericItem}>
                     <View style={styles.genericInfo}>
-                      <Text style={styles.brandName}>{item.brand_name}</Text>
-                      <Ionicons name="arrow-forward" size={14} color="#9CA3AF" />
-                      <Text style={styles.genericName}>{item.generic_name}</Text>
+                      <View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Text style={styles.brandName}>{item.brand_name}</Text>
+                          <Ionicons name="arrow-forward" size={12} color="#9CA3AF" />
+                          <Text style={styles.genericName}>{item.generic_name}</Text>
+                        </View>
+                        <Text style={{ fontSize: 11, color: '#10B981', fontWeight: '600', marginTop: 2 }}>
+                          Save {item.savings_percent || 85}% at Jan Aushadhi
+                        </Text>
+                      </View>
                     </View>
-                    <View style={styles.priceRow}>
-                      <Text style={styles.marketPrice}>₹{item.market_price}</Text>
-                      <Text style={styles.janPrice}>₹{item.jan_aushadhi_price}</Text>
+                    <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                      <View style={styles.priceRow}>
+                        <Text style={styles.marketPrice}>₹{item.market_price}</Text>
+                        <Text style={styles.janPrice}>₹{item.jan_aushadhi_price}</Text>
+                      </View>
+                      <TouchableOpacity 
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#E0F2FE', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}
+                        onPress={handleFindNearestStore}
+                      >
+                        <Ionicons name="navigate" size={11} color="#0284C7" />
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: '#0284C7' }}>Navigate</Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
                 ))}
 
-                <TouchableOpacity style={styles.findStoreBtn} onPress={handleExportJanAushadhiPDF}>
-                  <Text style={styles.findStoreText}>Download Jan Aushadhi Prescription</Text>
-                  <Ionicons name="download-outline" size={16} color="#FFFFFF" />
+                <TouchableOpacity style={[styles.findStoreBtn, { backgroundColor: '#0284C7', marginTop: 12 }]} onPress={handleFindNearestStore}>
+                  <Ionicons name={findingStore ? 'hourglass-outline' : 'map'} size={18} color="#FFFFFF" />
+                  <Text style={styles.findStoreText}>{findingStore ? 'Loading Live Map...' : '🗺️ Open PMBJP Map & Navigate (75 Kendras)'}</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={[styles.findStoreBtn, { backgroundColor: '#10B981', marginTop: 12 }]} onPress={handleFindNearestStore}>
-                  <Text style={styles.findStoreText}>{findingStore ? 'Locating...' : 'Find Kendras on Map'}</Text>
-                  <Ionicons name={findingStore ? 'hourglass-outline' : 'map-outline'} size={16} color="#FFFFFF" />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+                  <TouchableOpacity style={[styles.findStoreBtn, { flex: 1, backgroundColor: '#0474FC', marginTop: 0 }]} onPress={handleExportJanAushadhiPDF}>
+                    <Ionicons name="download-outline" size={16} color="#FFFFFF" />
+                    <Text style={styles.findStoreText}>Download PDF</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={[styles.findStoreBtn, { flex: 1, backgroundColor: '#6366F1', marginTop: 0 }]} onPress={handleSharePrescription}>
+                    <Ionicons name="share-social-outline" size={16} color="#FFFFFF" />
+                    <Text style={styles.findStoreText}>Share Rx</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </>
           )}
@@ -772,10 +1163,10 @@ export default function MedsScreen() {
       {/* Map Modal */}
       <Modal visible={isMapVisible} animationType="slide">
         <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-          <View style={[styles.modalHeader, { paddingHorizontal: 16, paddingTop: 16 }]}>
+          <View style={[styles.modalHeader, { paddingHorizontal: 16, paddingTop: 16, borderBottomWidth: 1, borderBottomColor: '#E2E8F0', paddingBottom: 12 }]}>
             <View style={styles.modalHeaderLeft}>
               <Ionicons name="location" size={24} color="#0EA5E9" />
-              <Text style={styles.modalTitle}>Jan Aushadhi Stores</Text>
+              <Text style={styles.modalTitle}>PMBJP Jan Aushadhi Kendras</Text>
             </View>
             <TouchableOpacity onPress={() => setIsMapVisible(false)}>
               <Ionicons name="close" size={24} color="#111827" />
@@ -794,18 +1185,87 @@ export default function MedsScreen() {
               </View>
             )}
           </View>
-          <View style={styles.storeFooter}>
-            <Text style={styles.storeFooterTitle}>Nearest Kendras ({nearbyStores.length}):</Text>
-            {nearbyStores.map((store: any) => (
-              <View key={store.id} style={styles.storeRow}>
-                <Text style={styles.storeName}>{store.area} ({store.distance_km}km)</Text>
-                <TouchableOpacity onPress={() => openDirections(store)}>
-                  <Text style={styles.navigateText}>Navigate</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
         </SafeAreaView>
+      </Modal>
+
+      {/* Share Options Modal */}
+      <Modal transparent animationType="slide" visible={shareModalVisible}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderLeft}>
+                <Ionicons name="share-social" size={22} color="#0474FC" />
+                <Text style={styles.modalTitle}>Share Prescription</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShareModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.modalSub}>Share generic medicine equivalents & Kendra details directly:</Text>
+
+            <View style={{ gap: 10, marginTop: 6, marginBottom: 12 }}>
+              {/* WhatsApp */}
+              <TouchableOpacity 
+                style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F0FDF4', padding: 14, borderRadius: 12, borderWidth: 1, borderColor: '#DCFCE7' }}
+                onPress={handleShareWhatsApp}
+              >
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#22C55E', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                  <Ionicons name="logo-whatsapp" size={22} color="#FFFFFF" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: '#14532D' }}>Share via WhatsApp</Text>
+                  <Text style={{ fontSize: 12, color: '#15803D' }}>Send formatted Rx with Kendra directions</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#16A34A" />
+              </TouchableOpacity>
+
+              {/* System Share Sheet */}
+              <TouchableOpacity 
+                style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#EFF6FF', padding: 14, borderRadius: 12, borderWidth: 1, borderColor: '#DBEAFE' }}
+                onPress={handleShareSystem}
+              >
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#0284C7', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                  <Ionicons name="share-outline" size={22} color="#FFFFFF" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: '#0C4A6E' }}>System Share Sheet</Text>
+                  <Text style={{ fontSize: 12, color: '#0369A1' }}>Share via Telegram, Messages, Gmail, etc.</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#0284C7" />
+              </TouchableOpacity>
+
+              {/* PDF Document */}
+              <TouchableOpacity 
+                style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#EEF2FF', padding: 14, borderRadius: 12, borderWidth: 1, borderColor: '#E0E7FF' }}
+                onPress={handleSharePDFFile}
+              >
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#6366F1', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                  <Ionicons name="document-text-outline" size={22} color="#FFFFFF" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: '#312E81' }}>Share as PDF File</Text>
+                  <Text style={{ fontSize: 12, color: '#4338CA' }}>Attach official Jan Aushadhi PDF</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#6366F1" />
+              </TouchableOpacity>
+
+              {/* Print / Save */}
+              <TouchableOpacity 
+                style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', padding: 14, borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0' }}
+                onPress={() => { setShareModalVisible(false); handleExportJanAushadhiPDF(); }}
+              >
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#64748B', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                  <Ionicons name="print-outline" size={22} color="#FFFFFF" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: '#1E293B' }}>Download / Print PDF</Text>
+                  <Text style={{ fontSize: 12, color: '#64748B' }}>Save or send directly to printer</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
 
       <AIAnalysisPanel

@@ -13,7 +13,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Alert,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -24,6 +23,7 @@ import {
   Modal,
   RefreshControl
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
 import { backendService } from '@/services/backend.service';
 import { supabase } from '@/services/supabaseClient';

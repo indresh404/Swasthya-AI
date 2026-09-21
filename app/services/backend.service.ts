@@ -11,62 +11,22 @@ const isOfflineId = (id: string | null | undefined): boolean => {
 // Helper to delay response for realistic UI loading states
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+import { JAN_AUSHADHI_ALL_STORES, JanAushadhiStore } from '@/data/janAushadhiStores';
+
 export const backendService = {
     // Jan Aushadhi Stores
-    getNearestStores: async (lat: number, lon: number) => {
-        await delay(1000);
-        
-        const REAL_STORES = [
-            {
-                id: 'real-store-1',
-                store_name: 'Jan Aushadhi Borivali (West)',
-                latitude: 19.2299,
-                longitude: 72.8480,
-                area: 'Shop No. 4, Bethlehem Apartments, S V Patel Road, Near Dominos & Bhagwati Hospital, Borivali (West)',
-            },
-            {
-                id: 'real-store-2',
-                store_name: 'Jan Aushadhi Andheri (East)',
-                latitude: 19.1155,
-                longitude: 72.8687,
-                area: 'Shop No. 11, Mubarak Manzil, Church Road, Marol, Andheri (East)',
-            },
-            {
-                id: 'real-store-3',
-                store_name: 'Jan Aushadhi Ghatkopar (West)',
-                latitude: 19.0886,
-                longitude: 72.9082,
-                area: 'Ghatkopar Seva Sangh, Near Chirag Nagar Police Station, LBS Marg, Ghatkopar (West)',
-            },
-            {
-                id: 'real-store-4',
-                store_name: 'Jan Aushadhi Kandivali (West)',
-                latitude: 19.2062,
-                longitude: 72.8427,
-                area: 'Shop No. 18, Nemi Krishna Co-op Society, Jethwa Nagar, V L Road, Kandivali (West)',
-            },
-            {
-                id: 'real-store-5',
-                store_name: 'Jan Aushadhi Malad (West)',
-                latitude: 19.1860,
-                longitude: 72.8485,
-                area: 'Shop No. 1, Kothari Apartment, Mamlatdar Wadi, S V Road, Malad (West)',
-            },
-            {
-                id: 'real-store-6',
-                store_name: 'Jan Aushadhi Navi Mumbai (Kharghar)',
-                latitude: 19.0260,
-                longitude: 73.0694,
-                area: 'Shop No. 13, Plot No. 35-36, Maitri Icon, Kpc High School Rd, Sector-19, Kharghar',
-            },
-            {
-                id: 'real-store-7',
-                store_name: 'Jan Aushadhi Thane (West)',
-                latitude: 19.2183,
-                longitude: 72.9781,
-                area: 'Shop No. D/6, Siddhivinayak Co-op Society, Sawarkar Nagar, Thane (West)',
+    getNearestStores: async (lat: number, lon: number, limit: number = 75) => {
+        try {
+            const response = await fetch(`${BACKEND_URL}/schemes/nearby?lat=${lat}&lon=${lon}&limit=${limit}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data && data.status === 'success' && data.stores && data.stores.length > 0) {
+                    return data;
+                }
             }
-        ];
+        } catch (err) {
+            console.log('Using local PMBJP stores registry:', err);
+        }
 
         const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
             const R = 6371; // Earth radius in km
@@ -80,17 +40,18 @@ export const backendService = {
             return R * c;
         };
 
-        const sortedStores = REAL_STORES.map(store => {
+        const sortedStores = JAN_AUSHADHI_ALL_STORES.map(store => {
             const dist = calculateDistance(lat, lon, store.latitude, store.longitude);
             return {
                 ...store,
                 distance_km: dist.toFixed(1)
             };
-        }).sort((a, b) => parseFloat(a.distance_km) - parseFloat(b.distance_km));
+        }).sort((a, b) => parseFloat(String(a.distance_km)) - parseFloat(String(b.distance_km)));
 
         return {
             status: 'success',
-            stores: sortedStores.slice(0, 3)
+            total: sortedStores.length,
+            stores: sortedStores.slice(0, limit)
         };
     },
 
