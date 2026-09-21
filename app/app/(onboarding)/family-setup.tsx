@@ -48,7 +48,7 @@ const CustomAlertModal = ({ visible, title, message, onClose, type = 'info' }: a
     }
   };
 
-  const getGradient = () => {
+  const getGradient = (): [string, string] => {
     switch (type) {
       case 'success':
         return ['#10B981', '#059669'];

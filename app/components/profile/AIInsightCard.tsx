@@ -75,10 +75,10 @@ export const AIInsightCard: React.FC<AIInsightCardProps> = ({
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const thinkingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const streamIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const confidenceIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const thinkingIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const streamIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const loadingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const confidenceIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // AI Orb animation
   const orbScale = useSharedValue(1);

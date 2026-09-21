@@ -53,7 +53,13 @@ interface ProfileTabContentProps {
 }
 
 // Custom Success Popup
-const SuccessPopup = ({ visible, title, message, onClose }) => {
+interface SuccessPopupProps {
+  visible: boolean;
+  title: string;
+  message: string;
+  onClose: () => void;
+}
+const SuccessPopup: React.FC<SuccessPopupProps> = ({ visible, title, message, onClose }) => {
   return (
     <Modal visible={visible} transparent animationType="fade">
       <TouchableOpacity 
@@ -156,7 +162,7 @@ export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
     } catch (error) {
       console.error('Failed to share:', error);
       // Don't show error if user cancelled
-      if (error.message !== 'User cancelled share dialog') {
+      if (error instanceof Error && error.message !== 'User cancelled share dialog') {
         Alert.alert('Error', 'Failed to share. Please try again.');
       }
     }

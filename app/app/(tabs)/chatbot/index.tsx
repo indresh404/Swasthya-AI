@@ -1383,7 +1383,7 @@ export default function ChatScreen() {
 
       {/* Agent Log Overlay */}
       {showAgentLog && (
-        <View style={StyleSheet.absoluteFillObject}>
+        <View style={StyleSheet.absoluteFill}>
           <AgentLog onClose={() => setShowAgentLog(false)} />
         </View>
       )}

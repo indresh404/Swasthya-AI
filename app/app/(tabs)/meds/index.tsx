@@ -738,10 +738,10 @@ export default function MedsScreen() {
   };
 
   const generateShareTextMessage = () => {
-    const patientDisplayName = user?.user_metadata?.full_name || user?.name || 'Indresh Suresh';
+    const patientDisplayName = user?.user_metadata?.full_name || 'Indresh Suresh';
     const medsList = (genericAlts.length > 0 ? genericAlts : [
       { brand_name: 'Glycomet 500mg', generic_name: 'Metformin HCl 500mg', market_price: 52, jan_aushadhi_price: 9.20, savings_percent: 82 },
-      { brand_name: 'Amlokind 5mg', generic_name: 'Amlodipine Besylate 5mg', market_price: 48, jan_aushadhi_price: 5.50, savings_percent: 88 },
+      { brand_name: 'Dolo 650', generic_name: 'Paracetamol 650mg', market_price: 32, jan_aushadhi_price: 4.50, savings_percent: 86 },
       { brand_name: 'Calcirol 60k', generic_name: 'Cholecalciferol 60,000 IU', market_price: 65, jan_aushadhi_price: 12.00, savings_percent: 81 },
     ]);
 

@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, memo } from 'react';
 import {
   Animated,
   LayoutAnimation,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,

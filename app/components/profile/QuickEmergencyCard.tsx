@@ -47,7 +47,17 @@ interface QuickEmergencyCardProps {
 }
 
 // Custom Alert Component
-const CustomAlert = ({ visible, title, message, type, onConfirm, onCancel, confirmText = 'OK', cancelText = 'Cancel' }) => {
+interface CustomAlertProps {
+  visible: boolean;
+  title: string;
+  message: string;
+  type?: 'call' | 'delete' | 'success' | 'error' | string;
+  onConfirm?: () => void;
+  onCancel: () => void;
+  confirmText?: string;
+  cancelText?: string;
+}
+const CustomAlert: React.FC<CustomAlertProps> = ({ visible, title, message, type, onConfirm, onCancel, confirmText = 'OK', cancelText = 'Cancel' }) => {
   const getIcon = () => {
     switch (type) {
       case 'call': return 'call-outline';

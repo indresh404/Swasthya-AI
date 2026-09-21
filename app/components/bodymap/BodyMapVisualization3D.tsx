@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(52, 211, 153, 0.16)',
   },
   loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: '#020617',
     alignItems: 'center',
     justifyContent: 'center',
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   errorOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(2, 6, 23, 0.96)',
     alignItems: 'center',
     justifyContent: 'center',

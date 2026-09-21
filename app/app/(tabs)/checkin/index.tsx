@@ -48,7 +48,12 @@ const COLORS = {
   border: '#E2E8F0'};
 
 // --- ANIMATED PROGRESS RING ---
-const AnimatedProgressRing = ({ progress, size = 100, strokeWidth = 10 }) => {
+interface ProgressRingProps {
+  progress: number;
+  size?: number;
+  strokeWidth?: number;
+}
+const AnimatedProgressRing: React.FC<ProgressRingProps> = ({ progress, size = 100, strokeWidth = 10 }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const center = size / 2;
@@ -107,7 +112,12 @@ const AnimatedProgressRing = ({ progress, size = 100, strokeWidth = 10 }) => {
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 // --- OPTION CHIP ---
-const OptionChip = React.memo(({ option, isSelected, onPress }) => {
+interface OptionChipProps {
+  option: string;
+  isSelected: boolean;
+  onPress: () => void;
+}
+const OptionChip: React.FC<OptionChipProps> = React.memo(({ option, isSelected, onPress }) => {
   return (
     <TouchableOpacity
       style={[
@@ -125,7 +135,15 @@ const OptionChip = React.memo(({ option, isSelected, onPress }) => {
 });
 
 // --- QUESTION CARD ---
-const QuestionCard = React.memo(({ 
+interface QuestionCardProps {
+  question: any;
+  onAnswer: (questionId: string, answer: string) => void;
+  selectedAnswer: string;
+  onRemove: (questionId: string) => void;
+  index?: number;
+  isActive: boolean;
+}
+const QuestionCard: React.FC<QuestionCardProps> = React.memo(({ 
   question, 
   onAnswer, 
   selectedAnswer, 
@@ -252,7 +270,7 @@ export default function CheckinScreen() {
   };
 
   // Render item for FlatList
-  const renderItem = useCallback(({ item, index }) => {
+  const renderItem = useCallback(({ item, index }: { item: any; index: number }) => {
     const isActive = index === 0;
     return (
       <QuestionCard
