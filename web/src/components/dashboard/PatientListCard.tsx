@@ -79,12 +79,12 @@ export const PatientListCard: React.FC = () => {
           <Badge variant={getRiskVariant(mainPatient.riskLevel)}>{mainPatient.riskLevel} Risk</Badge>
         </motion.div>
 
-        {/* Other Patients (For List Fullness) */}
+        {/* Other Patients (Dynamic Patient Profiles) */}
         {otherPatients.map((p) => (
           <motion.div
             key={p.id}
             variants={itemVariants}
-            onClick={() => navigate(`/patient/${mainPatient.id}`)} // Redirect to Indresh detailed profile
+            onClick={() => navigate(`/patient/${p.id}`)}
             style={{
               display: 'flex',
               justifyContent: 'space-between',

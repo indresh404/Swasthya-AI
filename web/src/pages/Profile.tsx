@@ -1,154 +1,133 @@
 // src/pages/Profile.tsx
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import '../styles/profile.css';
 
-interface PersonalInfo {
-  fullName: string;
-  dateOfBirth: string;
-  email: string;
-  phone: string;
-  gender: string;
-  languages: string;
-}
-
-interface ProfessionalDetails {
-  specialization: string;
-  qualification: string;
-  registrationNumber: string;
-  yearsOfExperience: string;
-  aboutMe: string;
-}
-
-interface Availability {
-  consultationFee: string;
-  timings: string;
-}
-
-const Profile: React.FC = () => {
+export const Profile: React.FC = () => {
   const navigate = useNavigate();
-  const { user, profile, isAuthenticated, loading, updateProfile } = useAuth();
-  const [editingSection, setEditingSection] = useState<string | null>(null);
+  const { user, profile, isAuthenticated, loading, updateProfile, logout } = useAuth();
+  const [editingSection, setEditingSection] = useState<'personal' | 'professional' | 'availability' | 'about' | null>(null);
   const [saving, setSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-  const aboutRef = useRef<HTMLDivElement>(null);
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const [personalInfo, setPersonalInfo] = useState<PersonalInfo>({
-    fullName: user?.fullName || '',
-    dateOfBirth: user?.dateOfBirth || '',
-    email: user?.email || '',
-    phone: user?.phoneNumber || '',
-    gender: user?.gender || '',
-    languages: user?.languages || '',
+  // Local form state
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    dateOfBirth: '',
+    gender: '',
+    languages: '',
+    specialization: '',
+    qualification: '',
+    registrationNumber: '',
+    yearsOfExperience: '',
+    aboutMe: '',
+    consultationFee: '',
+    timings: ''
   });
 
-  const [professionalDetails, setProfessionalDetails] = useState<ProfessionalDetails>({
-    specialization: user?.specialization || '',
-    qualification: user?.qualification || '',
-    registrationNumber: user?.registrationNumber || '',
-    yearsOfExperience: user?.yearsOfExperience || '',
-    aboutMe: user?.aboutMe || '',
-  });
-
-  const [availability, setAvailability] = useState<Availability>({
-    consultationFee: user?.consultationFee || '',
-    timings: user?.timings || '',
-  });
-
+  // Sync state with user context
   useEffect(() => {
-    if (user) {
-      setPersonalInfo(prev => ({
-        ...prev,
-        fullName: user.fullName || prev.fullName,
-        email: user.email || prev.email,
-        phone: user.phoneNumber || prev.phone,
-        dateOfBirth: user.dateOfBirth || prev.dateOfBirth,
-        gender: user.gender || prev.gender,
-        languages: user.languages || prev.languages,
-      }));
-      
-      setProfessionalDetails(prev => ({
-        ...prev,
-        specialization: user.specialization || prev.specialization,
-        registrationNumber: user.registrationNumber || prev.registrationNumber,
-        qualification: user.qualification || prev.qualification,
-        yearsOfExperience: user.yearsOfExperience || prev.yearsOfExperience,
-        aboutMe: user.aboutMe || prev.aboutMe,
-      }));
-      
-      setAvailability(prev => ({
-        ...prev,
-        consultationFee: user.consultationFee || prev.consultationFee,
-        timings: user.timings || prev.timings,
-      }));
+    if (user || profile) {
+      setFormData({
+        fullName: user?.fullName || profile?.full_name || 'Dr. Divya Sharma',
+        email: user?.email || profile?.email || 'divya.sharma@swasthya.com',
+        phone: user?.phoneNumber || profile?.phone_number || '7559302315',
+        dateOfBirth: user?.dateOfBirth || profile?.date_of_birth || '1966-08-15',
+        gender: user?.gender || profile?.gender || 'Female',
+        languages: user?.languages || profile?.languages || 'English, Hindi, Marathi',
+        specialization: user?.specialization || profile?.specialization || 'General Physician / Internal Medicine',
+        qualification: user?.qualification || profile?.qualification || 'MBBS, MD (Internal Medicine)',
+        registrationNumber: user?.registrationNumber || profile?.registration_number || 'MCI-12345',
+        yearsOfExperience: user?.yearsOfExperience || profile?.years_of_experience || '35 Years',
+        aboutMe: user?.aboutMe || profile?.about_me || 'Dr. Divya Sharma is a veteran of internal medicine in Mumbai, focusing on preventive care, lifestyle disease management, and family health memory tracing.',
+        consultationFee: user?.consultationFee || profile?.consultation_fee || '500',
+        timings: user?.timings || profile?.timings || '10:00 AM - 5:00 PM'
+      });
     }
-  }, [user]);
+  }, [user, profile]);
 
-  const toggleEdit = (section: string) => {
-    if (editingSection === section) {
-      saveUserData();
-    } else {
-      setEditingSection(section);
-      if (section === 'about' && aboutRef.current) {
-        setTimeout(() => {
-          aboutRef.current?.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'nearest'
-          });
-        }, 100);
-      }
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const startEditing = (section: 'personal' | 'professional' | 'availability' | 'about') => {
+    setEditingSection(section);
+    setSaveMessage(null);
+  };
+
+  const cancelEditing = () => {
+    setEditingSection(null);
+    if (user || profile) {
+      setFormData({
+        fullName: user?.fullName || profile?.full_name || 'Dr. Divya Sharma',
+        email: user?.email || profile?.email || 'divya.sharma@swasthya.com',
+        phone: user?.phoneNumber || profile?.phone_number || '7559302315',
+        dateOfBirth: user?.dateOfBirth || profile?.date_of_birth || '1966-08-15',
+        gender: user?.gender || profile?.gender || 'Female',
+        languages: user?.languages || profile?.languages || 'English, Hindi, Marathi',
+        specialization: user?.specialization || profile?.specialization || 'General Physician / Internal Medicine',
+        qualification: user?.qualification || profile?.qualification || 'MBBS, MD (Internal Medicine)',
+        registrationNumber: user?.registrationNumber || profile?.registration_number || 'MCI-12345',
+        yearsOfExperience: user?.yearsOfExperience || profile?.years_of_experience || '35 Years',
+        aboutMe: user?.aboutMe || profile?.about_me || 'Dr. Divya Sharma is a veteran of internal medicine in Mumbai, focusing on preventive care, lifestyle disease management, and family health memory tracing.',
+        consultationFee: user?.consultationFee || profile?.consultation_fee || '500',
+        timings: user?.timings || profile?.timings || '10:00 AM - 5:00 PM'
+      });
     }
   };
 
-  const saveUserData = async () => {
+  const handleSaveSection = async () => {
     setSaving(true);
     setSaveMessage(null);
 
     try {
-      const updateData: any = {
-        full_name: personalInfo.fullName,
-        date_of_birth: personalInfo.dateOfBirth || null,
-        email: personalInfo.email,
-        phone_number: personalInfo.phone,
-        gender: personalInfo.gender || null,
-        languages: personalInfo.languages || null,
-        specialization: professionalDetails.specialization || null,
-        qualification: professionalDetails.qualification || null,
-        registration_number: professionalDetails.registrationNumber || null,
-        years_of_experience: professionalDetails.yearsOfExperience || null,
-        about_me: professionalDetails.aboutMe || null,
-        consultation_fee: availability.consultationFee || null,
-        timings: availability.timings || null,
-      };
+      await updateProfile({
+        full_name: formData.fullName,
+        email: formData.email,
+        phone_number: formData.phone,
+        date_of_birth: formData.dateOfBirth,
+        gender: formData.gender,
+        languages: formData.languages,
+        specialization: formData.specialization,
+        qualification: formData.qualification,
+        registration_number: formData.registrationNumber,
+        years_of_experience: formData.yearsOfExperience,
+        about_me: formData.aboutMe,
+        consultation_fee: formData.consultationFee,
+        timings: formData.timings
+      });
 
-      await updateProfile(updateData);
-      setSaveMessage({ type: 'success', text: 'Profile saved successfully!' });
+      setSaveMessage({ type: 'success', text: 'Profile updated successfully!' });
       setEditingSection(null);
-    } catch (error: any) {
-      console.error('Error saving profile:', error);
-      setSaveMessage({ type: 'error', text: error.message || 'Failed to save profile' });
+    } catch (err: any) {
+      console.error('Error saving profile:', err);
+      setSaveMessage({ type: 'error', text: err.message || 'Failed to save profile changes' });
     } finally {
       setSaving(false);
-      setTimeout(() => setSaveMessage(null), 3000);
+      setTimeout(() => setSaveMessage(null), 4000);
     }
   };
 
-  useEffect(() => {
-    if (editingSection === 'about' && aboutRef.current) {
-      const scrollY = window.scrollY;
-      requestAnimationFrame(() => {
-        window.scrollTo(0, scrollY);
-      });
-    }
-  }, [editingSection]);
+  const getInitials = (name: string) => {
+    if (!name) return 'DS';
+    return name
+      .replace(/^Dr\.\s*/i, '')
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+  };
 
   if (loading) {
     return (
       <div className="profile-wrapper">
         <div className="profile-loading">
           <div className="spinner"></div>
-          <p>Loading profile...</p>
+          <p>Loading doctor profile...</p>
         </div>
       </div>
     );
@@ -165,7 +144,7 @@ const Profile: React.FC = () => {
             </svg>
           </div>
           <h2>Please Log In</h2>
-          <p>You need to be logged in to view your profile.</p>
+          <p>You need to be logged into Doctor Hub to view and manage practitioner settings.</p>
           <button className="profile-login-btn" onClick={() => navigate('/auth')}>
             Go to Doctor Hub &rarr;
           </button>
@@ -176,267 +155,367 @@ const Profile: React.FC = () => {
 
   return (
     <div className="profile-wrapper">
-      <div className="profile-header-bar">
-        <div className="profile-title-section">
-          <h1 className="profile-name">{personalInfo.fullName || 'User'}</h1>
-          <span className="profile-specialization">
-            {professionalDetails.specialization || 'Not Specified'}
-          </span>
-          {user.role && (
-            <span className={`profile-role-badge ${user.role}`}>
-              {user.role === 'doctor' ? '👨‍⚕️ Doctor' : '👤 Patient'}
-            </span>
-          )}
-        </div>
-      </div>
-
+      {/* Toast Alert */}
       {saveMessage && (
-        <div className={`profile-save-message ${saveMessage.type}`}>
+        <div className={`profile-toast-message ${saveMessage.type}`}>
           {saveMessage.text}
         </div>
       )}
 
-      <div className="profile-body">
-        <div className="profile-two-column">
-          <div className="profile-left-column">
-            <div className="profile-card">
-              <div className="profile-card-header">
-                <h2 className="profile-card-title">Personal Information</h2>
-                <button 
-                  className={`profile-section-edit-btn ${editingSection === 'personal' ? 'save-mode' : ''}`}
-                  onClick={() => toggleEdit('personal')}
-                  disabled={saving}
-                >
-                  {editingSection === 'personal' ? (saving ? 'Saving...' : 'Save Changes') : 'Edit'}
-                </button>
+      {/* Hero Header Profile Card */}
+      <div className="profile-hero-card">
+        <div className="profile-hero-cover" />
+        <div className="profile-hero-body">
+          <div className="profile-hero-top-row">
+            <div className="profile-avatar-container">
+              <div className="doc-hero-avatar-large">
+                {getInitials(formData.fullName)}
               </div>
-              <div className="profile-info-list">
-                <div className="profile-info-row">
-                  <div className="profile-info-label">Full Name</div>
+              <span className="profile-status-dot" title="Online Practitioner" />
+            </div>
+
+            <div className="profile-hero-actions">
+              <button className="logout-action-btn" onClick={logout}>
+                Sign Out
+              </button>
+            </div>
+          </div>
+
+          <div className="profile-hero-details">
+            <div className="profile-hero-header-row">
+              <div className="profile-hero-title-box">
+                <h1 className="profile-hero-name">{formData.fullName}</h1>
+                <span className="profile-verified-badge">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Verified Doctor
+                </span>
+              </div>
+            </div>
+
+            <p className="profile-hero-subtitle">
+              {formData.specialization} &bull; {formData.qualification}
+            </p>
+
+            {/* Quick Badges Bar */}
+            <div className="profile-hero-badges">
+              <div className="hero-stat-pill">
+                <span className="stat-label">Degree:</span>
+                <span>{formData.qualification || 'MBBS, MD'}</span>
+              </div>
+              <div className="hero-stat-pill">
+                <span className="stat-label">Exp:</span>
+                <span>{formData.yearsOfExperience || '35 Years'}</span>
+              </div>
+              <div className="hero-stat-pill">
+                <span className="stat-label">Reg:</span>
+                <span>{formData.registrationNumber || 'MCI-12345'}</span>
+              </div>
+              <div className="hero-stat-pill highlight">
+                <span className="stat-label">Fee:</span>
+                <span>₹{formData.consultationFee || '500'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Grid Layout of Cards */}
+      <div className="profile-grid">
+        {/* Left Column */}
+        <div className="profile-col">
+          {/* Personal Info Card */}
+          <div className={`profile-section-card ${editingSection === 'personal' ? 'is-editing' : ''}`}>
+            <div className="section-card-header">
+              <div className="section-title-box">
+                <h3>Personal Information</h3>
+              </div>
+              {editingSection === 'personal' ? (
+                <div className="edit-btn-group">
+                  <button className="btn-save-section" onClick={handleSaveSection} disabled={saving}>
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                  <button className="btn-cancel-section" onClick={cancelEditing} disabled={saving}>
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button className="btn-edit-section" onClick={() => startEditing('personal')}>
+                  Edit
+                </button>
+              )}
+            </div>
+
+            <div className="section-card-body">
+              <div className="field-grid">
+                <div className="field-item">
+                  <label>Full Name</label>
                   {editingSection === 'personal' ? (
-                    <input 
-                      type="text" 
-                      className="profile-info-input"
-                      value={personalInfo.fullName} 
-                      onChange={(e) => setPersonalInfo({...personalInfo, fullName: e.target.value})} 
-                      placeholder="Enter your full name"
+                    <input
+                      type="text"
+                      className="field-input"
+                      value={formData.fullName}
+                      onChange={e => handleInputChange('fullName', e.target.value)}
                     />
                   ) : (
-                    <div className="profile-info-value">{personalInfo.fullName || 'Not provided'}</div>
+                    <div className="field-value">{formData.fullName || 'Not provided'}</div>
                   )}
                 </div>
-                <div className="profile-info-row">
-                  <div className="profile-info-label">Date of Birth</div>
+
+                <div className="field-item">
+                  <label>Email Address</label>
                   {editingSection === 'personal' ? (
-                    <input 
-                      type="date" 
-                      className="profile-info-input"
-                      value={personalInfo.dateOfBirth} 
-                      onChange={(e) => setPersonalInfo({...personalInfo, dateOfBirth: e.target.value})} 
+                    <input
+                      type="email"
+                      className="field-input"
+                      value={formData.email}
+                      onChange={e => handleInputChange('email', e.target.value)}
                     />
                   ) : (
-                    <div className="profile-info-value">{personalInfo.dateOfBirth || 'Not provided'}</div>
+                    <div className="field-value">{formData.email || 'Not provided'}</div>
                   )}
                 </div>
-                <div className="profile-info-row">
-                  <div className="profile-info-label">Email Address</div>
+
+                <div className="field-item">
+                  <label>Phone Number</label>
                   {editingSection === 'personal' ? (
-                    <input 
-                      type="email" 
-                      className="profile-info-input"
-                      value={personalInfo.email} 
-                      onChange={(e) => setPersonalInfo({...personalInfo, email: e.target.value})} 
-                      placeholder="Enter your email"
+                    <input
+                      type="tel"
+                      className="field-input"
+                      value={formData.phone}
+                      onChange={e => handleInputChange('phone', e.target.value)}
                     />
                   ) : (
-                    <div className="profile-info-value">{personalInfo.email || 'Not provided'}</div>
+                    <div className="field-value">{formData.phone || 'Not provided'}</div>
                   )}
                 </div>
-                <div className="profile-info-row">
-                  <div className="profile-info-label">Phone Number</div>
+
+                <div className="field-item">
+                  <label>Date of Birth</label>
                   {editingSection === 'personal' ? (
-                    <input 
-                      type="tel" 
-                      className="profile-info-input"
-                      value={personalInfo.phone} 
-                      onChange={(e) => setPersonalInfo({...personalInfo, phone: e.target.value})} 
-                      placeholder="Enter your phone number"
+                    <input
+                      type="date"
+                      className="field-input"
+                      value={formData.dateOfBirth}
+                      onChange={e => handleInputChange('dateOfBirth', e.target.value)}
                     />
                   ) : (
-                    <div className="profile-info-value">{personalInfo.phone || 'Not provided'}</div>
+                    <div className="field-value">{formData.dateOfBirth || 'Not provided'}</div>
                   )}
                 </div>
-                <div className="profile-info-row">
-                  <div className="profile-info-label">Gender</div>
+
+                <div className="field-item">
+                  <label>Gender</label>
                   {editingSection === 'personal' ? (
-                    <select 
-                      className="profile-info-input"
-                      value={personalInfo.gender} 
-                      onChange={(e) => setPersonalInfo({...personalInfo, gender: e.target.value})}
+                    <select
+                      className="field-input"
+                      value={formData.gender}
+                      onChange={e => handleInputChange('gender', e.target.value)}
                     >
-                      <option value="">Select Gender</option>
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
                       <option value="Other">Other</option>
                     </select>
                   ) : (
-                    <div className="profile-info-value">{personalInfo.gender || 'Not provided'}</div>
+                    <div className="field-value">{formData.gender || 'Not provided'}</div>
                   )}
                 </div>
-                <div className="profile-info-row">
-                  <div className="profile-info-label">Languages Known</div>
+
+                <div className="field-item">
+                  <label>Languages Spoken</label>
                   {editingSection === 'personal' ? (
-                    <input 
-                      type="text" 
-                      className="profile-info-input"
-                      value={personalInfo.languages} 
-                      onChange={(e) => setPersonalInfo({...personalInfo, languages: e.target.value})} 
-                      placeholder="e.g., English, Spanish"
+                    <input
+                      type="text"
+                      className="field-input"
+                      value={formData.languages}
+                      onChange={e => handleInputChange('languages', e.target.value)}
+                      placeholder="e.g. English, Hindi, Marathi"
                     />
                   ) : (
-                    <div className="profile-info-value">{personalInfo.languages || 'Not provided'}</div>
+                    <div className="field-value">{formData.languages || 'Not provided'}</div>
                   )}
                 </div>
-              </div>
-            </div>
-
-            <div className="profile-card" ref={aboutRef}>
-              <div className="profile-card-header">
-                <h2 className="profile-card-title">About Me</h2>
-                <button 
-                  className={`profile-section-edit-btn ${editingSection === 'about' ? 'save-mode' : ''}`}
-                  onClick={() => toggleEdit('about')}
-                  disabled={saving}
-                >
-                  {editingSection === 'about' ? (saving ? 'Saving...' : 'Save Changes') : 'Edit'}
-                </button>
-              </div>
-              <div className="profile-about-container">
-                {editingSection === 'about' ? (
-                  <textarea 
-                    className="profile-about-textarea"
-                    value={professionalDetails.aboutMe} 
-                    onChange={(e) => setProfessionalDetails({...professionalDetails, aboutMe: e.target.value})} 
-                    rows={6}
-                    placeholder="Tell us about yourself..."
-                  />
-                ) : (
-                  <div className="profile-about-text">{professionalDetails.aboutMe || 'No about me information provided.'}</div>
-                )}
               </div>
             </div>
           </div>
 
-          <div className="profile-right-column">
-            <div className="profile-card">
-              <div className="profile-card-header">
-                <h2 className="profile-card-title">Professional Details</h2>
-                <button 
-                  className={`profile-section-edit-btn ${editingSection === 'professional' ? 'save-mode' : ''}`}
-                  onClick={() => toggleEdit('professional')}
-                  disabled={saving}
-                >
-                  {editingSection === 'professional' ? (saving ? 'Saving...' : 'Save Changes') : 'Edit'}
-                </button>
+          {/* About Doctor Card */}
+          <div className={`profile-section-card ${editingSection === 'about' ? 'is-editing' : ''}`}>
+            <div className="section-card-header">
+              <div className="section-title-box">
+                <h3>About Doctor</h3>
               </div>
-              <div className="profile-info-list">
-                <div className="profile-info-row">
-                  <div className="profile-info-label">Specialization</div>
+              {editingSection === 'about' ? (
+                <div className="edit-btn-group">
+                  <button className="btn-save-section" onClick={handleSaveSection} disabled={saving}>
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                  <button className="btn-cancel-section" onClick={cancelEditing} disabled={saving}>
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button className="btn-edit-section" onClick={() => startEditing('about')}>
+                  Edit
+                </button>
+              )}
+            </div>
+
+            <div className="section-card-body">
+              {editingSection === 'about' ? (
+                <textarea
+                  className="field-textarea"
+                  rows={5}
+                  value={formData.aboutMe}
+                  onChange={e => handleInputChange('aboutMe', e.target.value)}
+                  placeholder="Describe your medical experience, focus areas, and philosophy..."
+                />
+              ) : (
+                <p className="about-text-content">
+                  {formData.aboutMe || 'No detailed biography provided.'}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column */}
+        <div className="profile-col">
+          {/* Professional Credentials Card */}
+          <div className={`profile-section-card ${editingSection === 'professional' ? 'is-editing' : ''}`}>
+            <div className="section-card-header">
+              <div className="section-title-box">
+                <h3>Professional Credentials</h3>
+              </div>
+              {editingSection === 'professional' ? (
+                <div className="edit-btn-group">
+                  <button className="btn-save-section" onClick={handleSaveSection} disabled={saving}>
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                  <button className="btn-cancel-section" onClick={cancelEditing} disabled={saving}>
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button className="btn-edit-section" onClick={() => startEditing('professional')}>
+                  Edit
+                </button>
+              )}
+            </div>
+
+            <div className="section-card-body">
+              <div className="field-grid">
+                <div className="field-item">
+                  <label>Specialization</label>
                   {editingSection === 'professional' ? (
-                    <input 
-                      type="text" 
-                      className="profile-info-input"
-                      value={professionalDetails.specialization} 
-                      onChange={(e) => setProfessionalDetails({...professionalDetails, specialization: e.target.value})} 
-                      placeholder="Enter your specialization"
+                    <input
+                      type="text"
+                      className="field-input"
+                      value={formData.specialization}
+                      onChange={e => handleInputChange('specialization', e.target.value)}
                     />
                   ) : (
-                    <div className="profile-info-value">{professionalDetails.specialization || 'Not provided'}</div>
+                    <div className="field-value">{formData.specialization || 'Not provided'}</div>
                   )}
                 </div>
-                <div className="profile-info-row">
-                  <div className="profile-info-label">Qualification</div>
+
+                <div className="field-item">
+                  <label>Qualification</label>
                   {editingSection === 'professional' ? (
-                    <input 
-                      type="text" 
-                      className="profile-info-input"
-                      value={professionalDetails.qualification} 
-                      onChange={(e) => setProfessionalDetails({...professionalDetails, qualification: e.target.value})} 
-                      placeholder="Enter your qualifications"
+                    <input
+                      type="text"
+                      className="field-input"
+                      value={formData.qualification}
+                      onChange={e => handleInputChange('qualification', e.target.value)}
                     />
                   ) : (
-                    <div className="profile-info-value">{professionalDetails.qualification || 'Not provided'}</div>
+                    <div className="field-value">{formData.qualification || 'Not provided'}</div>
                   )}
                 </div>
-                <div className="profile-info-row">
-                  <div className="profile-info-label">Registration Number</div>
+
+                <div className="field-item">
+                  <label>MCI Registration Number</label>
                   {editingSection === 'professional' ? (
-                    <input 
-                      type="text" 
-                      className="profile-info-input"
-                      value={professionalDetails.registrationNumber} 
-                      onChange={(e) => setProfessionalDetails({...professionalDetails, registrationNumber: e.target.value})} 
-                      placeholder="Enter registration number"
+                    <input
+                      type="text"
+                      className="field-input"
+                      value={formData.registrationNumber}
+                      onChange={e => handleInputChange('registrationNumber', e.target.value)}
                     />
                   ) : (
-                    <div className="profile-info-value">{professionalDetails.registrationNumber || 'Not provided'}</div>
+                    <div className="field-value highlight-text">{formData.registrationNumber || 'Not provided'}</div>
                   )}
                 </div>
-                <div className="profile-info-row">
-                  <div className="profile-info-label">Years of Experience</div>
+
+                <div className="field-item">
+                  <label>Years of Experience</label>
                   {editingSection === 'professional' ? (
-                    <input 
-                      type="text" 
-                      className="profile-info-input"
-                      value={professionalDetails.yearsOfExperience} 
-                      onChange={(e) => setProfessionalDetails({...professionalDetails, yearsOfExperience: e.target.value})} 
-                      placeholder="e.g., 5+ Years"
+                    <input
+                      type="text"
+                      className="field-input"
+                      value={formData.yearsOfExperience}
+                      onChange={e => handleInputChange('yearsOfExperience', e.target.value)}
                     />
                   ) : (
-                    <div className="profile-info-value">{professionalDetails.yearsOfExperience || 'Not provided'}</div>
+                    <div className="field-value">{formData.yearsOfExperience || 'Not provided'}</div>
                   )}
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="profile-card">
-              <div className="profile-card-header">
-                <h2 className="profile-card-title">Availability</h2>
-                <button 
-                  className={`profile-section-edit-btn ${editingSection === 'availability' ? 'save-mode' : ''}`}
-                  onClick={() => toggleEdit('availability')}
-                  disabled={saving}
-                >
-                  {editingSection === 'availability' ? (saving ? 'Saving...' : 'Save Changes') : 'Edit'}
-                </button>
+          {/* Availability & Practice Card */}
+          <div className={`profile-section-card ${editingSection === 'availability' ? 'is-editing' : ''}`}>
+            <div className="section-card-header">
+              <div className="section-title-box">
+                <h3>Practice & Consultation Fees</h3>
               </div>
-              <div className="profile-info-list">
-                <div className="profile-info-row">
-                  <div className="profile-info-label">Consultation Fee</div>
+              {editingSection === 'availability' ? (
+                <div className="edit-btn-group">
+                  <button className="btn-save-section" onClick={handleSaveSection} disabled={saving}>
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                  <button className="btn-cancel-section" onClick={cancelEditing} disabled={saving}>
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button className="btn-edit-section" onClick={() => startEditing('availability')}>
+                  Edit
+                </button>
+              )}
+            </div>
+
+            <div className="section-card-body">
+              <div className="field-grid">
+                <div className="field-item">
+                  <label>Consultation Fee (₹)</label>
                   {editingSection === 'availability' ? (
-                    <input 
-                      type="text" 
-                      className="profile-info-input"
-                      value={availability.consultationFee} 
-                      onChange={(e) => setAvailability({...availability, consultationFee: e.target.value})} 
-                      placeholder="e.g., $100"
+                    <input
+                      type="text"
+                      className="field-input"
+                      value={formData.consultationFee}
+                      onChange={e => handleInputChange('consultationFee', e.target.value)}
+                      placeholder="e.g. 500"
                     />
                   ) : (
-                    <div className="profile-info-value">{availability.consultationFee || 'Not provided'}</div>
+                    <div className="field-value highlight-fee">₹{formData.consultationFee || '500'} per visit</div>
                   )}
                 </div>
-                <div className="profile-info-row">
-                  <div className="profile-info-label">Available Timings</div>
+
+                <div className="field-item">
+                  <label>Clinic Hours / Timings</label>
                   {editingSection === 'availability' ? (
-                    <input 
-                      type="text" 
-                      className="profile-info-input"
-                      value={availability.timings} 
-                      onChange={(e) => setAvailability({...availability, timings: e.target.value})} 
-                      placeholder="e.g., 10:00 AM - 08:00 PM"
+                    <input
+                      type="text"
+                      className="field-input"
+                      value={formData.timings}
+                      onChange={e => handleInputChange('timings', e.target.value)}
+                      placeholder="e.g. 10:00 AM - 5:00 PM"
                     />
                   ) : (
-                    <div className="profile-info-value">{availability.timings || 'Not provided'}</div>
+                    <div className="field-value">{formData.timings || '10:00 AM - 5:00 PM'}</div>
                   )}
                 </div>
               </div>

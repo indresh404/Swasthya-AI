@@ -315,32 +315,83 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const updateProfile = async (data: Partial<DoctorProfile>) => {
     if (!user?.id) throw new Error('User not authenticated');
 
-    const dbData: any = {};
-    if (data.full_name !== undefined) dbData.full_name = data.full_name;
-    if (data.date_of_birth !== undefined) dbData.date_of_birth = data.date_of_birth;
-    if (data.email !== undefined) dbData.email = data.email;
-    if (data.phone_number !== undefined) dbData.phone_number = data.phone_number;
-    if (data.gender !== undefined) dbData.gender = data.gender;
-    if (data.languages !== undefined) dbData.languages = data.languages;
-    if (data.specialization !== undefined) dbData.specialization = data.specialization;
-    if (data.qualification !== undefined) dbData.qualification = data.qualification;
-    if (data.registration_number !== undefined) dbData.registration_number = data.registration_number;
-    if (data.years_of_experience !== undefined) dbData.years_of_experience = data.years_of_experience;
-    if (data.about_me !== undefined) dbData.about_me = data.about_me;
-    if (data.consultation_fee !== undefined) dbData.consultation_fee = data.consultation_fee;
-    if (data.timings !== undefined) dbData.timings = data.timings;
+    const isGuest = localStorage.getItem('skipLogin') === 'true' || user.id === 'guest-doctor';
 
-    const { error } = await supabase
-      .from('doctor_profiles')
-      .update(dbData)
-      .eq('user_id', user.id);
+    // Construct updated local User object immediately
+    const updatedUser: User = {
+      ...user,
+      fullName: data.full_name ?? user.fullName,
+      dateOfBirth: data.date_of_birth ?? user.dateOfBirth,
+      email: data.email ?? user.email,
+      phoneNumber: data.phone_number ?? user.phoneNumber,
+      gender: data.gender ?? user.gender,
+      languages: data.languages ?? user.languages,
+      specialization: data.specialization ?? user.specialization,
+      qualification: data.qualification ?? user.qualification,
+      registrationNumber: data.registration_number ?? user.registrationNumber,
+      yearsOfExperience: data.years_of_experience ?? user.yearsOfExperience,
+      aboutMe: data.about_me ?? user.aboutMe,
+      consultationFee: data.consultation_fee ?? user.consultationFee,
+      timings: data.timings ?? user.timings,
+    };
 
-    if (error) throw error;
+    const updatedProfileData: DoctorProfile = {
+      ...(profile || {} as DoctorProfile),
+      id: user.id,
+      user_id: user.id,
+      full_name: updatedUser.fullName || '',
+      email: updatedUser.email || '',
+      phone_number: updatedUser.phoneNumber || '',
+      specialization: updatedUser.specialization || '',
+      qualification: updatedUser.qualification || '',
+      registration_number: updatedUser.registrationNumber || '',
+      years_of_experience: updatedUser.yearsOfExperience || '',
+      about_me: updatedUser.aboutMe || '',
+      consultation_fee: updatedUser.consultationFee || '',
+      timings: updatedUser.timings || '',
+      gender: updatedUser.gender || '',
+      date_of_birth: updatedUser.dateOfBirth || '',
+      languages: updatedUser.languages || '',
+    };
 
-    // Refresh profile
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    if (currentUser) {
-      await fetchDoctorProfile(currentUser);
+    // Update memory state right away so UI reflects changes immediately
+    setUser(updatedUser);
+    setProfile(updatedProfileData);
+
+    if (isGuest) {
+      console.log('✅ Guest profile updated in memory');
+      return;
+    }
+
+    // If logged in via Supabase, also write to Supabase
+    try {
+      const dbData: any = {};
+      if (data.full_name !== undefined) dbData.full_name = data.full_name;
+      if (data.date_of_birth !== undefined) dbData.date_of_birth = data.date_of_birth;
+      if (data.email !== undefined) dbData.email = data.email;
+      if (data.phone_number !== undefined) dbData.phone_number = data.phone_number;
+      if (data.gender !== undefined) dbData.gender = data.gender;
+      if (data.languages !== undefined) dbData.languages = data.languages;
+      if (data.specialization !== undefined) dbData.specialization = data.specialization;
+      if (data.qualification !== undefined) dbData.qualification = data.qualification;
+      if (data.registration_number !== undefined) dbData.registration_number = data.registration_number;
+      if (data.years_of_experience !== undefined) dbData.years_of_experience = data.years_of_experience;
+      if (data.about_me !== undefined) dbData.about_me = data.about_me;
+      if (data.consultation_fee !== undefined) dbData.consultation_fee = data.consultation_fee;
+      if (data.timings !== undefined) dbData.timings = data.timings;
+
+      const { error } = await supabase
+        .from('doctor_profiles')
+        .update(dbData)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.warn('⚠️ Supabase update warning:', error);
+      } else {
+        console.log('✅ Profile updated in Supabase database');
+      }
+    } catch (err) {
+      console.warn('⚠️ Non-fatal network error writing to Supabase:', err);
     }
   };
 

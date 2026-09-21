@@ -1,12 +1,8 @@
 // app/context/CheckinContext.tsx
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { LayoutAnimation, UIManager, Platform } from 'react-native';
+import { LayoutAnimation } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Enable LayoutAnimation for Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 // Mock API - Simulates backend question delivery
 const MOCK_API = {

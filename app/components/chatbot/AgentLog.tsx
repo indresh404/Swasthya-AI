@@ -10,7 +10,6 @@ import {
   TouchableOpacity,
   View,
   Platform,
-  UIManager,
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,10 +19,6 @@ import Svg, { Circle } from 'react-native-svg';
 import { backendService } from '@/services/backend.service';
 import { HealthGraphCard } from '../profile/HealthGraphCard';
 
-// Enable LayoutAnimation for Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 type StepStatus = 'waiting' | 'running' | 'done' | 'error';
 
@@ -45,8 +40,7 @@ const PIPELINE: AgentStep[] = [
     icon: 'chatbubble-ellipses-outline',
     color: '#38BDF8',
     durationMs: 1800,
-    logLines: [],
-  },
+    logLines: []},
   {
     id: 'health_extraction_agent',
     title: 'Health Extraction Agent',
@@ -54,8 +48,7 @@ const PIPELINE: AgentStep[] = [
     icon: 'document-text-outline',
     color: '#F97316',
     durationMs: 2000,
-    logLines: [],
-  },
+    logLines: []},
   {
     id: 'graph_memory_agent',
     title: 'Graph Memory Agent',
@@ -63,8 +56,7 @@ const PIPELINE: AgentStep[] = [
     icon: 'git-network-outline',
     color: '#8B5CF6',
     durationMs: 2200,
-    logLines: [],
-  },
+    logLines: []},
   {
     id: 'risk_analysis_agent',
     title: 'Risk Analysis Agent',
@@ -72,8 +64,7 @@ const PIPELINE: AgentStep[] = [
     icon: 'speedometer-outline',
     color: '#EF4444',
     durationMs: 2400,
-    logLines: [],
-  },
+    logLines: []},
   {
     id: 'insight_recommendation_agent',
     title: 'Insight & Recommendation Agent',
@@ -81,8 +72,7 @@ const PIPELINE: AgentStep[] = [
     icon: 'bulb-outline',
     color: '#EAB308',
     durationMs: 2000,
-    logLines: [],
-  },
+    logLines: []},
   {
     id: 'doctor_report_agent',
     title: 'Doctor Report Agent',
@@ -90,8 +80,7 @@ const PIPELINE: AgentStep[] = [
     icon: 'document-attach-outline',
     color: '#10B981',
     durationMs: 1800,
-    logLines: [],
-  },
+    logLines: []},
   {
     id: 'workflow_orchestrator',
     title: 'Workflow Orchestrator',
@@ -99,8 +88,7 @@ const PIPELINE: AgentStep[] = [
     icon: 'layers-outline',
     color: '#6366F1',
     durationMs: 1600,
-    logLines: [],
-  },
+    logLines: []},
 ];
 
 const LogLine = ({ line, delay }: { line: string; delay: number }) => {
@@ -136,8 +124,7 @@ const LogLine = ({ line, delay }: { line: string; delay: number }) => {
 const StepCard = ({
   step,
   status,
-  visibleLogLines,
-}: {
+  visibleLogLines}: {
   step: AgentStep;
   status: StepStatus;
   visibleLogLines: number;
@@ -224,14 +211,12 @@ const CircularProgress = ({ score, size = 120, strokeWidth = 10 }: { score: numb
     Animated.timing(animatedValue, {
       toValue: score,
       duration: 1500,
-      useNativeDriver: false,
-    }).start();
+      useNativeDriver: false}).start();
   }, [score]);
 
   const strokeDashoffsetTarget = animatedValue.interpolate({
     inputRange: [0, 100],
-    outputRange: [circumference, circumference - circumference * (score / 100)],
-  });
+    outputRange: [circumference, circumference - circumference * (score / 100)]});
 
   const progressColor = score < 40 ? '#10B981' : score < 70 ? '#F97316' : '#EF4444';
 
@@ -682,24 +667,21 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
     backgroundColor: '#171717',
     borderBottomWidth: 1,
-    borderBottomColor: '#2D2D2D',
-  },
+    borderBottomColor: '#2D2D2D'},
   backBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
     backgroundColor: '#2A2A2A',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
+    justifyContent: 'center'},
   topTitle: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
   topSub: { fontSize: 12, color: '#9CA3AF', marginTop: 1 },
   counterBadge: {
     backgroundColor: '#2A2A2A',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 12,
-  },
+    borderRadius: 12},
   counterText: { fontSize: 13, fontWeight: '700', color: '#0474FC' },
   progressOuter: { height: 3, backgroundColor: '#2D2D2D' },
   progressInner: { height: 3, backgroundColor: '#0474FC' },
@@ -708,8 +690,7 @@ const styles = StyleSheet.create({
   introGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 18,
-  },
+    padding: 18},
   introTitle: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
   introSub: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 3 },
   stepCard: {
@@ -722,36 +703,30 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    elevation: 5,
-  },
+    elevation: 5},
   stepHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   stepIconBg: {
     width: 40,
     height: 40,
     borderRadius: 10,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
+    justifyContent: 'center'},
   stepTitle: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
   stepSubtitle: { fontSize: 11, color: '#9CA3AF', marginTop: 2 },
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
-  },
+    borderRadius: 8},
   statusBadgeRunning: {
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
-  },
+    backgroundColor: 'rgba(245, 158, 11, 0.15)'},
   statusBadgeDone: {
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
-  },
+    backgroundColor: 'rgba(52, 211, 153, 0.15)'},
   statusText: { fontSize: 11, fontWeight: '600' },
   logContainer: {
     backgroundColor: '#0F172A',
     borderRadius: 8,
     padding: 10,
-    minHeight: 40,
-  },
+    minHeight: 40},
   logLine: { fontSize: 11, color: '#94A3B8', fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', lineHeight: 18 },
   logLineSuccess: { color: '#34D399' },
   logLineArrow: { color: '#60A5FA' },
@@ -766,16 +741,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 4.65,
-    elevation: 8,
-  },
+    elevation: 8},
   doneEmoji: { fontSize: 40, marginBottom: 12 },
   doneTitle: { fontSize: 20, fontWeight: '700', color: '#FFFFFF', marginBottom: 8 },
   doneSub: { fontSize: 14, color: '#9CA3AF', textAlign: 'center', lineHeight: 20, marginBottom: 20 },
   progressCardSection: {
     marginVertical: 20,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
+    justifyContent: 'center'},
   insightsContainer: {
     width: '100%',
     backgroundColor: '#171717',
@@ -783,60 +756,50 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#2D2D2D',
-  },
+    borderColor: '#2D2D2D'},
   insightsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 12,
-  },
+    marginBottom: 12},
   insightsTitle: {
     color: '#0474FC',
     fontSize: 14,
     fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
+    letterSpacing: 0.5},
   insightsText: {
     color: '#ECECF1',
     fontSize: 13,
     lineHeight: 18,
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   doneBtn: { width: '100%', borderRadius: 14, overflow: 'hidden' },
   doneBtnGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 14,
-    gap: 10,
-  },
+    gap: 10},
   doneBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
   historyContainer: {
-    paddingBottom: 16,
-  },
+    paddingBottom: 16},
   historyTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 6,
-  },
+    marginBottom: 6},
   historySubtitle: {
     fontSize: 13,
     color: '#9CA3AF',
     marginBottom: 20,
-    lineHeight: 18,
-  },
+    lineHeight: 18},
   loadingContainer: {
     paddingVertical: 32,
-    alignItems: 'center',
-  },
+    alignItems: 'center'},
   loadingText: {
     fontSize: 12,
     color: '#9CA3AF',
-    marginTop: 8,
-  },
+    marginTop: 8},
   emptyHistoryCard: {
     backgroundColor: '#1E1E1E',
     borderRadius: 14,
@@ -845,88 +808,72 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#2D2D2D',
-    marginBottom: 24,
-  },
+    marginBottom: 24},
   emptyHistoryTitle: {
     fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
     marginTop: 12,
-    marginBottom: 6,
-  },
+    marginBottom: 6},
   emptyHistorySub: {
     fontSize: 12,
     color: '#9CA3AF',
     textAlign: 'center',
-    lineHeight: 16,
-  },
+    lineHeight: 16},
   historyCard: {
     backgroundColor: '#1E1E1E',
     borderRadius: 14,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#2D2D2D',
-  },
+    borderColor: '#2D2D2D'},
   historyCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
-  },
+    marginBottom: 10},
   historyDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
     backgroundColor: '#0474FC',
-    marginRight: 8,
-  },
+    marginRight: 8},
   historyCardTitle: {
     fontSize: 13,
     fontWeight: '700',
     color: '#FFFFFF',
-    flex: 1,
-  },
+    flex: 1},
   historyCardDate: {
     fontSize: 11,
-    color: '#9CA3AF',
-  },
+    color: '#9CA3AF'},
   historyCardBody: {
     fontSize: 13,
     color: '#D1D5DB',
-    lineHeight: 18,
-  },
+    lineHeight: 18},
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
-    marginTop: 12,
-  },
+    marginTop: 12},
   tag: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
-    borderWidth: 1,
-  },
+    borderWidth: 1},
   tagText: {
     fontSize: 10,
-    fontWeight: '600',
-  },
+    fontWeight: '600'},
   startWorkflowBtn: {
     width: '100%',
     borderRadius: 14,
     overflow: 'hidden',
-    marginTop: 16,
-  },
+    marginTop: 16},
   startBtnGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 14,
-    gap: 10,
-  },
+    gap: 10},
   startBtnText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
-  },
-});
+    fontWeight: '600'}});

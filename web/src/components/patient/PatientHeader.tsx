@@ -1,10 +1,14 @@
 // src/components/patient/PatientHeader.tsx
 import React from 'react';
-import { mainPatient } from '../../data/clinicalData';
+import { mainPatient, PatientRecord } from '../../data/clinicalData';
 import Card from '../ui/Card';
 import Badge from '../ui/Badge';
 
-export const PatientHeader: React.FC = () => {
+interface PatientHeaderProps {
+  patient?: PatientRecord;
+}
+
+export const PatientHeader: React.FC<PatientHeaderProps> = ({ patient = mainPatient }) => {
   const getRiskVariant = (risk: string) => {
     if (risk === 'Low') return 'success';
     if (risk === 'Moderate') return 'warning';
@@ -29,24 +33,24 @@ export const PatientHeader: React.FC = () => {
               fontWeight: 800
             }}
           >
-            {mainPatient.name[0]}
+            {patient.name[0]}
           </div>
           <div>
             <h1 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-              {mainPatient.name}
+              {patient.name}
             </h1>
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
-              ID: {mainPatient.id} | Age: {mainPatient.age} | Gender: {mainPatient.gender} | Location: {mainPatient.location}
+              ID: {patient.id} | Age: {patient.age} | Gender: {patient.gender} | Location: {patient.location}
             </p>
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <Badge variant={getRiskVariant(mainPatient.riskLevel)} style={{ fontSize: '14px', padding: '6px 14px' }}>
-            {mainPatient.riskLevel} Clinical Risk
+          <Badge variant={getRiskVariant(patient.riskLevel)} style={{ fontSize: '14px', padding: '6px 14px' }}>
+            {patient.riskLevel} Clinical Risk
           </Badge>
           <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: 600 }}>
-            📞 {mainPatient.phone}
+            📞 {patient.phone}
           </div>
         </div>
       </div>
@@ -55,7 +59,7 @@ export const PatientHeader: React.FC = () => {
 
       {/* Vitals Summary Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
-        {mainPatient.vitals.map((v, i) => (
+        {patient.vitals.map((v, i) => (
           <div
             key={i}
             style={{

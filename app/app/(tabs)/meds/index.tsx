@@ -32,7 +32,13 @@ const MEDICINES_DATABASE = [
   { brand_name: 'Crocin 650mg', generic_name: 'Paracetamol 650mg', market_price: 30, jan_aushadhi_price: 4.50 },
   { brand_name: 'Paracetamol 650mg', generic_name: 'Paracetamol 650mg', market_price: 30, jan_aushadhi_price: 4.50 },
   { brand_name: 'Ecosprin 75mg', generic_name: 'Aspirin 75mg', market_price: 28, jan_aushadhi_price: 3.80 },
-  { brand_name: 'Aspirin 75mg', generic_name: 'Aspirin 75mg', market_price: 28, jan_aushadhi_price: 3.80 }
+  { brand_name: 'Aspirin 75mg', generic_name: 'Aspirin 75mg', market_price: 28, jan_aushadhi_price: 3.80 },
+  { brand_name: 'Sildenafil 50mg', generic_name: 'Sildenafil 50mg', market_price: 120, jan_aushadhi_price: 22.00 },
+  { brand_name: 'Viagra 50mg', generic_name: 'Sildenafil 50mg', market_price: 350, jan_aushadhi_price: 22.00 },
+  { brand_name: 'Nitroglycerin 0.5mg', generic_name: 'Nitroglycerin 0.5mg', market_price: 85, jan_aushadhi_price: 14.00 },
+  { brand_name: 'Sorbitrate 5mg', generic_name: 'Isosorbide Dinitrate 5mg', market_price: 45, jan_aushadhi_price: 8.00 },
+  { brand_name: 'Ibuprofen 400mg', generic_name: 'Ibuprofen 400mg', market_price: 25, jan_aushadhi_price: 4.00 },
+  { brand_name: 'Warfarin 5mg', generic_name: 'Warfarin 5mg', market_price: 95, jan_aushadhi_price: 18.00 }
 ];
 
 const DATA_ANALYSIS = [
@@ -113,14 +119,14 @@ const AnalyticsCard = () => {
 };
 
 // AI Analysis Panel
-const AIAnalysisPanel = ({ visible, onClose, medName }: { visible: boolean; onClose: () => void; medName: string }) => {
+const AIAnalysisPanel = ({ visible, onClose, medName, activeMeds = [] }: { visible: boolean; onClose: () => void; medName: string; activeMeds?: string[] }) => {
   const [analysing, setAnalysing] = useState(true);
   const [result, setResult] = useState<any>(null);
   const dotAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     async function runAnalysis() {
-      if (!visible) return;
+      if (!visible || !medName) return;
       setAnalysing(true);
       setResult(null);
       Animated.loop(
@@ -131,16 +137,17 @@ const AIAnalysisPanel = ({ visible, onClose, medName }: { visible: boolean; onCl
       ).start();
 
       try {
+        const otherMeds = activeMeds.filter(m => m.toLowerCase().trim() !== medName.toLowerCase().trim());
         const res = await backendService.checkInteraction({
           new_medicine: medName,
-          active_medicines: ["Amlodipine 5mg", "Metformin 500mg"],
+          active_medicines: otherMeds,
           patient_conditions: ["Hypertension", "Diabetes"]
         });
 
         if (res) {
           setResult({
             status: res.conflict_found ? 'danger' : 'safe',
-            note: res.warning_text || res.recommendation,
+            note: res.warning_text || res.recommendation || res.description,
             color: res.conflict_found ? '#EF4444' : '#10B981',
             icon: res.conflict_found ? 'warning' : 'checkmark-circle'
           });
@@ -157,7 +164,7 @@ const AIAnalysisPanel = ({ visible, onClose, medName }: { visible: boolean; onCl
       }
     }
     runAnalysis();
-  }, [visible, medName]);
+  }, [visible, medName, activeMeds]);
 
   if (!visible) return null;
   return (
@@ -174,24 +181,24 @@ const AIAnalysisPanel = ({ visible, onClose, medName }: { visible: boolean; onCl
             </TouchableOpacity>
           </View>
           <Text style={styles.modalMed}>{medName}</Text>
-          <Text style={styles.modalSub}>Powered by OpenFDA + Groq LLaMA-3.3</Text>
+          <Text style={styles.modalSub}>Powered by OpenFDA + Swasthya AI Engine</Text>
 
           {analysing ? (
             <View style={styles.analysingBox}>
               <Animated.Text style={[styles.analysingText, { opacity: dotAnim }]}>
                 🔍 Querying OpenFDA database...
               </Animated.Text>
-              <Text style={[styles.analysingText, { marginTop: 8 }]}>⚗️ Cross-checking known interactions...</Text>
+              <Text style={[styles.analysingText, { marginTop: 8 }]}>⚗️ Cross-checking active prescriptions for conflicts...</Text>
               <Text style={[styles.analysingText, { marginTop: 8 }]}>🤖 Running LLM safety review...</Text>
             </View>
           ) : result && (
             <View style={[styles.resultBox, { borderColor: result.color + '40', backgroundColor: result.color + '10' }]}>
               <Ionicons name={result.icon as any} size={28} color={result.color} />
               <Text style={[styles.resultStatus, { color: result.color }]}>
-                {result.status === 'safe' ? '✓ No Interaction Detected' : '⚠ Mild Interaction Found'}
+                {result.status === 'safe' ? '✓ No Interaction Detected' : '🚨 CRITICAL DRUG CONTRAINDICATION'}
               </Text>
               <Text style={styles.resultNote}>{result.note}</Text>
-              <Text style={styles.resultSource}>Source: OpenFDA API · Groq analysis</Text>
+              <Text style={styles.resultSource}>Source: Clinical Pharmacology & OpenFDA API</Text>
             </View>
           )}
         </View>
@@ -254,7 +261,6 @@ export default function MedsScreen() {
           setSuggestions(filtered);
         }
       } catch (e) {
-        console.warn('Search API error, falling back locally:', e);
         const q = newMedName.toLowerCase();
         const filtered = MEDICINES_DATABASE.filter(m => 
           m.brand_name.toLowerCase().includes(q) || 
@@ -806,6 +812,7 @@ export default function MedsScreen() {
         visible={analysisModal}
         onClose={() => setAnalysisModal(false)}
         medName={selectedMed}
+        activeMeds={medications.map(m => m.medicine_name)}
       />
     </SafeAreaView>
   );

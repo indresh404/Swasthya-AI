@@ -15,7 +15,6 @@ import {
   ActivityIndicator,
   Animated,
   Dimensions,
-  UIManager,
   LayoutAnimation,
   ScrollView,
   Keyboard,
@@ -32,10 +31,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { AgentLog } from '@/components/chatbot/AgentLog';
 import { Camera } from 'expo-camera';
 
-// Enable LayoutAnimation for Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 interface Message {
   id: string;
@@ -260,8 +255,7 @@ export default function ChatScreen() {
       id: '1',
       text: 'Hello! I am your Swasthya AI Assistant. How can I help you today?',
       isUser: false,
-      timestamp: new Date(),
-    },
+      timestamp: new Date()},
   ]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -299,13 +293,11 @@ export default function ChatScreen() {
           Animated.timing(voicePulseAnim, {
             toValue: 1.15,
             duration: 600,
-            useNativeDriver: true,
-          }),
+            useNativeDriver: true}),
           Animated.timing(voicePulseAnim, {
             toValue: 1.0,
             duration: 600,
-            useNativeDriver: true,
-          }),
+            useNativeDriver: true}),
         ])
       );
       animation.start();
@@ -748,9 +740,7 @@ export default function ChatScreen() {
           patient_id: user?.id || 'patient-123',
           session_id: sessionId,
           message: spokenText,
-          patient_context: context,
-        }),
-      });
+          patient_context: context})});
       if (!response.ok) throw new Error("Backend connection issue");
       const data = await response.json();
       const reply = data.bot_reply || getMultilingualFallback(spokenText, voiceLang);
@@ -806,16 +796,14 @@ export default function ChatScreen() {
     Animated.timing(slideAnim, {
       toValue: showHistory ? 1 : 0,
       duration: 350,
-      useNativeDriver: true,
-    }).start();
+      useNativeDriver: true}).start();
   }, [showHistory]);
 
   const toggleDayExpand = (id: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedDays(prev => ({
       ...prev,
-      [id]: !prev[id],
-    }));
+      [id]: !prev[id]}));
   };
 
   useEffect(() => {
@@ -880,8 +868,7 @@ export default function ChatScreen() {
       id: Date.now().toString(),
       text: inputText,
       isUser: true,
-      timestamp: new Date(),
-    };
+      timestamp: new Date()};
     setMessages(prev => [...prev, userMessage]);
     const currentInput = inputText;
     setInputText('');
@@ -903,9 +890,7 @@ export default function ChatScreen() {
         patient_id: user?.id || 'patient-123',
         session_id: sessionId,
         message: currentInput,
-        patient_context: context,
-      }),
-    })
+        patient_context: context})})
       .then(res => {
         if (!res.ok) throw new Error("Backend connection issue");
         return res.json();
@@ -916,8 +901,7 @@ export default function ChatScreen() {
           id: (Date.now() + 1).toString(),
           text: data.bot_reply || getFallbackReply(currentInput),
           isUser: false,
-          timestamp: new Date(),
-        };
+          timestamp: new Date()};
         setMessages(prev => [...prev, aiResponse]);
       })
       .catch(() => {
@@ -926,8 +910,7 @@ export default function ChatScreen() {
           id: (Date.now() + 1).toString(),
           text: getFallbackReply(currentInput),
           isUser: false,
-          timestamp: new Date(),
-        };
+          timestamp: new Date()};
         setMessages(prev => [...prev, errorMsg]);
       })
       .finally(() => {
@@ -977,16 +960,14 @@ export default function ChatScreen() {
   const renderHistoryDrawer = () => {
     const translateX = slideAnim.interpolate({
       inputRange: [0, 1],
-      outputRange: [screenWidth, 0],
-    });
+      outputRange: [screenWidth, 0]});
 
     return (
       <Animated.View
         style={[
           styles.historyDrawer,
           {
-            transform: [{ translateX }],
-          },
+            transform: [{ translateX }]},
         ]}
       >
         <SafeAreaView style={styles.historySafeArea}>
@@ -1148,8 +1129,7 @@ export default function ChatScreen() {
                   styles.blobCircleOuter,
                   {
                     transform: [{ scale: blobScale3 }],
-                    opacity: blobOpacity3,
-                  },
+                    opacity: blobOpacity3},
                 ]}
               />
               <Animated.View
@@ -1158,8 +1138,7 @@ export default function ChatScreen() {
                   styles.blobCircleMiddle,
                   {
                     transform: [{ scale: blobScale2 }],
-                    opacity: blobOpacity2,
-                  },
+                    opacity: blobOpacity2},
                 ]}
               />
               <Animated.View
@@ -1168,8 +1147,7 @@ export default function ChatScreen() {
                   styles.blobCircleInner,
                   {
                     transform: [{ scale: blobScale1 }],
-                    opacity: blobOpacity1,
-                  },
+                    opacity: blobOpacity1},
                 ]}
               />
               <TouchableOpacity
@@ -1416,8 +1394,7 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#171717',
-  },
+    backgroundColor: '#171717'},
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1427,15 +1404,13 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     backgroundColor: '#171717',
     borderBottomWidth: 1,
-    borderBottomColor: '#2D2D2D',
-  },
+    borderBottomColor: '#2D2D2D'},
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
+    justifyContent: 'center'},
   headerIcon: {
     width: 40,
     height: 40,
@@ -1443,14 +1418,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#2A2A2A',
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 8,
-  },
+    marginHorizontal: 8},
   headerTitle: {
     flex: 1,
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
-  },
+    color: '#FFFFFF'},
   historyButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1458,28 +1431,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 20,
-    gap: 5,
-  },
+    gap: 5},
   historyButtonText: {
     color: '#FFFFFF',
     fontSize: 13,
-    fontWeight: '700',
-  },
+    fontWeight: '700'},
   messagesList: {
     padding: 16,
-    paddingBottom: 20,
-  },
+    paddingBottom: 20},
   messageContainer: {
     flexDirection: 'row',
     marginBottom: 16,
-    alignItems: 'flex-end',
-  },
+    alignItems: 'flex-end'},
   userMessage: {
-    justifyContent: 'flex-end',
-  },
+    justifyContent: 'flex-end'},
   aiMessage: {
-    justifyContent: 'flex-start',
-  },
+    justifyContent: 'flex-start'},
   aiAvatar: {
     width: 32,
     height: 32,
@@ -1487,8 +1454,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2A2A2A',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 8,
-  },
+    marginRight: 8},
   userAvatar: {
     width: 32,
     height: 32,
@@ -1496,54 +1462,43 @@ const styles = StyleSheet.create({
     backgroundColor: '#0474FC',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 8,
-  },
+    marginLeft: 8},
   userAvatarText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFFFFF',
-  },
+    color: '#FFFFFF'},
   messageBubble: {
     maxWidth: '75%',
     padding: 12,
-    borderRadius: 20,
-  },
+    borderRadius: 20},
   userBubble: {
     backgroundColor: '#0474FC',
-    borderBottomRightRadius: 4,
-  },
+    borderBottomRightRadius: 4},
   aiBubble: {
     backgroundColor: '#212121',
-    borderBottomLeftRadius: 4,
-  },
+    borderBottomLeftRadius: 4},
   messageText: {
     fontSize: 15,
-    lineHeight: 20,
-  },
+    lineHeight: 20},
   userText: {
-    color: '#FFFFFF',
-  },
+    color: '#FFFFFF'},
   aiText: {
-    color: '#ECECF1',
-  },
+    color: '#ECECF1'},
   timestamp: {
     fontSize: 10,
     color: '#9CA3AF',
     marginTop: 4,
-    alignSelf: 'flex-end',
-  },
+    alignSelf: 'flex-end'},
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
     gap: 8,
-    backgroundColor: '#171717',
-  },
+    backgroundColor: '#171717'},
   loadingText: {
     fontSize: 12,
-    color: '#9CA3AF',
-  },
+    color: '#9CA3AF'},
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -1552,8 +1507,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#171717',
     borderTopWidth: 1,
     borderTopColor: '#2D2D2D',
-    gap: 12,
-  },
+    gap: 12},
   input: {
     flex: 1,
     backgroundColor: '#212121',
@@ -1564,19 +1518,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#2D2D2D',
-  },
+    borderColor: '#2D2D2D'},
   sendButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
     backgroundColor: '#0474FC',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
+    justifyContent: 'center'},
   sendButtonDisabled: {
-    opacity: 0.5,
-  },
+    opacity: 0.5},
   voiceButton: {
     width: 44,
     height: 44,
@@ -1585,27 +1536,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#2D2D2D',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
+    justifyContent: 'center'},
   voiceButtonActive: {
     backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    borderColor: '#EF4444',
-  },
+    borderColor: '#EF4444'},
 
   // Header Actions
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-  },
+    gap: 8},
   headerActionButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
     backgroundColor: '#0474FC',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
+    justifyContent: 'center'},
 
   // Voice mode overlay styles
   voiceOverlay: {
@@ -1614,39 +1561,32 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    zIndex: 2000,
-  },
+    zIndex: 2000},
   voiceSafeArea: {
-    flex: 1,
-  },
+    flex: 1},
   voiceOverlayHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'ios' ? 12 : 52,
-    paddingBottom: 16,
-  },
+    paddingBottom: 16},
   voiceCloseButton: {
     alignItems: 'center',
-    justifyContent: 'center',
-  },
+    justifyContent: 'center'},
   voiceHeaderTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#9CA3AF',
     textTransform: 'uppercase',
-    letterSpacing: 1.5,
-  },
+    letterSpacing: 1.5},
   langSelectorContainer: {
     height: 48,
-    marginVertical: 4,
-  },
+    marginVertical: 4},
   langSelectorScroll: {
     paddingHorizontal: 20,
     alignItems: 'center',
-    gap: 8,
-  },
+    gap: 8},
   langChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1655,49 +1595,40 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
+    borderColor: 'rgba(255,255,255,0.1)'},
   langChipSelected: {
     backgroundColor: '#06B6D4',
-    borderColor: '#22D3EE',
-  },
+    borderColor: '#22D3EE'},
   langChipText: {
     color: '#8AA0BC',
     fontSize: 12,
-    fontWeight: '600',
-  },
+    fontWeight: '600'},
   langChipTextSelected: {
     color: '#0F172A',
-    fontWeight: '700',
-  },
+    fontWeight: '700'},
   suggestionsContainer: {
     paddingHorizontal: 20,
-    marginVertical: 12,
-  },
+    marginVertical: 12},
   suggestionsTitle: {
     color: 'rgba(255,255,255,0.4)',
     fontSize: 11,
     fontWeight: '600',
     marginBottom: 8,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
+    letterSpacing: 0.5},
   suggestionsScroll: {
     gap: 8,
-    paddingRight: 20,
-  },
+    paddingRight: 20},
   suggestionChip: {
     backgroundColor: 'rgba(255,255,255,0.05)',
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
+    borderColor: 'rgba(255,255,255,0.08)'},
   suggestionText: {
     color: '#FFFFFF',
-    fontSize: 12,
-  },
+    fontSize: 12},
   voiceInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1708,61 +1639,52 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
+    borderColor: 'rgba(255,255,255,0.1)'},
   voiceTextInput: {
     flex: 1,
     color: '#FFFFFF',
     fontSize: 14,
     height: 40,
-    paddingRight: 8,
-  },
+    paddingRight: 8},
   voiceSendButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
     backgroundColor: '#0474FC',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
+    justifyContent: 'center'},
   voiceVisualizerContainer: {
     flex: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 40,
-  },
+    paddingTop: 40},
   blobAnchor: {
     width: 250,
     height: 250,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
-  },
+    position: 'relative'},
   blobCircle: {
     position: 'absolute',
-    borderRadius: 999,
-  },
+    borderRadius: 999},
   blobCircleOuter: {
     width: 220,
     height: 220,
     backgroundColor: 'rgba(147, 51, 234, 0.06)',
     borderWidth: 1,
-    borderColor: 'rgba(147, 51, 234, 0.12)',
-  },
+    borderColor: 'rgba(147, 51, 234, 0.12)'},
   blobCircleMiddle: {
     width: 170,
     height: 170,
     backgroundColor: 'rgba(59, 130, 246, 0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.18)',
-  },
+    borderColor: 'rgba(59, 130, 246, 0.18)'},
   blobCircleInner: {
     width: 120,
     height: 120,
     backgroundColor: 'rgba(99, 102, 241, 0.18)',
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.25)',
-  },
+    borderColor: 'rgba(99, 102, 241, 0.25)'},
   blobCoreWrapper: {
     width: 80,
     height: 80,
@@ -1772,28 +1694,24 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 12,
     elevation: 10,
-    zIndex: 20,
-  },
+    zIndex: 20},
   blobCore: {
     width: 80,
     height: 80,
     borderRadius: 40,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
+    justifyContent: 'center'},
   voiceStatusText: {
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '700',
     marginTop: 30,
-    letterSpacing: 0.5,
-  },
+    letterSpacing: 0.5},
   voiceSubtitlesContainer: {
     flex: 1,
     paddingHorizontal: 24,
     justifyContent: 'center',
-    marginTop: 20,
-  },
+    marginTop: 20},
   subtitlesScroll: {
     flex: 1,
     backgroundColor: 'rgba(255,255,255,0.04)',
@@ -1804,19 +1722,16 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 4,
-  },
+    elevation: 4},
   subtitlesContent: {
     padding: 16,
-    alignItems: 'center',
-  },
+    alignItems: 'center'},
   subtitlesText: {
     color: '#ECECF1',
     fontSize: 16,
     lineHeight: 24,
     textAlign: 'center',
-    fontWeight: '500',
-  },
+    fontWeight: '500'},
 
   // History Drawer styles
   historyDrawer: {
@@ -1826,11 +1741,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: '#121212',
-    zIndex: 1000,
-  },
+    zIndex: 1000},
   historySafeArea: {
-    flex: 1,
-  },
+    flex: 1},
   historyHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1839,29 +1752,24 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 32 : 42,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2D2D2D',
-  },
+    borderBottomColor: '#2D2D2D'},
   historyCloseButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
+    justifyContent: 'center'},
   historyTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFFFFF',
-  },
+    color: '#FFFFFF'},
   historyContent: {
     padding: 16,
-    paddingRight: 8,
-  },
+    paddingRight: 8},
   timelineRow: {
     flexDirection: 'row',
     marginBottom: 20,
-    minHeight: 100,
-  },
+    minHeight: 100},
   historyCard: {
     flex: 1,
     backgroundColor: '#1E1E1E',
@@ -1873,94 +1781,76 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    elevation: 5,
-  },
+    elevation: 5},
   historyCardExpanded: {
-    borderColor: '#0474FC',
-  },
+    borderColor: '#0474FC'},
   cardHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   cardDateText: {
     color: '#0474FC',
     fontSize: 14,
-    fontWeight: '700',
-  },
+    fontWeight: '700'},
   cardHeaderRight: {
     flexDirection: 'row',
-    alignItems: 'center',
-  },
+    alignItems: 'center'},
   cardSummaryText: {
     color: '#ECECF1',
     fontSize: 14,
-    lineHeight: 20,
-  },
+    lineHeight: 20},
   expandedSection: {
-    marginTop: 12,
-  },
+    marginTop: 12},
   divider: {
     height: 1,
     backgroundColor: '#2D2D2D',
-    marginVertical: 12,
-  },
+    marginVertical: 12},
   agentSectionTitle: {
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '700',
     marginBottom: 10,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
+    letterSpacing: 0.5},
   agentThoughtRow: {
     backgroundColor: '#171717',
     borderRadius: 10,
     padding: 12,
     marginBottom: 10,
     borderLeftWidth: 3,
-    borderLeftColor: '#0474FC',
-  },
+    borderLeftColor: '#0474FC'},
   agentHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: 4,
-    marginBottom: 6,
-  },
+    marginBottom: 6},
   agentName: {
     color: '#FFFFFF',
     fontSize: 13,
-    fontWeight: '600',
-  },
+    fontWeight: '600'},
   agentRole: {
     color: '#9CA3AF',
-    fontSize: 11,
-  },
+    fontSize: 11},
   agentThoughtText: {
     color: '#ECECF1',
     fontSize: 12.5,
-    lineHeight: 18,
-  },
+    lineHeight: 18},
   timelineRightCol: {
     width: 60,
     alignItems: 'center',
-    position: 'relative',
-  },
+    position: 'relative'},
   timelineLine: {
     position: 'absolute',
     top: 0,
     bottom: 0,
     width: 2,
-    backgroundColor: '#2D2D2D',
-  },
+    backgroundColor: '#2D2D2D'},
   timelineLineFirst: {
-    top: 24,
-  },
+    top: 24},
   timelineLineLast: {
-    bottom: '60%',
-  },
+    bottom: '60%'},
   timelineNode: {
     width: 24,
     height: 24,
@@ -1971,27 +1861,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 12,
-    zIndex: 10,
-  },
+    zIndex: 10},
   timelineNodeInner: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#0474FC',
-  },
+    backgroundColor: '#0474FC'},
   timelineDateBadge: {
     color: '#9CA3AF',
     fontSize: 11,
     fontWeight: '600',
     marginTop: 6,
-    textAlign: 'center',
-  },
+    textAlign: 'center'},
   historyFooter: {
     padding: 16,
     borderTopWidth: 1,
     borderTopColor: '#2D2D2D',
-    backgroundColor: '#121212',
-  },
+    backgroundColor: '#121212'},
   processButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1999,11 +1885,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#0474FC',
     paddingVertical: 14,
     borderRadius: 14,
-    gap: 8,
-  },
+    gap: 8},
   processButtonText: {
     color: '#FFFFFF',
     fontSize: 15,
-    fontWeight: '700',
-  },
-});
+    fontWeight: '700'}});

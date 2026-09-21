@@ -13,7 +13,6 @@ import {
   Dimensions,
   FlatList,
   LayoutAnimation,
-  UIManager,
   ActivityIndicator,
 } from 'react-native';
 import Animated, {
@@ -23,15 +22,10 @@ import Animated, {
   withSpring,
   withSequence,
   Easing,
-  useAnimatedProps,
-} from 'react-native-reanimated';
+  useAnimatedProps} from 'react-native-reanimated';
 import { Svg, Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 import { useCheckin } from '../../context/CheckinContext';
 
-// Enable LayoutAnimation for Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -50,10 +44,8 @@ const COLORS = {
   text: {
     primary: '#0F172A',
     secondary: '#475569',
-    light: '#94A3B8',
-  },
-  border: '#E2E8F0',
-};
+    light: '#94A3B8'},
+  border: '#E2E8F0'};
 
 // --- ANIMATED PROGRESS RING ---
 const AnimatedProgressRing = ({ progress, size = 100, strokeWidth = 10 }) => {
@@ -66,13 +58,11 @@ const AnimatedProgressRing = ({ progress, size = 100, strokeWidth = 10 }) => {
   useEffect(() => {
     progressValue.value = withTiming(progress, {
       duration: 600,
-      easing: Easing.bezier(0.25, 1, 0.5, 1),
-    });
+      easing: Easing.bezier(0.25, 1, 0.5, 1)});
   }, [progress]);
 
   const animatedStrokeDashoffset = useAnimatedProps(() => ({
-    strokeDashoffset: circumference * (1 - progressValue.value),
-  }));
+    strokeDashoffset: circumference * (1 - progressValue.value)}));
 
   return (
     <View style={styles.ringWrapper}>
@@ -141,8 +131,7 @@ const QuestionCard = React.memo(({
   selectedAnswer, 
   onRemove,
   index,
-  isActive,
-}) => {
+  isActive}) => {
   const opacity = useSharedValue(isActive ? 0 : 0);
   const translateY = useSharedValue(isActive ? 30 : 0);
   const scale = useSharedValue(isActive ? 0.95 : 1);
@@ -176,8 +165,7 @@ const QuestionCard = React.memo(({
     transform: [
       { scale: scale.value },
       { translateY: translateY.value },
-    ],
-  }));
+    ]}));
 
   const isAI = question?.asked_by === 'ai';
 
@@ -223,8 +211,7 @@ const EmptyState = () => {
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
-    transform: [{ scale: scale.value }],
-  }));
+    transform: [{ scale: scale.value }]}));
 
   return (
     <Animated.View style={[styles.emptyState, animatedStyle]}>
@@ -252,8 +239,7 @@ export default function CheckinScreen() {
     isLoading,
     handleAnswer,
     handleRemoveQuestion,
-    getProgress,
-  } = useCheckin();
+    getProgress} = useCheckin();
 
   const flatListRef = useRef<FlatList>(null);
   const { progress, completed, total } = getProgress();
@@ -385,8 +371,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
-  },
+    marginBottom: 20},
   dateText: { 
     fontSize: 12, 
     fontWeight: '600', 
@@ -408,8 +393,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 14,
-    gap: 4,
-  },
+    gap: 4},
   streakCount: { fontSize: 14, fontWeight: '700', color: COLORS.warning },
 
   progressCard: {
@@ -423,8 +407,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 4,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.02)',
-  },
+    borderColor: 'rgba(0,0,0,0.02)'},
   progressRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   ringWrapper: { alignItems: 'center', justifyContent: 'center' },
   ringCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
@@ -432,8 +415,7 @@ const styles = StyleSheet.create({
     fontSize: 20, 
     fontWeight: '800', 
     color: COLORS.text.primary, 
-    textAlign: 'center',
-  },
+    textAlign: 'center'},
   progressDetails: { flex: 1 },
   progressTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text.primary, marginBottom: 2 },
   progressSubtitle: { fontSize: 13, color: COLORS.text.secondary, marginBottom: 8 },
@@ -461,21 +443,17 @@ const styles = StyleSheet.create({
   statusTextPending: { fontSize: 11, fontWeight: '600', color: COLORS.warning },
 
   listContent: {
-    paddingBottom: 150,
-  },
+    paddingBottom: 150},
   listHeader: {
-    marginBottom: 16,
-  },
+    marginBottom: 16},
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: COLORS.text.primary,
-  },
+    color: COLORS.text.primary},
   sectionSubtitle: {
     fontSize: 13,
     color: COLORS.text.secondary,
-    marginTop: 2,
-  },
+    marginTop: 2},
 
   questionCard: {
     backgroundColor: COLORS.card,
@@ -488,8 +466,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.02)',
-  },
+    borderColor: 'rgba(0,0,0,0.02)'},
   activeCard: {
     borderColor: COLORS.primary,
     borderWidth: 2,
@@ -497,14 +474,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
-    elevation: 6,
-  },
+    elevation: 6},
   questionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
-  },
+    marginBottom: 12},
   tagBadge: { 
     flexDirection: 'row', 
     alignItems: 'center', 
@@ -517,8 +492,7 @@ const styles = StyleSheet.create({
   questionNumber: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.text.light,
-  },
+    color: COLORS.text.light},
   questionText: { 
     fontSize: 16, 
     fontWeight: '600', 
@@ -529,22 +503,18 @@ const styles = StyleSheet.create({
   optionsWrapper: { 
     flexDirection: 'row', 
     flexWrap: 'wrap', 
-    gap: 8,
-  },
+    gap: 8},
   optionChip: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    borderWidth: 1.5,
-  },
+    borderWidth: 1.5},
   optionChipUnselected: {
     backgroundColor: '#F8FAFC',
-    borderColor: COLORS.border,
-  },
+    borderColor: COLORS.border},
   optionChipSelected: {
     backgroundColor: COLORS.primaryLight,
-    borderColor: COLORS.primary,
-  },
+    borderColor: COLORS.primary},
   optionChipText: { fontSize: 13, fontWeight: '600', color: COLORS.text.secondary },
   optionChipTextSelected: { color: COLORS.primaryDark },
 
@@ -555,8 +525,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderRadius: 24,
     marginTop: 20,
-    minHeight: 300,
-  },
+    minHeight: 300},
   emptyStateIcon: {
     width: 80,
     height: 80,
@@ -564,19 +533,16 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.successLight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
-  },
+    marginBottom: 16},
   emptyStateTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: COLORS.text.primary,
-    marginBottom: 8,
-  },
+    marginBottom: 8},
   emptyStateSubtitle: {
     fontSize: 14,
     color: COLORS.text.secondary,
-    textAlign: 'center',
-  },
+    textAlign: 'center'},
 
   loadingContainer: { gap: 12, marginTop: 12 },
   skeletonCard: {
@@ -585,6 +551,4 @@ const styles = StyleSheet.create({
     padding: 20,
     height: 160,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
-  },
-});
+    borderColor: '#F1F5F9'}});

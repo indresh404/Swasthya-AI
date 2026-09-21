@@ -2,16 +2,17 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Medicine } from '../types/medicine';
+import { fallbackMedicines } from '../data/fallbackMedicines';
 import '../styles/medicine.css';
 
 const Medicine: React.FC = () => {
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [filteredMedicines, setFilteredMedicines] = useState<Medicine[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(50);
+  const [itemsPerPage] = useState(25);
   const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null);
 
   useEffect(() => {
@@ -21,40 +22,35 @@ const Medicine: React.FC = () => {
   const loadMedicines = async () => {
     try {
       setLoading(true);
-      setError(null);
+      setIsOfflineMode(false);
       
-      console.log('🔍 Fetching medicines...');
+      console.log('🔍 Fetching medicines from Supabase...');
       
-      // Simple query - just get all data
       const { data, error } = await supabase
         .from('Medicines')
         .select('*');
 
-      if (error) {
-        console.error('Error:', error);
-        setError(error.message);
-        throw error;
-      }
-
-      if (!data || data.length === 0) {
-        console.warn('No data found');
-        setMedicines([]);
-        setFilteredMedicines([]);
-        setLoading(false);
+      if (error || !data || data.length === 0) {
+        console.warn('⚠️ Supabase fetch issue, using fallback directory:', error);
+        useFallbackData();
         return;
       }
 
-      console.log(`✅ Loaded ${data.length} medicines`);
+      console.log(`✅ Loaded ${data.length} medicines from Supabase`);
       setMedicines(data);
       setFilteredMedicines(data);
     } catch (err: any) {
-      console.error('Error:', err);
-      if (!error) {
-        setError(err.message || 'Failed to load medicines');
-      }
+      console.warn('⚠️ Failed to fetch medicines from network. Loading fallback directory:', err);
+      useFallbackData();
     } finally {
       setLoading(false);
     }
+  };
+
+  const useFallbackData = () => {
+    setIsOfflineMode(true);
+    setMedicines(fallbackMedicines);
+    setFilteredMedicines(fallbackMedicines);
   };
 
   // Filter medicines based on search
@@ -80,7 +76,7 @@ const Medicine: React.FC = () => {
 
   const formatPrice = (price: string) => {
     if (!price) return 'N/A';
-    return `${price}`;
+    return price.startsWith('₹') ? price : `₹${price}`;
   };
 
   // Pagination
@@ -148,24 +144,22 @@ const Medicine: React.FC = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="medicine-error">
-        <p>❌ {error}</p>
-        <button onClick={loadMedicines}>🔄 Retry</button>
-      </div>
-    );
-  }
-
   return (
     <div className="medicine-page">
       <div className="medicine-header">
         <div>
-          <h1>💊 Medicine Directory</h1>
-          <p className="medicine-count">Total: {medicines.length} medicines</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <h1>💊 Medicine Directory</h1>
+            {isOfflineMode && (
+              <span className="offline-pill-badge">
+                ⚡ Offline Presets Loaded
+              </span>
+            )}
+          </div>
+          <p className="medicine-count">Total: {medicines.length} medicines registered</p>
         </div>
         <button className="refresh-btn" onClick={loadMedicines}>
-          🔄 Refresh
+          🔄 Refresh Sync
         </button>
       </div>
 
@@ -221,7 +215,7 @@ const Medicine: React.FC = () => {
                     className="view-btn"
                     onClick={() => setSelectedMedicine(medicine)}
                   >
-                    View
+                    View Details
                   </button>
                 </td>
               </tr>
@@ -231,7 +225,7 @@ const Medicine: React.FC = () => {
 
         {filteredMedicines.length === 0 && (
           <div className="no-results">
-            <p>No medicines found matching your search.</p>
+            <p>No medicines found matching your search query.</p>
             <button onClick={() => setSearchQuery('')}>Clear Search</button>
           </div>
         )}
