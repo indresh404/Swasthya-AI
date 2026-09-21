@@ -27,6 +27,8 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 MOCK_MEDICINES_DATABASE = [
     {"product_name": "Glycomet 500mg", "salt_composition": "Metformin 500mg", "product_price": "₹ 52.00"},
     {"product_name": "Glycomet 1g", "salt_composition": "Metformin 1000mg", "product_price": "₹ 82.00"},
+    {"product_name": "Dolo 650", "salt_composition": "Paracetamol 650mg", "product_price": "₹ 32.00"},
+    {"product_name": "Dolo 650mg", "salt_composition": "Paracetamol 650mg", "product_price": "₹ 32.00"},
     {"product_name": "Amlokind 5mg", "salt_composition": "Amlodipine 5mg", "product_price": "₹ 48.00"},
     {"product_name": "Amlopin 10mg", "salt_composition": "Amlodipine 10mg", "product_price": "₹ 78.00"},
     {"product_name": "Calcirol 60k", "salt_composition": "Vitamin D3", "product_price": "₹ 65.00"},

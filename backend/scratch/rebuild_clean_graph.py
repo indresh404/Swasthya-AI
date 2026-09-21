@@ -181,13 +181,13 @@ MATCH (u:User {id: 'indresh'}), (p123:User {id: 'patient-123'})
 MATCH (c1:Condition {name: 'Type 2 Diabetes Mellitus'}), (c2:Condition {name: 'Primary Hypertension'}), (c3:Condition {name: 'Vitamin D Deficiency'}), (c4:Condition {name: 'Migraine / Tension Headache'}), (c5:Condition {name: 'Dyslipidemia (Mild Lipids)'})
 
 CREATE (m1:Medication {name: 'Glycomet 500mg', generic_name: 'Metformin HCl 500mg', dosage: '500mg', frequency: 'Twice daily after meals', brand_price: 52.00, timing: '08:00 AM, 08:30 PM'})
-CREATE (m2:Medication {name: 'Amlokind 5mg', generic_name: 'Amlodipine Besylate 5mg', dosage: '5mg', frequency: 'Once daily bedtime', brand_price: 48.00, timing: '09:30 PM'})
+CREATE (m2:Medication {name: 'Dolo 650', generic_name: 'Paracetamol 650mg', dosage: '650mg', frequency: 'As needed for fever/headache', brand_price: 32.00, timing: '02:00 PM'})
 CREATE (m3:Medication {name: 'Calcirol 60k', generic_name: 'Cholecalciferol Vitamin D3', dosage: '60000 IU', frequency: 'Once weekly Sunday', brand_price: 65.00, timing: '01:00 PM'})
 CREATE (m4:Medication {name: 'Crocin 650mg', generic_name: 'Paracetamol 650mg', dosage: '650mg', frequency: 'SOS (As needed for headache)', brand_price: 30.00, timing: 'SOS'})
 CREATE (m5:Medication {name: 'Pan-D', generic_name: 'Pantoprazole 40mg + Domperidone 30mg', dosage: '40mg/30mg', frequency: 'Morning before food (SOS)', brand_price: 95.00, timing: 'SOS'})
 
 CREATE (u)-[:TAKES_MEDICATION {status: 'active', adherence_rate: '94%'}]->(m1)
-CREATE (u)-[:TAKES_MEDICATION {status: 'active', adherence_rate: '89%'}]->(m2)
+CREATE (u)-[:TAKES_MEDICATION {status: 'active', adherence_rate: '91%'}]->(m2)
 CREATE (u)-[:TAKES_MEDICATION {status: 'active', adherence_rate: '96%'}]->(m3)
 CREATE (u)-[:TAKES_MEDICATION {status: 'as_needed'}]->(m4)
 CREATE (u)-[:TAKES_MEDICATION {status: 'as_needed'}]->(m5)
@@ -196,26 +196,26 @@ CREATE (p123)-[:TAKES_MEDICATION {status: 'active'}]->(m1)
 CREATE (p123)-[:TAKES_MEDICATION {status: 'active'}]->(m2)
 
 CREATE (m1)-[:TREATS]->(c1)
-CREATE (m2)-[:TREATS]->(c2)
+CREATE (m2)-[:TREATS]->(c4)
 CREATE (m3)-[:TREATS]->(c3)
 CREATE (m4)-[:TREATS]->(c4);
 
 // 8. Jan Aushadhi Bio-Equivalent Generics (PMBJP Government Scheme)
-MATCH (m1:Medication {name: 'Glycomet 500mg'}), (m2:Medication {name: 'Amlokind 5mg'}), (m3:Medication {name: 'Calcirol 60k'}), (m4:Medication {name: 'Crocin 650mg'}), (m5:Medication {name: 'Pan-D'})
+MATCH (m1:Medication {name: 'Glycomet 500mg'}), (m2:Medication {name: 'Dolo 650'}), (m3:Medication {name: 'Calcirol 60k'}), (m4:Medication {name: 'Crocin 650mg'}), (m5:Medication {name: 'Pan-D'})
 CREATE (ja1:JanAushadhiMedicine {name: 'Jan Aushadhi Metformin 500mg', generic_name: 'Metformin HCl 500mg', brand_equivalent: 'Glycomet 500mg', brand_price: 52.00, jan_aushadhi_price: 9.20, savings_pct: 82.3, code: 'PMBJP-0142'})
-CREATE (ja2:JanAushadhiMedicine {name: 'Jan Aushadhi Amlodipine 5mg', generic_name: 'Amlodipine Besylate 5mg', brand_equivalent: 'Amlokind 5mg', brand_price: 48.00, jan_aushadhi_price: 5.50, savings_pct: 88.5, code: 'PMBJP-0089'})
+CREATE (ja2:JanAushadhiMedicine {name: 'Jan Aushadhi Paracetamol 650mg (Dolo Equivalent)', generic_name: 'Paracetamol 650mg', brand_equivalent: 'Dolo 650', brand_price: 32.00, jan_aushadhi_price: 4.50, savings_pct: 85.9, code: 'PMBJP-0012'})
 CREATE (ja3:JanAushadhiMedicine {name: 'Jan Aushadhi Vitamin D3 60k', generic_name: 'Cholecalciferol 60k IU', brand_equivalent: 'Calcirol 60k', brand_price: 65.00, jan_aushadhi_price: 12.00, savings_pct: 81.5, code: 'PMBJP-0321'})
 CREATE (ja4:JanAushadhiMedicine {name: 'Jan Aushadhi Paracetamol 650mg', generic_name: 'Paracetamol 650mg', brand_equivalent: 'Crocin 650mg', brand_price: 30.00, jan_aushadhi_price: 4.50, savings_pct: 85.0, code: 'PMBJP-0012'})
 CREATE (ja5:JanAushadhiMedicine {name: 'Jan Aushadhi Pantoprazole 40mg', generic_name: 'Pantoprazole 40mg', brand_equivalent: 'Pan-D', brand_price: 95.00, jan_aushadhi_price: 14.00, savings_pct: 85.2, code: 'PMBJP-0205'})
 
 CREATE (m1)-[:JAN_AUSHADHI_EQUIVALENT {savings_pct: 82.3, monthly_savings_inr: 42.80}]->(ja1)
-CREATE (m2)-[:JAN_AUSHADHI_EQUIVALENT {savings_pct: 88.5, monthly_savings_inr: 42.50}]->(ja2)
+CREATE (m2)-[:JAN_AUSHADHI_EQUIVALENT {savings_pct: 85.9, monthly_savings_inr: 27.50}]->(ja2)
 CREATE (m3)-[:JAN_AUSHADHI_EQUIVALENT {savings_pct: 81.5, monthly_savings_inr: 53.00}]->(ja3)
 CREATE (m4)-[:JAN_AUSHADHI_EQUIVALENT {savings_pct: 85.0, monthly_savings_inr: 25.50}]->(ja4)
 CREATE (m5)-[:JAN_AUSHADHI_EQUIVALENT {savings_pct: 85.2, monthly_savings_inr: 81.00}]->(ja5);
 
 // 9. Jan Aushadhi Kendras (Pharmacy Stores)
-MATCH (ja1:JanAushadhiMedicine {name: 'Jan Aushadhi Metformin 500mg'}), (ja2:JanAushadhiMedicine {name: 'Jan Aushadhi Amlodipine 5mg'}), (ja3:JanAushadhiMedicine {name: 'Jan Aushadhi Vitamin D3 60k'}), (ja4:JanAushadhiMedicine {name: 'Jan Aushadhi Paracetamol 650mg'}), (ja5:JanAushadhiMedicine {name: 'Jan Aushadhi Pantoprazole 40mg'})
+MATCH (ja1:JanAushadhiMedicine {name: 'Jan Aushadhi Metformin 500mg'}), (ja2:JanAushadhiMedicine {name: 'Jan Aushadhi Paracetamol 650mg (Dolo Equivalent)'}), (ja3:JanAushadhiMedicine {name: 'Jan Aushadhi Vitamin D3 60k'}), (ja4:JanAushadhiMedicine {name: 'Jan Aushadhi Paracetamol 650mg'}), (ja5:JanAushadhiMedicine {name: 'Jan Aushadhi Pantoprazole 40mg'})
 CREATE (k1:JanAushadhiKendra {name: 'Jan Aushadhi Kendra Dadar (West)', area: 'Dadar West, Mumbai', address: 'Shop 4, Bethlehem Apts, Dadar West', distance_km: 1.2, phone: '022-24381020', lat: 19.0178, lon: 72.8478, hours: '08:00 AM - 10:00 PM'})
 CREATE (k2:JanAushadhiKendra {name: 'Jan Aushadhi Kendra Borivali (West)', area: 'Borivali West, Mumbai', address: 'S V Patel Road, Near Bhagwati Hospital', distance_km: 2.4, phone: '022-28901234', lat: 19.2299, lon: 72.8480, hours: '08:30 AM - 09:30 PM'})
 CREATE (k3:JanAushadhiKendra {name: 'Jan Aushadhi Kendra Andheri (East)', area: 'Andheri East, Mumbai', address: 'Shop 11, Mubarak Manzil, Marol', distance_km: 3.1, phone: '022-28504321', lat: 19.1155, lon: 72.8687, hours: '09:00 AM - 10:00 PM'})
@@ -441,7 +441,7 @@ for r in node_summary.records:
     lbl = r["label"]
     cnt = r["count"]
     total_nodes += cnt
-    print(f"• {lbl:<25}: {cnt:>2} nodes")
+    print(f"* {lbl:<25}: {cnt:>2} nodes")
 print(f"\nTOTAL DISTINCT NODES: {total_nodes}")
 
 rel_summary = driver.execute_query("MATCH ()-[r]->() RETURN type(r) as rel_type, count(r) as count ORDER BY count DESC")
@@ -450,7 +450,7 @@ for r in rel_summary.records:
     rt = r["rel_type"]
     cnt = r["count"]
     total_rels += cnt
-    print(f"→ {rt:<26}: {cnt:>2} edges")
+    print(f"-> {rt:<26}: {cnt:>2} edges")
 print(f"\nTOTAL ACTIVE RELATIONSHIPS: {total_rels}")
 
 isolated_check = driver.execute_query("MATCH (n) WHERE NOT (n)--() RETURN count(n) as isolated_count").records[0]["isolated_count"]

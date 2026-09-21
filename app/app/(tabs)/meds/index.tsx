@@ -24,8 +24,8 @@ const ADHERENCE_DATA = [true, true, false, true, true, true, false];
 const MEDICINES_DATABASE = [
   { brand_name: 'Glycomet 500mg', generic_name: 'Metformin 500mg', market_price: 52, jan_aushadhi_price: 9.20 },
   { brand_name: 'Metformin 500mg', generic_name: 'Metformin 500mg', market_price: 52, jan_aushadhi_price: 9.20 },
-  { brand_name: 'Amlokind 5mg', generic_name: 'Amlodipine 5mg', market_price: 48, jan_aushadhi_price: 5.50 },
-  { brand_name: 'Amlodipine 5mg', generic_name: 'Amlodipine 5mg', market_price: 48, jan_aushadhi_price: 5.50 },
+  { brand_name: 'Dolo 650', generic_name: 'Paracetamol 650mg', market_price: 32, jan_aushadhi_price: 4.50 },
+  { brand_name: 'Dolo 650mg', generic_name: 'Paracetamol 650mg', market_price: 32, jan_aushadhi_price: 4.50 },
   { brand_name: 'Calcirol 60k', generic_name: 'Vitamin D3', market_price: 65, jan_aushadhi_price: 12.00 },
   { brand_name: 'Vitamin D3', generic_name: 'Vitamin D3', market_price: 65, jan_aushadhi_price: 12.00 },
   { brand_name: 'Crocin 650mg', generic_name: 'Paracetamol 650mg', market_price: 30, jan_aushadhi_price: 4.50 },
@@ -42,7 +42,7 @@ const MEDICINES_DATABASE = [
 
 const DATA_ANALYSIS = [
   { medicine: 'Metformin 500mg', status: 'safe', note: 'No known interactions with your current medications.', color: '#10B981', icon: 'checkmark-circle' },
-  { medicine: 'Amlodipine 5mg', status: 'warning', note: 'Mild interaction possible with Aspirin — consult physician.', color: '#F59E0B', icon: 'warning' },
+  { medicine: 'Dolo 650', status: 'safe', note: 'Standard antipyretic/analgesic. No active contraindications.', color: '#10B981', icon: 'checkmark-circle' },
   { medicine: 'Vitamin D3', status: 'safe', note: 'OpenFDA: No adverse interactions detected.', color: '#10B981', icon: 'checkmark-circle' },
 ];
 
@@ -381,7 +381,7 @@ export default function MedsScreen() {
       } else {
         resolved = [
           { id: 'm1', medicine_name: 'Glycomet 500mg', next_dose: '08:00 AM' },
-          { id: 'm2', medicine_name: 'Amlodipine 5mg', next_dose: '09:00 PM' },
+          { id: 'm2', medicine_name: 'Dolo 650', next_dose: '02:00 PM' },
           { id: 'm3', medicine_name: 'Vitamin D3', next_dose: '01:00 PM' },
         ];
         await AsyncStorage.setItem(`@active_medications_${patientId}`, JSON.stringify(resolved));
@@ -392,7 +392,7 @@ export default function MedsScreen() {
       console.error(e);
       const fallback = [
         { id: 'm1', medicine_name: 'Glycomet 500mg', next_dose: '08:00 AM' },
-        { id: 'm2', medicine_name: 'Amlodipine 5mg', next_dose: '09:00 PM' },
+        { id: 'm2', medicine_name: 'Dolo 650', next_dose: '02:00 PM' },
         { id: 'm3', medicine_name: 'Vitamin D3', next_dose: '01:00 PM' },
       ];
       setMedications(fallback);
@@ -1122,7 +1122,7 @@ _Generated digitally via Swasthya AI Clinical Support Engine._`;
             />
             <Text style={{ fontSize: 12, color: '#4B5563', marginBottom: 6, fontWeight: '600' }}>Suggestions:</Text>
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-              {['Glycomet 500mg', 'Amlokind 5mg', 'Calcirol 60k'].map((med) => (
+              {['Glycomet 500mg', 'Dolo650 5mg', 'Calcirol 60k'].map((med) => (
                 <TouchableOpacity
                   key={med}
                   onPress={() => setNewMedName(med)}

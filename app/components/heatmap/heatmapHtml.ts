@@ -315,6 +315,111 @@ function startApp(THREE) {
     }, 300);
   }
 
+  function buildFallbackModel() {
+    const fallbackGroup = new THREE.Group();
+    const mat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color('#d9dee7'),
+      roughness: 0.72,
+      metalness: 0.08,
+      side: THREE.DoubleSide
+    });
+    
+    // Head
+    const headGeo = new THREE.SphereGeometry(0.18, 24, 24);
+    const head = new THREE.Mesh(headGeo, mat);
+    head.position.set(0, 1.62, 0);
+    fallbackGroup.add(head);
+
+    // Neck
+    const neckGeo = new THREE.CylinderGeometry(0.07, 0.08, 0.12, 16);
+    const neck = new THREE.Mesh(neckGeo, mat);
+    neck.position.set(0, 1.45, 0);
+    fallbackGroup.add(neck);
+
+    // Chest / Upper Torso
+    const chestGeo = new THREE.BoxGeometry(0.48, 0.36, 0.24);
+    const chest = new THREE.Mesh(chestGeo, mat);
+    chest.position.set(0, 1.22, 0);
+    fallbackGroup.add(chest);
+
+    // Abdomen / Mid Torso
+    const abdomenGeo = new THREE.BoxGeometry(0.42, 0.28, 0.22);
+    const abdomen = new THREE.Mesh(abdomenGeo, mat);
+    abdomen.position.set(0, 0.92, 0);
+    fallbackGroup.add(abdomen);
+
+    // Pelvis
+    const pelvisGeo = new THREE.BoxGeometry(0.44, 0.2, 0.22);
+    const pelvis = new THREE.Mesh(pelvisGeo, mat);
+    pelvis.position.set(0, 0.7, 0);
+    fallbackGroup.add(pelvis);
+
+    // Left and Right Arms
+    [-0.32, 0.32].forEach((xSide) => {
+      const shGeo = new THREE.SphereGeometry(0.08, 16, 16);
+      const sh = new THREE.Mesh(shGeo, mat);
+      sh.position.set(xSide, 1.34, 0);
+      fallbackGroup.add(sh);
+
+      const uArmGeo = new THREE.CylinderGeometry(0.06, 0.05, 0.34, 16);
+      const uArm = new THREE.Mesh(uArmGeo, mat);
+      uArm.position.set(xSide, 1.12, 0);
+      fallbackGroup.add(uArm);
+
+      const elbowGeo = new THREE.SphereGeometry(0.055, 12, 12);
+      const elbow = new THREE.Mesh(elbowGeo, mat);
+      elbow.position.set(xSide, 0.94, 0);
+      fallbackGroup.add(elbow);
+
+      const fArmGeo = new THREE.CylinderGeometry(0.05, 0.04, 0.32, 16);
+      const fArm = new THREE.Mesh(fArmGeo, mat);
+      fArm.position.set(xSide, 0.77, 0);
+      fallbackGroup.add(fArm);
+
+      const handGeo = new THREE.BoxGeometry(0.06, 0.1, 0.04);
+      const hand = new THREE.Mesh(handGeo, mat);
+      hand.position.set(xSide, 0.57, 0);
+      fallbackGroup.add(hand);
+    });
+
+    // Left and Right Legs
+    [-0.14, 0.14].forEach((xSide) => {
+      const thighGeo = new THREE.CylinderGeometry(0.09, 0.07, 0.44, 16);
+      const thigh = new THREE.Mesh(thighGeo, mat);
+      thigh.position.set(xSide, 0.42, 0);
+      fallbackGroup.add(thigh);
+
+      const kneeGeo = new THREE.SphereGeometry(0.07, 16, 16);
+      const knee = new THREE.Mesh(kneeGeo, mat);
+      knee.position.set(xSide, 0.18, 0);
+      fallbackGroup.add(knee);
+
+      const shinGeo = new THREE.CylinderGeometry(0.07, 0.05, 0.42, 16);
+      const shin = new THREE.Mesh(shinGeo, mat);
+      shin.position.set(xSide, -0.06, 0);
+      fallbackGroup.add(shin);
+
+      const footGeo = new THREE.BoxGeometry(0.09, 0.06, 0.18);
+      const foot = new THREE.Mesh(footGeo, mat);
+      foot.position.set(xSide, -0.28, 0.04);
+      fallbackGroup.add(foot);
+    });
+
+    return fallbackGroup;
+  }
+
+  function loadProceduralFallback() {
+    try {
+      modelGroup = buildFallbackModel();
+      centerModel(modelGroup);
+      scene.add(modelGroup);
+      hideLoader();
+      postToRN({ type: 'MODEL_LOADED' });
+    } catch(err) {
+      reportModelError('Failed to initialize 3D model geometry.');
+    }
+  }
+
   function initModel() {
     const loader = new THREE.GLTFLoader();
     const modelBase64 = window.__MODEL_BASE64__ || null;
@@ -332,16 +437,19 @@ function startApp(THREE) {
           hideLoader();
           postToRN({ type: 'MODEL_LOADED' });
         }, (error) => {
-          reportModelError(error && error.message ? error.message : 'Failed to parse GLB model');
+          console.warn('GLB parse notice, activating procedural 3D model:', error);
+          loadProceduralFallback();
         });
         return;
       } catch(e) {
-        reportModelError('Failed to decode embedded model');
+        console.warn('GLB decode notice, activating procedural 3D model:', e);
+        loadProceduralFallback();
         return;
       }
     }
 
-    reportModelError('Embedded 3D model data is missing.');
+    // Direct fallback activation
+    loadProceduralFallback();
   }
 
   window.addEventListener('resize', () => {
@@ -373,3 +481,12 @@ loadRemoteScripts();
 </script>
 </body>
 </html>`;
+
+export const getHeatmapHtml = (modelBase64?: string) => {
+  if (modelBase64 && typeof modelBase64 === 'string' && modelBase64.length > 100) {
+    const injection = `<script>window.__MODEL_BASE64__ = ${JSON.stringify(modelBase64)};</script>`;
+    return HEATMAP_HTML.replace('<head>', '<head>\n' + injection);
+  }
+  return HEATMAP_HTML;
+};
+

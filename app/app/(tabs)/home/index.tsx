@@ -139,29 +139,29 @@ const WatchSimulatorCard = ({ isAbnormal, setIsAbnormal }: { isAbnormal: boolean
   const [vitals, setVitals] = useState({ hr: 72, spo2: 98, sys: 120, dia: 80 });
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setIsAbnormal((prev: boolean) => {
-        const next = !prev;
-        if (next) {
-          setVitals({
-            hr: Math.floor(Math.random() * (140 - 120) + 120),
-            spo2: Math.floor(Math.random() * (92 - 85) + 85),
-            sys: Math.floor(Math.random() * (160 - 140) + 140),
-            dia: Math.floor(Math.random() * (100 - 90) + 90),
-          });
-        } else {
-          setVitals({
-            hr: Math.floor(Math.random() * (85 - 65) + 65),
-            spo2: Math.floor(Math.random() * (100 - 96) + 96),
-            sys: Math.floor(Math.random() * (125 - 110) + 110),
-            dia: Math.floor(Math.random() * (80 - 70) + 70),
-          });
-        }
-        return next;
+    if (isAbnormal) {
+      setVitals({
+        hr: Math.floor(Math.random() * (140 - 120) + 120),
+        spo2: Math.floor(Math.random() * (92 - 85) + 85),
+        sys: Math.floor(Math.random() * (160 - 140) + 140),
+        dia: Math.floor(Math.random() * (100 - 90) + 90),
       });
-    }, 3500);
+    } else {
+      setVitals({
+        hr: Math.floor(Math.random() * (85 - 65) + 65),
+        spo2: Math.floor(Math.random() * (100 - 96) + 96),
+        sys: Math.floor(Math.random() * (125 - 110) + 110),
+        dia: Math.floor(Math.random() * (80 - 70) + 70),
+      });
+    }
+  }, [isAbnormal]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsAbnormal(prev => !prev);
+    }, 4500);
     return () => clearInterval(interval);
-  }, []);
+  }, [setIsAbnormal]);
 
   return (
     <View style={styles.newCard}>

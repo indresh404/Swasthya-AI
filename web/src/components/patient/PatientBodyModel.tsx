@@ -3,6 +3,7 @@ import React, { useRef, useState, useMemo, Component, ReactNode } from 'react';
 import { Canvas, useFrame, extend } from '@react-three/fiber';
 import { useGLTF, OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import modelGlbUrl from '../../assets/model.glb';
 
 export interface HeatPoint {
   id: string;
@@ -417,7 +418,7 @@ const ModelWrapper: React.FC<{
   setCursorState: (state: 'default' | 'grabbing' | 'pointer') => void;
   positionOffset: [number, number, number];
 }> = ({ heatPoints, onZoneClick, centerOffsetRef, modelScaleRef, selectedZoneLabel, setCursorState, positionOffset }) => {
-  const { scene } = useGLTF("/model.glb");
+  const { scene } = useGLTF(modelGlbUrl || "/model.glb");
   const shaderRef = useRef<any>(null);
 
   const [isMobile, setIsMobile] = useState(false);
@@ -898,5 +899,7 @@ export const PatientBodyModel: React.FC<PatientBodyModelProps> = ({
     </div>
   );
 };
+
+useGLTF.preload(modelGlbUrl || "/model.glb");
 
 export default PatientBodyModel;
