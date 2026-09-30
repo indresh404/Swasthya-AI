@@ -448,6 +448,12 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
     marginBottom: 4,
   },
+  subtitleText: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    fontFamily: TYPOGRAPHY.fonts.regular,
+    color: 'rgba(255,255,255,0.7)',
+    marginBottom: SPACING.xs,
+  },
   bodyContainer: {
     minHeight: 68,
     marginBottom: SPACING.sm,
