@@ -4,6 +4,7 @@ import { Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { BodyMapCard } from '@/components/home/BodyMapCard';
 import { GovernmentSchemeCard } from '@/components/home/GovernmentSchemeCard';
+import { AshaWorkerSyncCard } from '@/components/home/AshaWorkerSyncCard';
 import { ScreenIntroGate } from '@/components/ui/ScreenIntroGate';
 import { SkeletonHomeScreen } from '@/components/ui/SkeletonLoader';
 import { Ionicons } from '@expo/vector-icons';
@@ -603,6 +604,9 @@ export default function HomeScreen() {
                   description="Your health risk score is moderate. Regular monitoring and healthy habits are recommended."
                   factors={riskFactors}
                 />
+
+                {/* ASHA Worker Live Dynamic QR Sync & Calling Card */}
+                <AshaWorkerSyncCard patientProfile={profile} />
 
                 {/* Health Graph Card - From Profile */}
                 <HealthGraphCard />
