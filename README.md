@@ -210,7 +210,7 @@ python scratch/seed_neo4j_indresh.py
 ```bash
 cd app
 npm install
-npx expo start
+
 ```
 - Press `w` to open in Web Browser.
 - Scan the QR code with the **Expo Go** app on Android/iOS.
