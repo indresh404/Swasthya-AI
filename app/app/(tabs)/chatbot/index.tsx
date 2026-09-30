@@ -29,6 +29,7 @@ import { BACKEND_URL, API_ENDPOINTS } from '@/config/api';
 import Voice from '@react-native-voice/voice';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AgentLog } from '@/components/chatbot/AgentLog';
+import { AiOrbVisualizer } from '@/components/chatbot/AiOrbVisualizer';
 import { Camera } from 'expo-camera';
 
 
@@ -448,35 +449,40 @@ export default function ChatScreen() {
           rec.continuous = false;
           rec.interimResults = false;
           
+          let hasHandledResult = false;
+
           rec.onstart = () => {
-            console.log('Web speech recognition started');
             setVoiceState('listening');
           };
           
           rec.onresult = (event: any) => {
-            const transcript = event.results[0][0].transcript;
-            console.log('Web speech result:', transcript);
-            latestVoiceSpeechRef.current = transcript;
-            setVoiceSubtitles(transcript);
+            const transcript = event?.results?.[0]?.[0]?.transcript;
+            if (transcript) {
+              latestVoiceSpeechRef.current = transcript;
+              setVoiceSubtitles(transcript);
+              hasHandledResult = true;
+            }
           };
           
           rec.onerror = (event: any) => {
-            console.error('Web speech error:', event);
-            if (voiceModeActive && voiceState === 'listening') {
-              setVoiceSubtitles(getLocaleConfig().unheard);
-              setTimeout(() => { startListeningLoop(); }, 1500);
+            const errType = event?.error || 'unknown';
+            if (errType !== 'no-speech' && errType !== 'aborted') {
+              console.warn('Web speech status:', errType);
             }
           };
           
           rec.onend = () => {
-            console.log('Web speech recognition ended');
-            if (voiceModeActive) {
+            if (voiceModeActive && voiceState === 'listening') {
               const finalSpeech = latestVoiceSpeechRef.current.trim();
               if (finalSpeech) {
                 processUserVoiceInput(finalSpeech);
               } else {
-                setVoiceSubtitles(getLocaleConfig().unheard);
-                setTimeout(() => { startListeningLoop(); }, 1500);
+                if (voiceInteractionTimer.current) clearTimeout(voiceInteractionTimer.current);
+                voiceInteractionTimer.current = setTimeout(() => {
+                  if (voiceModeActive && voiceState === 'listening') {
+                    startListeningLoop();
+                  }
+                }, 1200);
               }
             }
           };
@@ -1122,78 +1128,28 @@ export default function ChatScreen() {
           </View>
 
           <View style={styles.voiceVisualizerContainer}>
-            <View style={styles.blobAnchor}>
-              <Animated.View
-                style={[
-                  styles.blobCircle,
-                  styles.blobCircleOuter,
-                  {
-                    transform: [{ scale: blobScale3 }],
-                    opacity: blobOpacity3},
-                ]}
-              />
-              <Animated.View
-                style={[
-                  styles.blobCircle,
-                  styles.blobCircleMiddle,
-                  {
-                    transform: [{ scale: blobScale2 }],
-                    opacity: blobOpacity2},
-                ]}
-              />
-              <Animated.View
-                style={[
-                  styles.blobCircle,
-                  styles.blobCircleInner,
-                  {
-                    transform: [{ scale: blobScale1 }],
-                    opacity: blobOpacity1},
-                ]}
-              />
-              <TouchableOpacity
-                onPress={async () => {
-                  if (voiceState === 'listening') {
-                    if (isVoiceAvailable || Platform.OS === 'web') {
-                      await stopVoiceCapture();
-                    } else {
-                      // Manual selection fallback
-                      const simulatedUserSayings = getLocaleConfig().suggestions;
-                      const randomSaying = simulatedUserSayings[Math.floor(Math.random() * simulatedUserSayings.length)];
-                      processUserVoiceInput(randomSaying);
-                    }
+            <AiOrbVisualizer
+              voiceState={voiceState}
+              onMicPress={async () => {
+                if (voiceState === 'listening') {
+                  if (isVoiceAvailable || Platform.OS === 'web') {
+                    await stopVoiceCapture();
+                  } else {
+                    // Manual selection fallback
+                    const simulatedUserSayings = getLocaleConfig().suggestions;
+                    const randomSaying = simulatedUserSayings[Math.floor(Math.random() * simulatedUserSayings.length)];
+                    processUserVoiceInput(randomSaying);
                   }
-                }}
-                activeOpacity={0.8}
-                style={styles.blobCoreWrapper}
-              >
-                <LinearGradient
-                  colors={['#06B6D4', '#0474FC', '#6366F1']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.blobCore}
-                >
-                  <Ionicons
-                    name={
-                      voiceState === 'listening'
-                        ? 'mic'
-                        : voiceState === 'thinking'
-                        ? 'sync-outline'
-                        : 'volume-high'
-                    }
-                    size={32}
-                    color="#FFFFFF"
-                  />
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.voiceStatusText}>
-              {voiceState === 'listening'
-                ? getLocaleConfig().statusListening
-                : voiceState === 'thinking'
-                ? getLocaleConfig().thinking
-                : getLocaleConfig().speaking}
-            </Text>
+                }
+              }}
+              text={
+                voiceState === 'listening'
+                  ? 'Listening'
+                  : voiceState === 'thinking'
+                  ? 'Thinking'
+                  : 'Speaking'
+              }
+            />
           </View>
 
           <View style={styles.voiceSubtitlesContainer}>
