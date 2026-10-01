@@ -1,281 +1,254 @@
-# 🌿 Swasthya AI — Multilingual Knowledge Graph Health Memory System
+# 🌿 Swasthya AI — Multilingual Agentic Healthcare Continuity
 
-[![App CI](https://github.com/indresh404/Swasthya-AI-v2/actions/workflows/app.yml/badge.svg)](https://github.com/indresh404/Swasthya-AI-v2/actions/workflows/app.yml)
-[![Backend CI](https://github.com/indresh404/Swasthya-AI-v2/actions/workflows/backend.yml/badge.svg)](https://github.com/indresh404/Swasthya-AI-v2/actions/workflows/backend.yml)
-[![Web CI](https://github.com/indresh404/Swasthya-AI-v2/actions/workflows/web.yml/badge.svg)](https://github.com/indresh404/Swasthya-AI-v2/actions/workflows/web.yml)
-[![Overall CI](https://github.com/indresh404/Swasthya-AI-v2/actions/workflows/overall.yml/badge.svg)](https://github.com/indresh404/Swasthya-AI-v2/actions/workflows/overall.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Neo4j AuraDB](https://img.shields.io/badge/Neo4j-AuraDB_Enterprise-008CC1?logo=neo4j)](https://neo4j.com/cloud/aura/)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI_0.110+-009688?logo=fastapi)](https://fastapi.tiangolo.com)
+[![Neo4j AuraDB](https://img.shields.io/badge/Neo4j-AuraDB_Enterprise-008CC1?logo=neo4j)](https://neo4j.com/cloud/aura/)
 [![React Native](https://img.shields.io/badge/Mobile-Expo_SDK_51-000020?logo=expo)](https://expo.dev)
+[![React + Vite](https://img.shields.io/badge/Doctor_Portal-React_Vite-61DAFB?logo=react)](https://react.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> **Swasthya AI** is a voice-first, multilingual clinical memory and knowledge graph system. Patients build an interconnected health graph over time through natural daily voice interactions in vernacular Indian languages (powered by **Sarvam AI** & **Groq LLaMA 3.3**), while doctors obtain instant, explainable medical context the moment they scan a patient's universal dynamic QR code.
-
----
-
-## 🌐 Live Demos & Links
-
-- 🖥️ **Live Doctor Web Dashboard**: [Swasthya AI Doctor Portal](https://swasthya-ai-sage.vercel.app/about)
-- 📱 **Live App Prototype**: [Swasthya AI Base-44](https://swasthya-smart-care.base44.app)
-- 📚 **Comprehensive Documentation Hub**: [`docs/`](docs/Swasthya_AI.md)
+> **Swasthya AI** is a multilingual, voice-first, **agentic healthcare continuity system** that maintains a longitudinal patient health memory across **Neo4j** and **Supabase**, using specialized clinical sub-agents to continuously:
+> 
+> $$\text{Perceive} \longrightarrow \text{Understand} \longrightarrow \text{Retrieve} \longrightarrow \text{Reason} \longrightarrow \text{Use Tools} \longrightarrow \text{Act} \longrightarrow \text{Update Memory} \longrightarrow \text{Follow Up}$$
 
 ---
 
-## 🧩 Key Innovations & Capabilities
+## 🧭 Why Swasthya AI is Truly Agentic
 
-### 1. 🧠 Neo4j Clinical Knowledge Graph & Family Hereditary Overlap
-- **Cross-temporal Graph Memory**: Maps patient symptoms, conditions, triggers, medications, lifestyle habits, and vitals into a connected graph.
-- **Genetic & Contagion Detection**: Detects hereditary disease trends and household contagion overlaps between family members (e.g. parent-child diabetes predisposition or shared viral symptoms).
-- **Explainable Clinical Context**: Instant graph queries for doctors summarizing active complaints, drug adherence, contraindications, and chronological disease progression.
+Swasthya AI is **not** a diagnostic chatbot and **not** a raw LLM wrapper.
 
-### 2. 💊 Pradhan Mantri Jan Aushadhi (PMBJP) Calculator & PDF Prescription
-- **Instant Brand-to-Generic Equivalents**: Auto-translates branded medicines (e.g., *Glycomet 500mg* $\rightarrow$ *Metformin HCl 500mg*) with up to **80–88% cost savings**.
-- **Printable / Downloadable Jan Aushadhi Rx PDF**: Generates a standard government-format generic prescription that patients can directly hand over to pharmacists at any PMBJP Kendra.
-- **Interactive Kendra Store Locator & Map**: Interactive OpenStreetMap / Leaflet web map and native mobile map with GPS navigation, contact numbers, and distance calculations to nearest generic pharmacy outlets.
+```
+Traditional Chatbot:    User Message ──> LLM ──> Unverified Text Answer
 
-### 3. 🎙️ Vernacular Multilingual Voice (Sarvam AI)
-- Conversational audio check-ins in Hindi, Marathi, Tamil, Telugu, Gujarati, and English with low-latency Speech-to-Text (STT) and expressive Text-to-Speech (TTS).
-
-### 4. 🛡️ Real-Time Drug Safety & OpenFDA Engine
-- Automatic contraindication detection and drug-drug / drug-disease interaction checks powered by OpenFDA and clinical LLM safety pipelines.
-
-### 5. 🩻 Universal Dynamic QR & Multi-Agent Architecture
-- Generates dynamic QR tokens containing encrypted patient credentials, allowing verified doctors to access real-time clinical timelines, vitals, 3D anatomical heatmaps, and lab histories in under 2 seconds.
-
----
-
-## 🏗️ System Architecture
-
-```mermaid
-flowchart TD
-    subgraph Client Layer
-        A["📱 Patient App (React Native / Expo)"]
-        B["🖥️ Doctor Web Dashboard (React + Vite)"]
-    end
-
-    subgraph AI Gateway & Backend
-        C["🚀 FastAPI Gateway (Python 3.11)"]
-        D["🎙️ Sarvam AI (Speech-to-Text & TTS)"]
-        E["⚡ Groq LLaMA 3.3 70B (Multi-Agent Extraction)"]
-        F["🛡️ OpenFDA Safety Engine"]
-    end
-
-    subgraph Persistence & Knowledge Graph
-        G[("🌐 Neo4j AuraDB (Clinical Knowledge Graph)")]
-        H[("🗄️ Supabase PostgreSQL (Auth & Records)")]
-    end
-
-    A -->|"Voice / Text Check-ins"| C
-    B -->|"Scan QR / View Timeline"| C
-    C <--> D
-    C <--> E
-    C <--> F
-    C <--> G
-    C <--> H
+Swasthya Agent Loop:   Patient / Clinician Input
+                                    │
+                              [1. Perceive] (Sarvam Multilingual Voice & STT)
+                                    │
+                             [2. Understand] (Structured Entity & Intent Parsing)
+                                    │
+                          [3. Retrieve Context] (Neo4j Graph & Supabase Active Chart)
+                                    │
+                            [4. Route Agent] (Check-in, Medicine, Escalation, Doctor Q&A)
+                                    │
+                             [5. Tool Use] (OpenFDA, Graph Search, Follow-up Queue)
+                                    │
+                            [6. Safety Check] (Pure Python Deterministic Rules)
+                                    │
+                           [7. Action & Audit] (Clinician Review Alert, Event Store)
+                                    │
+                          [8. Memory Update] (Neo4j Longitudinal Graph Mutation)
+                                    │
+                             [9. Follow-Up] (Closed-loop Check-in Question Queue)
 ```
 
 ---
 
-## 🧬 Neo4j Clinical Knowledge Graph Schema
+## 🏛️ System Architecture
 
-The Neo4j database uses a deeply connected biomedical ontology representing patient **Indresh Suresh** and family health networks:
-
-```mermaid
-graph LR
-    User["(:User {id: 'indresh', name: 'Indresh Suresh'})"]
-    Fam["(:FamilyGroup {name: 'Suresh Family Cohort'})"]
-    Father["(:User {name: 'Suresh Kumar', relation: 'Father'})"]
-    
-    Cond1["(:Condition {name: 'Type 2 Diabetes Mellitus'})"]
-    Cond2["(:Condition {name: 'Primary Hypertension'})"]
-    
-    Sym1["(:Symptom {name: 'Morning Fatigue'})"]
-    Sym2["(:Symptom {name: 'Occipital Headache'})"]
-    
-    Fact1["(:HealthFact {category: 'sleep', text: '5.5-6.5 hrs sleep'})"]
-    Fact2["(:HealthFact {category: 'stress', text: 'Sprint deadline stress'})"]
-    
-    Med1["(:Medication {name: 'Glycomet 500mg'})"]
-    Med2["(:Medication {name: 'Amlokind 5mg'})"]
-    
-    JA1["(:JanAushadhiMedicine {name: 'Jan Aushadhi Metformin 500mg', price: 9.20})"]
-    Kendra["(:JanAushadhiKendra {name: 'Jan Aushadhi Dadar (West)'})"]
-    
-    Doc["(:Doctor {name: 'Dr. Rajesh Mehta, MD'})"]
-    Vital["(:VitalSign {type: 'Fasting Blood Sugar', value: 112})"]
-
-    Fam -->|CONTAINS| User
-    Fam -->|CONTAINS| Father
-    User -->|FAMILY_MEMBER| Father
-    
-    User -->|HAS_CONDITION| Cond1
-    User -->|HAS_CONDITION| Cond2
-    Father -->|HAS_CONDITION| Cond1
-    
-    User -->|HAS_SYMPTOM| Sym1
-    User -->|HAS_SYMPTOM| Sym2
-    
-    User -->|HAS_FACT| Fact1
-    User -->|HAS_FACT| Fact2
-    Sym2 -->|TRIGGERED_BY| Fact2
-    
-    User -->|TAKES_MEDICATION| Med1
-    User -->|TAKES_MEDICATION| Med2
-    Med1 -->|TREATS| Cond1
-    Med2 -->|TREATS| Cond2
-    
-    Med1 -->|JAN_AUSHADHI_EQUIVALENT| JA1
-    JA1 -->|STOCKED_AT| Kendra
-    
-    User -->|CONSULTS_WITH| Doc
-    Doc -->|PRESCRIBED| Med1
-    User -->|RECORDED_VITAL| Vital
-```
-
-### Useful Cypher Queries to Run in Neo4j Browser / Bloom:
-
-```cypher
-// 1. Inspect complete health picture for Indresh
-MATCH (u:User {id: 'indresh'})-[r]->(n)
-RETURN u, r, n;
-
-// 2. View generic drug savings and PMBJP Kendra links
-MATCH (m:Medication)-[r1:JAN_AUSHADHI_EQUIVALENT]->(ja:JanAushadhiMedicine)-[r2:STOCKED_AT]->(k:JanAushadhiKendra)
-RETURN m.name AS Brand, ja.name AS Generic, ja.brand_price AS MRP, ja.jan_aushadhi_price AS JanPrice, k.name AS Kendra;
-
-// 3. Detect family symptom and hereditary condition overlap
-MATCH (fg:FamilyGroup)-[:CONTAINS]->(member:User)-[r:HAS_CONDITION]->(c:Condition)
-RETURN member.name, c.name, r.status;
+```text
+                         ┌─────────────────────────────────────────┐
+                         │               SWASTHYA AI               │
+                         │     Health Continuity Primary Agent     │
+                         └────────────────────┬────────────────────┘
+                                              │
+                                      Agent Orchestrator
+                                              │
+             ┌────────────────────────────────┼────────────────────────────────┐
+             │                                │                                │
+     Context Retrieval                Specialized Agents                  Safety Layer
+             │                                │                                │
+      Neo4j + Supabase             ┌──────────┼──────────┐             Deterministic Pure Python
+    (Longitudinal Graph)           │          │          │              (Zero LLM Hallucination)
+                              Check-In     Medicine  Escalation
+                                   │          │          │
+                              Doctor Q&A  Onboarding Cognitive
+                                              │
+                                        Tool Selection
+                                              │
+                    ┌─────────────────────────┼─────────────────────────┐
+                    │                         │                         │
+             Neo4j Graph Tool           Supabase Tool             OpenFDA Tool
+         (Symptoms, Conditions)     (Medications, Events)    (Labeling & Interactions)
+                    │                         │                         │
+                    └─────────────────────────┼─────────────────────────┘
+                                              │
+                                        Action / Audit
+                                              │
+                                   Longitudinal Health Memory
+                                        (Neo4j Update)
+                                              │
+                                    Patient / Clinician
+                                         Follow-Up
 ```
 
 ---
 
-## 📂 Repository Directory Layout
+## 🚀 Public API & aiKart Compatibility Contract
 
+Swasthya AI exposes **ONE unified public agent endpoint** callable by external orchestrators and buyers (such as **aiKart API Endpoint Testing Mode**):
+
+```http
+POST /api/v1/agent
+Content-Type: application/json
 ```
-Swasthya-AI/
-├── .github/
-│   └── workflows/
-│       ├── app.yml          # React Native / Expo Lint, TypeCheck & Web Export Build
-│       ├── backend.yml      # FastAPI Python 3.11 Lint, Flake8, Compile & Test Suite
-│       ├── web.yml          # Vite + React Doctor Dashboard Build & TypeScript Check
-│       ├── overall.yml      # Git merge conflict marker scanner
-│       └── assign.yml       # Automated PR review routing and issue triage
-├── app/                     # React Native Expo Patient Mobile App
-│   ├── app/                 # Expo Router tabs (home, chat, meds, profile)
-│   ├── components/          # UI Components, JanAushadhiMap (.web.tsx & .native.tsx)
-│   ├── services/            # Supabase & Backend API clients
-│   └── store/               # Zustand global state management
-├── backend/                 # FastAPI AI Backend
-│   ├── routes/              # Health Graph, Chat, Meds, Schemes, Risk, Safety
-│   ├── services/            # Neo4j, Groq, Sarvam, OpenFDA, Supabase clients
-│   ├── scratch/             # Seed scripts for Neo4j Aura DB
-│   └── main.py              # Application entrypoint
-├── web/                     # Doctor & Hospital Web Dashboard (React + Vite + Three.js)
-│   ├── src/pages/           # Patient profile, appointments, medicine directory, scanner
-│   └── src/components/      # 3D Anatomical Body Viewer & Analytics
-└── docs/                    # Technical & Hackathon Documentation
+
+### Request Schema
+```json
+{
+  "user_id": "DEMO-P001",
+  "message": "I've been having breathing difficulty again",
+  "language": "en"
+}
 ```
+
+### Response Schema (`200 OK`)
+```json
+{
+  "agent": "swasthya-health-continuity-agent",
+  "status": "completed",
+  "response": "I have recorded your breathing difficulty update and noted that this is a recurring episode. Because of your health history, this has been flagged for clinician review. Please seek urgent care if your breathing worsens.",
+  "context_used": [
+    "previous_symptoms_history",
+    "previous_breathlessness_episode",
+    "active_medications",
+    "chronic_conditions_chart"
+  ],
+  "tools_used": [
+    "get_patient_context",
+    "get_active_medications",
+    "check_escalation_rules",
+    "create_clinician_notification",
+    "update_health_memory",
+    "create_health_event"
+  ],
+  "actions": [
+    "clinician_notification_created",
+    "follow_up_required",
+    "health_event_recorded"
+  ],
+  "memory_updated": true,
+  "requires_clinician_review": true,
+  "trace": [
+    {
+      "step": "Perceive & Understand",
+      "agent": "swasthya-health-continuity-agent",
+      "explanation": "Interpreted intent as 'symptom_report' with 1 symptom(s) and temporal context 'recurring'."
+    },
+    {
+      "step": "Retrieve Memory",
+      "agent": "swasthya-health-continuity-agent",
+      "tool": "get_patient_context",
+      "explanation": "Retrieved patient chart (Ramesh Patel, age 58) and 2 active medications from Neo4j & Supabase."
+    },
+    {
+      "step": "Deterministic Safety Check",
+      "agent": "safety-rules-engine",
+      "explanation": "Evaluated safety rules: Level 'URGENT_EVALUATION'. Clinician review required = True."
+    },
+    {
+      "step": "Memory Update",
+      "agent": "swasthya-health-continuity-agent",
+      "tool": "update_health_memory",
+      "explanation": "Persisted health event and updated Neo4j graph nodes for patient DEMO-P001."
+    }
+  ]
+}
+```
+
+### Core Public Endpoints
+
+| Endpoint | Method | Purpose |
+| :--- | :--- | :--- |
+| `/health` | `GET` | System health check (`{"status": "healthy", "agent": "swasthya-health-continuity-agent", "version": "1.0.0"}`) |
+| `/api/v1/agent` | `POST` | **Primary Swasthya Health Continuity Agent** |
+| `/api/v1/agent/doctor-qa` | `POST` | Grounded Clinician Q&A with closed-loop follow-up queue |
+| `/docs` | `GET` | Interactive Swagger UI API documentation |
+| `/openapi.json` | `GET` | OpenAPI specification |
 
 ---
 
-## ⚡ Quick Start & Setup Guide
+## 🏆 Flagship Hackathon Scenarios
 
-### 1. Prerequisites
-- **Node.js**: v18+ or v20+
-- **Python**: 3.11+
-- **Neo4j AuraDB Instance**: (Credentials in `.env`)
-- **Supabase Project**: (PostgreSQL DB + Auth)
-- **Groq API Key**: (For fast LLaMA 3.3 multi-agent inference)
+### Scenario 1: Patient Recurrent Symptom Check-In
+1. **Patient Input**: `"I've been having breathing difficulty again."`
+2. **Perception**: Extracts `breathing difficulty` + `recurrence=True`.
+3. **Memory Retrieval**: Pulls patient `DEMO-P001` chart from Neo4j showing previous acute dyspnea episode on `2026-09-18` and active `Amlodipine 5mg` / `Telmisartan 40mg` prescriptions.
+4. **Deterministic Safety Engine**: Evaluates `RULE_01_RECURRENT_DYSPNEA_CARDIO_RISK` $\rightarrow$ triggers `requires_clinician_review = True` (Level: `URGENT_EVALUATION`).
+5. **Action & Memory**: Creates priority clinician notification, writes updated symptom node into Neo4j, logs health event in Supabase.
+6. **Response**: Delivers clinically grounded, empathetic guidance.
 
-### 2. Backend Setup
+### Scenario 2: Grounded Doctor Q&A & Closed-Loop Follow-Up
+1. **Clinician asks**: `"What happened during the patient's recent breathing episodes?"`
+2. **Doctor Q&A Agent**: Retrieves patient graph records and synthesizes a strictly grounded summary with exact dates (`2026-09-18`), severity (`7/10`), and medication context without hallucinating.
+3. **Clinician asks for missing data**: `"What are the patient's recent fasting glucose levels?"`
+4. **Closed-Loop Resolution**: Because lab results are absent from graph memory, the agent returns `grounded: false` and **automatically queues a follow-up question** for the patient's next check-in.
+
+---
+
+## 🛡️ Deterministic Safety Rules
+
+To guarantee clinical reliability:
+- **Zero Diagnostic Claims**: The system assists continuity and triage; it does not replace medical practitioners.
+- **Pure Python Rules**: Clinical red flags (e.g. concurrent chest pain + dyspnea, medication collisions with Penicillin allergy) are evaluated via transparent rule matrices, never delegated solely to LLM probabilistic output.
+
+---
+
+## 🧪 Quickstart & Local Testing
+
+### 1. Clone & Setup Python Virtual Environment
 ```bash
 cd backend
 python -m venv venv
-# On Windows:
+# Windows:
 .\venv\Scripts\activate
-# On Linux/macOS:
-# source venv/bin/activate
+# Linux/macOS:
+source venv/bin/activate
 
 pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
 ```
 
-#### Seed Neo4j Knowledge Graph with Indresh's Medical Data:
+### 2. Configure Environment Variables
 ```bash
-python scratch/seed_neo4j_indresh.py
+cp .env.example .env
 ```
+*(By default `DEMO_MODE=true` is enabled, allowing end-to-end execution without live cloud credentials).*
 
-### 3. Patient Mobile App (Expo)
+### 3. Seed Synthetic Demo Patient
 ```bash
-cd app
-npm install
-npx expo start
+python ../scripts/seed_demo_patient.py
 ```
-- Press `w` to open in Web Browser.
-- Scan the QR code with the **Expo Go** app on Android/iOS.
 
-### 4. Doctor Web Dashboard
+### 4. Run Acceptance Test Suite
 ```bash
-cd web
-npm install
-npm run dev
+python tests/test_agent_workflow.py
 ```
-- Open `http://localhost:5173` in your browser.
 
----
-
-## 🔐 Environment Variables
-
-Create a `.env` file inside `backend/` with the following keys:
-
-```ini
-# Supabase Configuration
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your_supabase_anon_key
-DATABASE_URL=postgresql://postgres:password@db.your-project.supabase.co:5432/postgres
-
-# Groq Cloud API
-GROQ_API_KEY=gsk_your_groq_api_key
-
-# Sarvam AI Voice Engine
-SARVAM_API_KEY=sk_your_sarvam_api_key
-
-# Neo4j AuraDB Enterprise
-NEO4J_URI=neo4j+s://63ba98a5.databases.neo4j.io
-NEO4J_USERNAME=63ba98a5
-NEO4J_PASSWORD=your_neo4j_aura_password
+### 5. Start Backend Server
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ---
 
-## 🤖 Multi-Agent LLM Orchestration
+## 🐳 Docker & Cloud Deployment (Render)
 
-Swasthya AI deploys an ensemble of 11 cooperative AI agents:
-1. **Onboarding Agent**: Elicits patient medical history, allergies, and lifestyle.
-2. **Check-in Agent**: Conducts conversational daily voice check-ins.
-3. **Symptom Extraction Agent**: Isolates anatomical locations, duration, severity, and triggers.
-4. **Lifestyle & Habit Agent**: Catalogs diet, sleep patterns, screen time, and exercise.
-5. **Medical History Agent**: Classifies chronic conditions and past surgical interventions.
-6. **Family Hereditary Agent**: Correlates genetic risk indicators across household trees.
-7. **Jan Aushadhi Scheme Agent**: Computes generic drug equivalencies and calculates direct savings.
-8. **Drug Safety & OpenFDA Agent**: Validates concurrent medications for adverse interactions.
-9. **Doctor Q&A Agent**: Answers clinical questions based on grounded graph context.
-10. **Appointment Agent**: Automates specialist triage and booking workflows.
-11. **Workflow Orchestrator**: Coordinates background jobs and health alert triggers.
+### Local Docker Build & Run
+```bash
+# Build image
+docker build -t swasthya-agent .
 
----
+# Run container
+docker run -p 8000:8000 -e DEMO_MODE=true swasthya-agent
+```
 
-## 🛠️ CI / CD Pipeline Health
+### Render Deployment Configuration
+The repository includes `render.yaml` and a production-ready `Dockerfile`.
+- **Runtime**: Docker
+- **Health Check Path**: `/health`
+- **Dynamic Port**: Binds automatically to `${PORT:-8000}`.
 
-All continuous integration pipelines are configured in `.github/workflows/`:
-- **`app.yml`**: Dependency security audit, TypeScript compiler checks (`tsc --noEmit`), ESLint rules, and production web export (`expo export --platform web`).
-- **`backend.yml`**: Black code formatting, Flake8 logic analysis, Python bytecode compileall check, server import sanity, and unit test suites.
-- **`web.yml`**: Vite React production bundling and TypeScript validation.
-- **`overall.yml`**: Pre-merge validation ensuring zero unresolved git conflict markers across all code files.
+For in-depth architectural specifications, see [`AGENTIC.md`](AGENTIC.md).
 
 ---
 
-## 📜 License
-
-Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more information.
+## 📄 License
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.

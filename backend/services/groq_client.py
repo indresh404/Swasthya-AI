@@ -7,13 +7,16 @@ load_dotenv()
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
 
 async def call_groq(system_prompt: str, user_prompt: str, max_tokens: int = 1024, temperature: float = 0.1, json_mode: bool = True) -> str:
     """
     Single async function to call Groq API.
     json_mode: If True, uses response_format={"type": "json_object"}. 
-               Note: Groq requires the word 'json' in the prompt for this to work.
     """
+    if not GROQ_API_KEY or GROQ_API_KEY.startswith("gsk_your") or GROQ_API_KEY.strip() == "":
+        raise RuntimeError("GROQ_API_KEY not configured or placeholder.")
+
     headers = {
         "Authorization": f"Bearer {GROQ_API_KEY}",
         "Content-Type": "application/json"
@@ -24,7 +27,7 @@ async def call_groq(system_prompt: str, user_prompt: str, max_tokens: int = 1024
         user_prompt += " Respond in valid JSON format."
 
     payload = {
-        "model": "llama-3.3-70b-versatile",
+        "model": GROQ_MODEL,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
@@ -36,17 +39,8 @@ async def call_groq(system_prompt: str, user_prompt: str, max_tokens: int = 1024
     if json_mode:
         payload["response_format"] = {"type": "json_object"}
     
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        try:
-            response = await client.post(GROQ_URL, headers=headers, json=payload)
-            response.raise_for_status()
-            data = response.json()
-            return data["choices"][0]["message"]["content"]
-        except httpx.HTTPStatusError as e:
-            error_body = e.response.text
-            print(f"Groq API HTTP Error ({e.response.status_code}): {error_body}")
-            return json.dumps({"error": f"Groq API Error {e.response.status_code}", "detail": error_body})
-        except Exception as e:
-            print(f"Groq Client Exception: {e}")
-            # Return a minimal valid JSON error if possible
-            return json.dumps({"error": "LLM unavailable", "exception": str(e)})
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.post(GROQ_URL, headers=headers, json=payload)
+        response.raise_for_status()
+        data = response.json()
+        return data["choices"][0]["message"]["content"]
