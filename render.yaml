@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: swasthya-health-continuity-agent
+    runtime: docker
+    plan: free
+    dockerfilePath: Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: DEMO_MODE
+        value: "true"
+      - key: GROQ_MODEL
+        value: "llama-3.1-8b-instant"
+      - key: GROQ_API_KEY
+        sync: false
+      - key: SARVAM_API_KEY
+        sync: false
+      - key: NEO4J_URI
+        sync: false
+      - key: NEO4J_USERNAME
+        sync: false
+      - key: NEO4J_PASSWORD
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: "http://localhost:3000,http://localhost:5173,http://localhost:8081"
