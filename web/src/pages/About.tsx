@@ -3,15 +3,16 @@ import React from 'react';
 import Navbar from '../components/common/Navbar';
 import AboutHero from '../components/about/AboutHero';
 import AboutBodyModelSection from '../components/about/AboutBodyModelSection';
-import HealthMemoryBuilder from '../components/about/HealthMemoryBuilder';
-import FeatureShowcase from '../components/about/FeatureShowcase';
+import PatientMemoryGraph from '../components/about/PatientMemoryGraph';
+import FamilyGeneticsGraph from '../components/about/FamilyGeneticsGraph';
+import AgentWorkflowSection from '../components/about/AgentWorkflowSection';
 import AgentShowcase from '../components/about/AgentShowcase';
+import FeatureShowcase from '../components/about/FeatureShowcase';
+import ModelSection from '../components/about/ModelSection';
 import TechStackSection from '../components/about/TechStackSection';
 import FAQSection from '../components/about/FAQSection';
 import Footer from '../components/common/Footer';
 import ScrollNavigator from '../components/about/ScrollNavigator';
-import KahaniVaaniSection from '../components/about/KahaniVaaniSection';
-import ModelSection from '../components/about/ModelSection';
 
 export const About: React.FC = () => {
   return (
@@ -31,69 +32,68 @@ export const About: React.FC = () => {
       {/* Floating vertical section navigator */}
       <ScrollNavigator />
 
-      {/* Hero Section */}
+      {/* 1. Hero & Philosophy Section */}
       <section id="about-hero">
         <AboutHero />
       </section>
 
-      {/* 3D Body Model Section */}
+      {/* 2. 3D Body Mannequin Symptom Heatmap */}
       <section id="bodymap-section">
         <AboutBodyModelSection />
       </section>
 
       <div style={{ borderBottom: '1px solid var(--border)', width: '100%', margin: '20px 0' }} />
       
-      {/* Patient Graph Section */}
+      {/* 3. Patient Health Memory Graph Builder */}
       <section id="patient-graph-section">
-        <HealthMemoryBuilder />
+        <PatientMemoryGraph />
       </section>
 
-      {/* Family Warning Section - Added missing section */}
+      <div style={{ borderBottom: '1px solid var(--border)', width: '100%', margin: '20px 0' }} />
+
+      {/* 4. Family Genetics & Exposure Graph */}
       <section id="family-graph-section">
-        <div style={{ padding: '40px 0' }}>
-          {/* Family Genetics Graph component would go here */}
-          {/* You can add the FamilyGeneticsGraph component if available */}
-        </div>
+        <FamilyGeneticsGraph />
       </section>
 
       <div style={{ borderBottom: '1px solid var(--border)', width: '100%', margin: '20px 0' }} />
 
-      {/* Clinical Modules Section */}
-      <section id="modules-section">
-        <FeatureShowcase />
+      {/* 5. Agent Workflow Architecture & Lifecycle Diagram */}
+      <section id="workflow-section">
+        <AgentWorkflowSection />
       </section>
 
       <div style={{ borderBottom: '1px solid var(--border)', width: '100%', margin: '20px 0' }} />
 
-      {/* Agents Section */}
+      {/* 6. 12-Agent Specialization Mesh & Live Sandbox Simulator */}
       <section id="agents-section">
         <AgentShowcase />
       </section>
 
       <div style={{ borderBottom: '1px solid var(--border)', width: '100%', margin: '20px 0' }} />
 
-      {/* Kahani Vaani Section */}
-      <section id="kahanivaani-section">
-        <KahaniVaaniSection />
+      {/* 7. Clinical Modules & Surfaces */}
+      <section id="modules-section">
+        <FeatureShowcase />
       </section>
 
       <div style={{ borderBottom: '1px solid var(--border)', width: '100%', margin: '20px 0' }} />
 
-      {/* Model Section */}
+      {/* 8. ML Cardiovascular Risk Prediction & 3D Brain Particle Animation */}
       <section id="model-section">
         <ModelSection />
       </section>
 
       <div style={{ borderBottom: '1px solid var(--border)', width: '100%', margin: '20px 0' }} />
 
-      {/* Tech Stack Section */}
+      {/* 9. Production Tech Stack */}
       <section id="techstack-section">
         <TechStackSection />
       </section>
 
       <div style={{ borderBottom: '1px solid var(--border)', width: '100%', margin: '20px 0' }} />
 
-      {/* FAQ Section */}
+      {/* 10. Technical FAQs */}
       <section id="faq-section">
         <FAQSection />
       </section>

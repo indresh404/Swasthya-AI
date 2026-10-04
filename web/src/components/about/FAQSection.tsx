@@ -13,40 +13,52 @@ interface FAQItem {
 
 const FAQS: FAQItem[] = [
   {
-    q: "What makes this different from a regular health chatbot?",
-    a: "Unlike single-prompt chatbots that suffer from hallucination and lack explanation, Swasthya AI maps all patient logs to a structured Neo4j graph database. Insights are derived by traversing relationships (e.g. tracking specific symptom occurrences over time), making reasoning fully traceable.",
-    category: "Architecture",
-    color: "#0474FC" // Blue
+    q: "What makes Swasthya AI fundamentally different from a stateless chatbot?",
+    a: "Every existing health chatbot treats each conversation as isolated. It does not remember that you had the same fever three weeks ago, that your father has diabetes, or that this is the fourth time this month you reported fatigue. Swasthya AI builds a connected, longitudinal health graph in Neo4j AuraDB. Without memory, there is no insight, only response.",
+    category: "Core Philosophy",
+    color: "#0066FF"
   },
   {
-    q: "Why a graph database instead of a normal database?",
-    a: "Human health is highly interconnected. A relational database requires heavy, slow joins to connect symptoms, medication timings, family risk profiles, and lab reports. A graph database stores these connections directly as first-class relationships, enabling real-time risk propagation and family genetics tracing.",
-    category: "Data Engineering",
-    color: "#8B5CF6" // Purple
+    q: "Why use Neo4j AuraDB (Graph) alongside Supabase (SQL)?",
+    a: "Health data is fundamentally relational: a symptom links to prior episodes, to affected body zones, to family hereditary profiles, and to active prescriptions. Neo4j stores this graph memory for real-time risk traversal and explainability. Supabase handles structured transactional data (user accounts, authentication, appointment slots, and medicine registries).",
+    category: "Data Architecture",
+    color: "#8B5CF6"
   },
   {
-    q: "Does this provide medical diagnoses?",
-    a: "No, Swasthya AI is a clinical assistant. It never makes unsupervised medical decisions. It extracts information, links relationships, matches government-approved eligibility rules, and flags severe patterns. It acts as an assistant for doctors, keeping them in control.",
-    category: "Clinical Compliance",
-    color: "#10B981" // Green
+    q: "How does the Deterministic Safety Layer prevent LLM hallucinations?",
+    a: "No triage or escalation decision relies on an LLM's stochastic output. The LLM's job is strictly to extract symptom entities into validated Pydantic JSON schemas. Pure-Python deterministic rules evaluate the extracted fields (e.g. recurrent dyspnea + cardiovascular history) to assign escalation levels (URGENT_EVALUATION) with traceable rule IDs.",
+    category: "Safety & Compliance",
+    color: "#EF4444"
   },
   {
-    q: "How does the voice feature work?",
-    a: "It integrates Sarvam AI's speech API to handle transcription and text-to-speech rendering. Patients can click the mic button, speak naturally in Hindi, Marathi, or English, and the model will parse it into structured graph logs.",
-    category: "Voice AI",
-    color: "#EC4899" // Pink
+    q: "How does Sarvam AI voice integration support Indian languages?",
+    a: "Patients can converse naturally by voice in Hindi, Marathi, or English. Sarvam AI's speech-to-text (STT) transcribes the audio, our Onboarding/Check-In agents extract structured medical markers, and Sarvam's text-to-speech (TTS) synthesizes grounded empathetic audio replies back to the patient.",
+    category: "Multilingual Voice",
+    color: "#EC4899"
   },
   {
-    q: "Is patient data shared within a family?",
-    a: "Patient privacy is strictly enforced. While family members share a group code to track hereditary patterns, only non-sensitive risk indicators (like a family history of diabetes) propagate through relationships. Specific doctor consultations or logs remain strictly private.",
-    category: "Security & Privacy",
-    color: "#F59E0B" // Amber
+    q: "How does the Closed-Loop Doctor Q&A work?",
+    a: "When a doctor asks a question in the dashboard, the system answers ONLY from graph records with citations. If the data is missing, it marks the answer as 'not grounded', rewrites the question into a patient-friendly prompt, and queues it for the patient's next daily check-in. Once answered, the graph updates and the doctor is notified.",
+    category: "Clinical Loop",
+    color: "#10B981"
   },
   {
-    q: "What happens if a doctor asks something the system doesn't know?",
-    a: "The Doctor Q&A agent intercepts the query. If the patient's record lacks the required data, the agent translates the clinical question into a patient-friendly prompt and queues it for the patient's next daily check-in, closing the loop automatically.",
-    category: "Edge Cases",
-    color: "#06B6D4" // Cyan
+    q: "How does the OpenFDA drug conflict check work?",
+    a: "Before any new medicine is saved to the patient's tracker or reminders, the Medicine Agent executes a synchronous OpenFDA API call against all active prescriptions. If a severe drug-drug interaction is detected, saving is gated and a clear plain-language warning is displayed immediately.",
+    category: "Drug Safety",
+    color: "#F59E0B"
+  },
+  {
+    q: "How does Jan Aushadhi generic price comparison save money?",
+    a: "The system matches branded prescriptions against the official Pradhan Mantri Bhartiya Janaushadhi Pariyojana (PMBJP) generic database. It calculates real patient cost savings and can generate a pharmacist-ready summary PDF to hand over at Jan Aushadhi Kendra stores.",
+    category: "Financial Care",
+    color: "#06B6D4"
+  },
+  {
+    q: "What ML model is used for cardiovascular risk prediction?",
+    a: "Swasthya AI uses exactly one ML model: an explainable, calibrated classifier (evaluated across Logistic Regression, Random Forest, and XGBoost with 5-fold CV) trained on Kaggle's Cardiovascular Disease dataset (~70,000 records). It outputs calibrated probabilities in LOW (<0.35), MEDIUM (0.35–0.65), and HIGH (>0.65) bands alongside SHAP factor breakdowns.",
+    category: "Machine Learning",
+    color: "#3B82F6"
   }
 ];
 
@@ -56,13 +68,13 @@ export const FAQSection: React.FC = () => {
   return (
     <div style={{ maxWidth: '850px', margin: '0 auto 85px auto', padding: '0 24px', boxSizing: 'border-box', width: '100%' }}>
       <h2 style={{ fontSize: '32px', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 12px 0', textAlign: 'center' }}>
-        System FAQs
+        Frequently Asked Questions
       </h2>
-      <p style={{ fontSize: '16px', color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '44px', lineHeight: 1.6 }}>
-        Technical questions regarding Swasthya AI's knowledge model, compliance boundaries, and privacy structures.
+      <p style={{ fontSize: '15px', color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '40px', lineHeight: 1.6 }}>
+        Technical details regarding Swasthya AI's knowledge graph, safety boundaries, and machine learning models.
       </p>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {FAQS.map((faq, idx) => {
           const isOpen = activeIdx === idx;
           return (
@@ -75,30 +87,27 @@ export const FAQSection: React.FC = () => {
                 backgroundColor: 'var(--surface)',
                 cursor: 'pointer',
                 border: isOpen ? `1.5px solid ${faq.color}` : '1.5px solid var(--border)',
-                borderRadius: '16px',
-                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                borderRadius: '18px',
+                transition: 'all 0.25s ease',
                 overflow: 'hidden',
                 boxSizing: 'border-box',
-                boxShadow: isOpen ? 'var(--shadow-lg)' : 'var(--shadow-sm)'
+                boxShadow: isOpen ? 'var(--shadow-md)' : 'var(--shadow-sm)'
               }}
               onClick={() => setActiveIdx(isOpen ? null : idx)}
             >
-              {/* Sliding dynamic colored left bar */}
-              <motion.div
-                initial={{ height: '30%' }}
-                animate={{ height: isOpen ? '100%' : '30%' }}
-                transition={{ type: "spring", stiffness: 120, damping: 15 }}
+              {/* Colored left bar */}
+              <div
                 style={{
                   position: 'absolute',
                   left: 0,
                   top: 0,
+                  bottom: 0,
                   width: '4px',
                   backgroundColor: faq.color
                 }}
               />
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {/* FAQ Category Tag */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span 
                     style={{ 
@@ -114,15 +123,11 @@ export const FAQSection: React.FC = () => {
                   >
                     {faq.category}
                   </span>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', opacity: 0.5 }}>
-                    <HelpCircle size={12} style={{ color: 'var(--text-secondary)' }} />
-                  </div>
+                  <HelpCircle size={14} style={{ color: 'var(--text-secondary)', opacity: 0.5 }} />
                 </div>
 
-                {/* Header Row */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-                  <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', transition: 'color 0.2s ease' }}>
+                  <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)' }}>
                     {faq.q}
                   </span>
                   
@@ -136,7 +141,7 @@ export const FAQSection: React.FC = () => {
                 </div>
               </div>
 
-              {/* Accordian Answer */}
+              {/* Accordion Answer */}
               <AnimatePresence initial={false}>
                 {isOpen && (
                   <motion.div
@@ -162,14 +167,14 @@ export const FAQSection: React.FC = () => {
                   >
                     <div 
                       style={{ 
-                        paddingTop: '20px', 
+                        paddingTop: '16px', 
                         fontSize: '14px', 
                         color: 'var(--text-secondary)', 
                         lineHeight: 1.6, 
                         borderTop: '1px solid var(--border)', 
-                        marginTop: '20px' 
+                        marginTop: '16px' 
                       }}
-                      onClick={(e) => e.stopPropagation()} // Prevent card closing when clicking content
+                      onClick={(e) => e.stopPropagation()}
                     >
                       {faq.a}
                     </div>

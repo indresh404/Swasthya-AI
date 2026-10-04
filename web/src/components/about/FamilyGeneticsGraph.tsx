@@ -88,7 +88,7 @@ export const FamilyGeneticsGraph: React.FC = () => {
   };
 
   return (
-    <div style={{ width: '100%' }}>
+    <div className="family-genetics-container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px 60px 24px', boxSizing: 'border-box', width: '100%' }}>
       <div style={{ textAlign: 'left', marginBottom: '32px' }}>
         <h3 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px' }}>
           Step-by-Step Family Genetics Warning
@@ -139,6 +139,19 @@ export const FamilyGeneticsGraph: React.FC = () => {
                   const sourcePos = getDriftedPosition(sNode);
                   const targetPos = getDriftedPosition(tNode);
 
+                  if (
+                    sourcePos.x === undefined || 
+                    sourcePos.y === undefined || 
+                    targetPos.x === undefined || 
+                    targetPos.y === undefined ||
+                    isNaN(sourcePos.x) ||
+                    isNaN(sourcePos.y) ||
+                    isNaN(targetPos.x) ||
+                    isNaN(targetPos.y)
+                  ) {
+                    return null;
+                  }
+
                   const isHovered = activeNodeFocusId && (link.sourceId === activeNodeFocusId || link.targetId === activeNodeFocusId);
                   const dim = activeNodeFocusId && !isHovered;
 
@@ -154,20 +167,18 @@ export const FamilyGeneticsGraph: React.FC = () => {
                   const linkColor = getLinkColor(link, FAMILY_NODES);
                   return (
                     <g key={link.id}>
-                      <motion.line
-                        x1={x1} y1={y1} x2={x1} y2={y1}
+                      <line
+                        x1={x1}
+                        y1={y1}
+                        x2={x2}
+                        y2={y2}
                         stroke={isHovered ? '#fbbf24' : linkColor}
                         strokeWidth={isHovered ? 3.5 : 2.5}
-                        initial={{ x2: x1, y2: y1 }}
-                        animate={{
-                          x1: x1, y1: y1,
-                          x2: x2, y2: y2,
-                          stroke: isHovered ? '#fbbf24' : linkColor,
-                          strokeWidth: isHovered ? 3.5 : 2.5,
-                          opacity: dim ? 0.15 : (isHovered ? 1.0 : 0.6)
+                        opacity={dim ? 0.15 : (isHovered ? 1.0 : 0.6)}
+                        style={{ 
+                          filter: isHovered ? `drop-shadow(0 0 4px ${linkColor})` : 'none',
+                          transition: 'stroke 0.25s ease, stroke-width 0.25s ease, opacity 0.25s ease'
                         }}
-                        transition={{ type: 'spring', stiffness: 80, damping: 15 }}
-                        style={{ filter: isHovered ? `drop-shadow(0 0 4px ${linkColor})` : 'none' }}
                         markerEnd={`url(#${isHovered ? 'f-arrow-high' : 'f-arrow'})`}
                       />
                     </g>
@@ -349,6 +360,20 @@ export const FamilyGeneticsGraph: React.FC = () => {
           </motion.div>
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 1024px) {
+          .pipeline-grid {
+            grid-template-columns: 1fr !important;
+            gap: 24px !important;
+          }
+        }
+        @media (max-width: 768px) {
+          .family-genetics-container {
+            padding: 0 16px 40px 16px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

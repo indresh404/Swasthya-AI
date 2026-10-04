@@ -98,7 +98,7 @@ export const PatientMemoryGraph: React.FC = () => {
   };
 
   return (
-    <div style={{ width: '100%', fontFamily: '"Inter", sans-serif' }}>
+    <div className="patient-memory-container" style={{ width: '100%', maxWidth: '1200px', margin: '0 auto', padding: '0 24px 60px 24px', boxSizing: 'border-box' }}>
       
       {/* Controls Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '36px', flexWrap: 'wrap', gap: '20px' }}>
@@ -222,6 +222,19 @@ export const PatientMemoryGraph: React.FC = () => {
                   const sourcePos = getDriftedPosition(sNode);
                   const targetPos = getDriftedPosition(tNode);
 
+                  if (
+                    sourcePos.x === undefined || 
+                    sourcePos.y === undefined || 
+                    targetPos.x === undefined || 
+                    targetPos.y === undefined ||
+                    isNaN(sourcePos.x) ||
+                    isNaN(sourcePos.y) ||
+                    isNaN(targetPos.x) ||
+                    isNaN(targetPos.y)
+                  ) {
+                    return null;
+                  }
+
                   const isHovered = activeNodeFocusId && (link.sourceId === activeNodeFocusId || link.targetId === activeNodeFocusId);
                   const dim = activeNodeFocusId && !isHovered;
 
@@ -238,24 +251,19 @@ export const PatientMemoryGraph: React.FC = () => {
                   
                   return (
                     <g key={link.id}>
-                      <motion.line
-                        x1={x1} y1={y1} x2={x1} y2={y1}
-                        initial={{ x2: x1, y2: y1 }}
-                        animate={{
-                          x1: x1, y1: y1,
-                          x2: x2, y2: y2,
-                          stroke: isHovered ? '#00E5FF' : linkColor,
-                          strokeWidth: isHovered ? 3 : 1.5,
-                          opacity: dim ? 0.1 : (isHovered ? 1.0 : 0.4),
-                          // Flowing data animation when hovered
-                          strokeDashoffset: isHovered ? [0, -20] : 0
-                        }}
+                      <line
+                        x1={x1}
+                        y1={y1}
+                        x2={x2}
+                        y2={y2}
+                        stroke={isHovered ? '#00E5FF' : linkColor}
+                        strokeWidth={isHovered ? 3 : 1.5}
+                        opacity={dim ? 0.1 : (isHovered ? 1.0 : 0.4)}
                         strokeDasharray={isHovered ? "8, 6" : "none"}
-                        transition={{ 
-                          type: 'spring', stiffness: 70, damping: 20,
-                          strokeDashoffset: { repeat: Infinity, duration: 0.6, ease: "linear" }
+                        style={{ 
+                          filter: isHovered ? 'url(#neonGlow)' : 'none', 
+                          transition: 'stroke 0.25s ease, stroke-width 0.25s ease, opacity 0.25s ease' 
                         }}
-                        style={{ filter: isHovered ? 'url(#neonGlow)' : 'none' }}
                         markerEnd={`url(#${isHovered ? 'arrow-high' : 'arrow'})`}
                       />
                     </g>
@@ -571,6 +579,11 @@ export const PatientMemoryGraph: React.FC = () => {
         @media (max-width: 1024px) {
           .pipeline-grid {
             grid-template-columns: 1fr !important;
+          }
+        }
+        @media (max-width: 768px) {
+          .patient-memory-container {
+            padding: 0 16px 40px 16px !important;
           }
         }
       `}</style>

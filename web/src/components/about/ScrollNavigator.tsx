@@ -7,15 +7,16 @@ interface SectionItem {
 }
 
 const SECTIONS: SectionItem[] = [
-  { id: 'about-hero', label: 'Hero' },
+  { id: 'about-hero', label: 'Overview' },
   { id: 'bodymap-section', label: '3D Body' },
   { id: 'patient-graph-section', label: 'Patient Graph' },
-  { id: 'family-graph-section', label: 'Family Warning' },
-  { id: 'modules-section', label: 'Modules' },
-  { id: 'agents-section', label: 'Agents' },
+  { id: 'family-graph-section', label: 'Family Tree' },
+  { id: 'workflow-section', label: 'Agent Workflow' },
+  { id: 'agents-section', label: 'Agent Mesh' },
+  { id: 'modules-section', label: 'Clinical Modules' },
+  { id: 'model-section', label: 'ML Risk Model' },
   { id: 'techstack-section', label: 'Tech Stack' },
-  { id: 'tracks-section', label: 'Dev Tracks' },
-  { id: 'faq-section', label: 'FAQ' }
+  { id: 'faq-section', label: 'FAQs' }
 ];
 
 export const ScrollNavigator: React.FC = () => {
@@ -41,7 +42,6 @@ export const ScrollNavigator: React.FC = () => {
       let currentSection = SECTIONS[0].id;
       let closestDistance = Infinity;
       
-      // Look at the upper-middle part of the screen (40% down from the top)
       const viewportCenter = window.innerHeight * 0.4;
 
       for (const section of SECTIONS) {
@@ -49,14 +49,12 @@ export const ScrollNavigator: React.FC = () => {
         if (el) {
           const rect = el.getBoundingClientRect();
           
-          // 1. Ideal Case: The section overlaps our viewport center mark
           if (rect.top <= viewportCenter && rect.bottom >= viewportCenter) {
             currentSection = section.id;
             closestDistance = 0;
             break;
           }
           
-          // 2. Fallback Case: Find the section closest to our mark
           const distanceToCenter = Math.min(
             Math.abs(rect.top - viewportCenter),
             Math.abs(rect.bottom - viewportCenter)
@@ -69,7 +67,6 @@ export const ScrollNavigator: React.FC = () => {
         }
       }
 
-      // If we're near the absolute bottom, force the last section to be active
       if (scrollTop + clientHeight >= scrollHeight - 50) {
         currentSection = SECTIONS[SECTIONS.length - 1].id;
       }
@@ -118,7 +115,7 @@ export const ScrollNavigator: React.FC = () => {
           bottom: '20px',
           right: '23px',
           width: '2px',
-          backgroundColor: 'rgba(128, 128, 128, 0.2)', // Adjusted to work on both themes
+          backgroundColor: 'rgba(128, 128, 128, 0.2)',
           borderRadius: '4px',
           zIndex: 0
         }}
@@ -144,7 +141,7 @@ export const ScrollNavigator: React.FC = () => {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          height: '400px',
+          height: '420px',
           position: 'relative',
           zIndex: 1,
         }}
@@ -180,7 +177,6 @@ export const ScrollNavigator: React.FC = () => {
                 alignItems: 'center',
                 flexShrink: 0
               }}>
-                {/* Node Dot */}
                 <div 
                   className={isActive ? 'active-pulse' : ''}
                   style={{
@@ -210,7 +206,6 @@ export const ScrollNavigator: React.FC = () => {
       </div>
 
       <style>{`
-        /* Master Container Styling */
         .scroll-navigator-container {
           position: fixed;
           right: 32px;
@@ -229,7 +224,6 @@ export const ScrollNavigator: React.FC = () => {
           }
         }
 
-        /* Default Thin Glass Background (Light Theme Base) */
         .glass-card-bg {
           position: absolute;
           top: 0;
@@ -246,15 +240,13 @@ export const ScrollNavigator: React.FC = () => {
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
-        /* Hover Expansion for the Glass Card (Light Theme Base) */
         .scroll-navigator-container:hover .glass-card-bg {
           width: 180px;
-          background: rgba(255, 255, 255, 0.85); /* Bright background for black text */
+          background: rgba(255, 255, 255, 0.85);
           border: 1px solid rgba(0, 0, 0, 0.1);
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5);
         }
 
-        /* Label Default State (Light Theme Base) */
         .scroll-nav-label {
           opacity: 0;
           transform: translateX(10px);
@@ -265,14 +257,13 @@ export const ScrollNavigator: React.FC = () => {
           letter-spacing: 0.5px;
           margin-right: 16px;
           white-space: nowrap;
-          color: rgba(0, 0, 0, 0.6); /* Black text */
+          color: rgba(0, 0, 0, 0.6);
         }
 
-        /* Active Label State */
         .scroll-nav-label.active {
           opacity: 1;
           transform: translateX(0);
-          color: #000000; /* Pure black when active */
+          color: #000000;
           font-weight: 700;
         }
 
@@ -291,7 +282,6 @@ export const ScrollNavigator: React.FC = () => {
           transition: transform 0.1s ease;
         }
 
-        /* Active dot glowing pulse */
         @keyframes pulse-ring {
           0% { box-shadow: 0 0 0 0 rgba(0, 102, 255, 0.6), 0 0 15px rgba(0, 102, 255, 0.6); }
           70% { box-shadow: 0 0 0 12px rgba(0, 102, 255, 0), 0 0 30px rgba(0, 102, 255, 0); }
@@ -302,10 +292,6 @@ export const ScrollNavigator: React.FC = () => {
           animation: pulse-ring 2.5s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
         }
 
-        /* =========================================
-           DARK MODE OVERRIDES 
-           (Supports standard OS themes & standard .dark classes)
-           ========================================= */
         @media (prefers-color-scheme: dark) {
           .glass-card-bg {
             background: rgba(15, 20, 30, 0.3);
@@ -317,7 +303,7 @@ export const ScrollNavigator: React.FC = () => {
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
           }
           .scroll-nav-label {
-            color: rgba(255, 255, 255, 0.6); /* White text */
+            color: rgba(255, 255, 255, 0.6);
           }
           .scroll-nav-label.active {
             color: #FFFFFF;
@@ -327,12 +313,6 @@ export const ScrollNavigator: React.FC = () => {
             text-shadow: 0 0 10px rgba(0, 102, 255, 0.4) !important;
           }
         }
-
-        /* Tailwind / class-based dark mode specific overrides */
-        :global(.dark) .glass-card-bg { background: rgba(15, 20, 30, 0.3); border: 1px solid rgba(255, 255, 255, 0.08); }
-        :global(.dark) .scroll-navigator-container:hover .glass-card-bg { background: rgba(15, 20, 30, 0.7); border: 1px solid rgba(255, 255, 255, 0.15); }
-        :global(.dark) .scroll-nav-label { color: rgba(255, 255, 255, 0.6); }
-        :global(.dark) .scroll-nav-label.active { color: #FFFFFF; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
       `}</style>
     </div>
   );

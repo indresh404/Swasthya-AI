@@ -11,18 +11,18 @@ interface AgentItem {
 }
 
 const AGENTS: AgentItem[] = [
-  { num: "01", name: "Onboarding Agent", role: "Extracts chronic conditions, allergies, and family history through natural back-and-forth." },
-  { num: "02", name: "Check-In Agent", role: "Generates 2–3 adaptive daily questions from the patient's own graph." },
-  { num: "03", name: "Sarvam Chat Agent", role: "Handles speech-to-text and text-to-speech via Sarvam AI in Hindi, Marathi, or English." },
-  { num: "04", name: "Escalation Agent", role: "Watches extracted symptoms for danger combinations and triggers immediate doctor notification." },
-  { num: "05", name: "Family Genetics Agent", role: "Traverses the family branch to surface inherited risk and keeps reasoning explainable." },
-  { num: "06", name: "Medical Scan Agent", role: "Reads and verifies uploaded documents, extracting fields for scheme eligibility." },
-  { num: "07", name: "Medicine Reminder Agent", role: "Manages reminders, adherence tracking, and synchronous OpenFDA conflict checks." },
-  { num: "08", name: "Smartwatch Risk Agent", role: "Pulls vitals from wearables to prompt check-ins even before patients notice symptoms." },
-  { num: "09", name: "Doctor Q&A Agent", role: "Answers doctor free-text questions from graph data or queues them for the patient." },
-  { num: "10", name: "Appointment Automation Agent", role: "Matches patients to available doctors and handles booking automatically." },
-  { num: "11", name: "Memory & Cognitive Recall Agent", role: "Runs Kahani-Vaani, generates recall prompts, evaluates answers, and stores memory trends." },
-  { num: "12", name: "Daily Workflow Orchestrator", role: "Ties everything together running multi-stage pipelines reliably with retry support." }
+  { num: "01", name: "Onboarding Agent", role: "Extracts chronic conditions, medicines, allergies, surgeries, and family history through conversational onboarding." },
+  { num: "02", name: "Check-In Agent", role: "Generates 2–3 adaptive daily questions from the patient's own longitudinal history and parses responses." },
+  { num: "03", name: "Sarvam Chat Agent", role: "Voice and multilingual layer (speech-to-text, text-to-speech) in Hindi, Marathi, and English via Sarvam AI." },
+  { num: "04", name: "Escalation Agent", role: "Watches for danger combinations and alerts the doctor using pure-Python deterministic rules (no LLM guesses)." },
+  { num: "05", name: "Family Genetics Agent", role: "Traverses the family graph to surface inherited risk with exact relationship context without exposing private data." },
+  { num: "06", name: "Medical Scan Agent", role: "Reads uploaded documents (lab reports, certificates) and extracts clinical values for user confirmation." },
+  { num: "07", name: "Medicine Agent", role: "Manages reminders, adherence tracking, synchronous OpenFDA drug conflict checks, and Jan Aushadhi generic pricing." },
+  { num: "08", name: "Smartwatch Risk Agent", role: "Feeds simulator heart rate, SpO2, and blood pressure into the risk graph and ML model inputs." },
+  { num: "09", name: "Doctor Q&A Agent", role: "Answers doctor questions from graph data only; rewrites and queues missing fields to the patient's next check-in." },
+  { num: "10", name: "Appointment Agent", role: "Matches patients to doctor specialties and available slots, attaching the graph-summarized health profile." },
+  { num: "11", name: "Cardiac Risk Agent", role: "Calls the ML model tool and returns calibrated cardiovascular probability, risk band, and SHAP factor breakdown." },
+  { num: "12", name: "Main Orchestrator Agent", role: "Single entry point brain coordinating memory retrieval (Neo4j + Supabase), specialist dispatch, and safety." }
 ];
 
 interface SimStep {
@@ -40,50 +40,53 @@ interface Simulation {
 const SIMULATIONS: Simulation[] = [
   {
     id: 'onboarding',
-    name: '1. Onboarding Flow',
+    name: '1. Voice Onboarding Flow',
     icon: '👤',
     steps: [
-      { agentNum: '12', log: '[Orchestrator] Initiating onboarding flow webhook event.' },
-      { agentNum: '03', log: '[Sarvam Chat] Hindi voice input captured: "मेरा नाम इन्द्रेश है, 20 वर्ष का हूँ..."' },
-      { agentNum: '03', log: '[Sarvam Chat] Transcribed payload: "Name: Indresh, Age: 20, Gender: Male."' },
-      { agentNum: '01', log: '[Onboarding Agent] Analyzing conversation. Extracted Patient profile details.' },
-      { agentNum: '12', log: '[Orchestrator] Executing Cypher merge: MERGE (u:User {name: "Indresh", age: 20})' },
-      { agentNum: '12', log: '[Success] Onboarding complete! Initial graph nodes saved.' }
+      { agentNum: '12', log: '[Main Orchestrator] Ingesting multi-turn onboarding payload at POST /api/v1/agent' },
+      { agentNum: '03', log: '[Sarvam Chat Agent] Hindi speech-to-text decoded: "मेरा नाम इन्द्रेश है, उम्र 20 साल, मुझे धूल से एलर्जी है और मेरे पिताजी को डायबिटीज है..."' },
+      { agentNum: '01', log: '[Onboarding Agent] Pydantic schema validation successful: User profile, Allergy(Dust), FamilyLink(Father -> T2D).' },
+      { agentNum: '12', log: '[Main Orchestrator] Cypher write: MERGE (p:Patient {name: "Indresh", age: 20}) MERGE (p)-[:HAS_ALLERGY]->(:Allergy {name: "Dust"})' },
+      { agentNum: '12', log: '[Success] Onboarding complete! Initial health graph nodes and confirmation card generated.' }
     ]
   },
   {
     id: 'checkin',
-    name: '2. Check-In Assessment',
+    name: '2. Daily Adaptive Check-In',
     icon: '📋',
     steps: [
-      { agentNum: '12', log: '[Orchestrator] Starting scheduled daily check-in sequence.' },
-      { agentNum: '08', log: '[Smartwatch Agent] Ingesting wearable logs: SpO2=95%, HeartRate=72bpm.' },
-      { agentNum: '02', log: '[Check-In Agent] Running graph traversal... Found active family risk: Monish is positive.' },
-      { agentNum: '02', log: '[Check-In Agent] Generated adaptive question: "Monish has COVID. Do you have dry cough or fever?"' },
-      { agentNum: '12', log: '[Success] Patient check-in response successfully logged to graph.' }
+      { agentNum: '12', log: '[Main Orchestrator] Triggering scheduled adaptive daily check-in pipeline.' },
+      { agentNum: '08', log: '[Smartwatch Risk Agent] Ingesting wearable simulator telemetry: BP=138/88 mmHg, Resting HR=84 bpm, SpO2=98%.' },
+      { agentNum: '05', log: '[Family Genetics Agent] Graph traversal: MATCH (p)-[:RELATED_TO]->(f)-[:HAS_CONDITION]->(c) -> Father has Hypertension.' },
+      { agentNum: '02', log: '[Check-In Agent] Generated 2 personalized questions based on BP elevation and father\'s cardiac profile.' },
+      { agentNum: '03', log: '[Sarvam Chat Agent] Hindi TTS audio prompt synthesized: "नमस्ते इन्द्रेश, क्या आपको आज सीने में भारीपन या सांस की तकलीफ महसूस हुई?"' },
+      { agentNum: '12', log: '[Success] Patient check-in logged and mapped to longitudinal timeline.' }
     ]
   },
   {
     id: 'escalation',
-    name: '3. Risk Scan & Escalation',
+    name: '3. Deterministic Safety Escalation',
     icon: '🚨',
     steps: [
-      { agentNum: '12', log: '[Orchestrator] Scan event triggered: Active symptoms updated.' },
-      { agentNum: '05', log: '[Family Genetics Agent] Querying family history: MATCH (u)-[:RELATED_TO]->(f)-[:HAS_DISEASE]->(d)' },
-      { agentNum: '05', log: '[Family Genetics Agent] Found exposure vector: Child Monish has active COVID-19.' },
-      { agentNum: '04', log: '[Escalation Agent] Match rule check: Fever + Cough + SpO2 (95%) + Exposure = High COVID-19 Risk.' },
-      { agentNum: '12', log: '[Success] Patient profile flagged as Elevated Risk. Pulsing dashboard alert.' }
+      { agentNum: '12', log: '[Main Orchestrator] New symptom reported: "Severe breathlessness for 3 days" + Chest discomfort.' },
+      { agentNum: '12', log: '[Main Orchestrator] Neo4j historical retrieval found 2 recurring dyspnea episodes in past 30 days.' },
+      { agentNum: '04', log: '[Escalation Agent] Executing pure-Python safety rule (Rule ID: CARDIO_DYSPNEA_RECURRENCE_01).' },
+      { agentNum: '04', log: '[Escalation Agent] Match: has_breathing_difficulty=True & is_recurring=True & has_cardiac_history=True -> Level: URGENT_EVALUATION.' },
+      { agentNum: '10', log: '[Appointment Agent] Flagged urgent clinician review & pre-matched Cardiologist Dr. Sharma.' },
+      { agentNum: '12', log: '[Success] Escalation alert published to doctor dashboard with exact rule reasoning.' }
     ]
   },
   {
-    id: 'appointment',
-    name: '4. Pulmonology Scheduler',
-    icon: '🗓️',
+    id: 'doctor_closedloop',
+    name: '4. Closed-Loop Q&A & Cardiac Risk',
+    icon: '🩺',
     steps: [
-      { agentNum: '12', log: '[Orchestrator] Referral received from Escalation Agent.' },
-      { agentNum: '10', log: '[Appointment Agent] Scanning Pulmonology calendars for Dr. Sharma...' },
-      { agentNum: '10', log: '[Appointment Agent] Slot matched: Pulmonologist Dr. Sharma (Tomorrow 10:00 AM).' },
-      { agentNum: '12', log: '[Success] Relationship saved: (u)-[:APPOINTED_WITH]->(Doctor Dr. Sharma).' }
+      { agentNum: '12', log: '[Main Orchestrator] Doctor asks via dashboard: "Does the patient have recent cholesterol/lipid panel values?"' },
+      { agentNum: '09', log: '[Doctor Q&A Agent] Graph retrieval: Cholesterol is marked as ESTIMATED (missing actual lab report).' },
+      { agentNum: '09', log: '[Doctor Q&A Agent] Marking answer as NOT GROUNDED. Rewriting question for patient next check-in.' },
+      { agentNum: '06', log: '[Medical Scan Agent] Patient uploads lab lipid report -> Extracted: Total Cholesterol = 210 mg/dL.' },
+      { agentNum: '11', log: '[Cardiac Risk Agent] Recomputed ML risk: 68% (HIGH band). Top SHAP factors: Systolic BP (+32%), Cholesterol (+24%), Age (+18%).' },
+      { agentNum: '12', log: '[Success] Closed loop complete! Doctor notified with updated graph citations and SHAP chart.' }
     ]
   }
 ];
@@ -120,12 +123,9 @@ export const AgentShowcase: React.FC = () => {
     const element = document.getElementById(`agent-card-${agentNum}`);
     
     if (container && element) {
-      // Calculate exact center of the scroll container
       const containerCenter = container.clientHeight / 2;
-      // Calculate the center of the target element relative to the container
       const elementCenter = element.offsetTop + (element.clientHeight / 2);
       
-      // Scroll to position the element exactly in the middle
       container.scrollTo({
         top: elementCenter - containerCenter,
         behavior: 'smooth'
@@ -151,7 +151,7 @@ export const AgentShowcase: React.FC = () => {
         const step = sim.steps[currentStep];
         
         setActiveAgentNum(step.agentNum);
-        scrollToAgent(step.agentNum); // Triggers auto-scroll to the highlighted agent
+        scrollToAgent(step.agentNum);
         setStreamedLogs(prev => [...prev, step.log]);
         
         currentStep++;
@@ -179,14 +179,14 @@ export const AgentShowcase: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
           <Cpu size={20} style={{ color: '#0066FF' }} />
           <span style={{ fontSize: '13px', fontWeight: 800, color: '#0066FF', textTransform: 'uppercase', letterSpacing: '1px' }}>
-            System Architecture
+            Multi-Agent System
           </span>
         </div>
         <h2 style={{ fontSize: '36px', fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 16px 0', textAlign: 'center', letterSpacing: '-0.5px' }}>
-          The 12-Agent Mesh
+          The 12-Agent Specialization Mesh
         </h2>
-        <p style={{ fontSize: '17px', color: 'var(--text-secondary)', textAlign: 'center', maxWidth: '750px', margin: 0, lineHeight: 1.6 }}>
-          Instead of a single brittle chatbot, Swasthya AI coordinates 12 dedicated, specialized agents. Select a simulation workflow on the left to watch them coordinate in real-time.
+        <p style={{ fontSize: '16px', color: 'var(--text-secondary)', textAlign: 'center', maxWidth: '750px', margin: 0, lineHeight: 1.6 }}>
+          Instead of a single unexplainable chatbot, Swasthya AI coordinates 1 Orchestrator and 11 single-purpose domain specialists. Select a simulation workflow on the left to watch them coordinate in real time.
         </p>
       </motion.div>
 
@@ -201,9 +201,7 @@ export const AgentShowcase: React.FC = () => {
         }}
       >
         
-        {/* ========================================= */}
         {/* LEFT COLUMN: SIMULATOR & EXECUTION TERMINAL */}
-        {/* ========================================= */}
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
@@ -227,10 +225,10 @@ export const AgentShowcase: React.FC = () => {
                   Orchestrator Sandbox
                 </span>
                 <h3 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-                  Live Workflow Simulator
+                  Live Multi-Agent Simulator
                 </h3>
                 <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '8px 0 0 0', maxWidth: '400px' }}>
-                  Trigger a core background workflow to watch specialized agents execute tasks.
+                  Trigger a real-world clinical workflow to watch the Orchestrator delegate tasks.
                 </p>
               </div>
               
@@ -305,7 +303,7 @@ export const AgentShowcase: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Terminal size={16} style={{ color: '#38bdf8' }} />
                 <span style={{ color: '#A1A1AA', fontSize: '12px', fontWeight: 600, letterSpacing: '0.5px' }}>
-                  swasthya-mesh ~ % ./tail-logs
+                  swasthya-agent-mesh ~ % ./tail-orchestrator-trace
                 </span>
               </div>
               <div style={{ display: 'flex', gap: '6px' }}>
@@ -324,17 +322,18 @@ export const AgentShowcase: React.FC = () => {
                     animate={{ opacity: 1 }}
                     style={{ color: '#52525b', fontSize: '13px', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '8px' }}
                   >
-                    <CheckCircle2 size={14} /> Waiting for orchestrator initialization...
+                    <CheckCircle2 size={14} /> Click a workflow simulation above to watch agents stream execution logs...
                   </motion.span>
                 ) : (
                   streamedLogs.map((log, idx) => {
                     const isSuccess = log.includes('[Success]');
-                    const isAlert = log.includes('[Escalation') || log.includes('Warning') || log.includes('Risk');
+                    const isAlert = log.includes('[Escalation') || log.includes('URGENT') || log.includes('Risk');
                     let color = '#D4D4D8';
                     if (isSuccess) color = '#34D399';
                     else if (isAlert) color = '#F87171';
-                    else if (log.includes('[Orchestrator]')) color = '#38BDF8';
+                    else if (log.includes('[Main Orchestrator]')) color = '#38BDF8';
                     else if (log.includes('[Family Genetics Agent]')) color = '#C084FC';
+                    else if (log.includes('[Cardiac Risk Agent]')) color = '#FBBF24';
 
                     return (
                       <motion.div
@@ -366,9 +365,7 @@ export const AgentShowcase: React.FC = () => {
           </Card>
         </motion.div>
 
-        {/* ========================================= */}
         {/* RIGHT COLUMN: 1-COLUMN AGENT LIST */}
-        {/* ========================================= */}
         <motion.div 
           initial={{ opacity: 0, x: 20 }}
           whileInView={{ opacity: 1, x: 0 }}
@@ -377,8 +374,8 @@ export const AgentShowcase: React.FC = () => {
           style={{ display: 'flex', flexDirection: 'column', height: '80%', maxHeight: '780px' }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', padding: '0 8px' }}>
-            <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>Specialized Nodes</span>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', backgroundColor: 'var(--bg-secondary)', padding: '4px 10px', borderRadius: '12px' }}>12 Agents Total</span>
+            <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>11 Specialists + 1 Orchestrator</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#0066FF', backgroundColor: 'rgba(0, 102, 255, 0.08)', padding: '4px 10px', borderRadius: '12px' }}>12 Nodes Total</span>
           </div>
 
           <div 
@@ -387,11 +384,11 @@ export const AgentShowcase: React.FC = () => {
             style={{ 
               display: 'flex', 
               flexDirection: 'column', 
-              gap: '16px', 
+              gap: '12px', 
               overflowY: 'auto', 
               paddingRight: '12px',
               paddingBottom: '24px',
-              position: 'relative' // Required for accurate .offsetTop calculation
+              position: 'relative'
             }}
           >
             {AGENTS.map((a, idx) => {
@@ -401,17 +398,17 @@ export const AgentShowcase: React.FC = () => {
               return (
                 <motion.div 
                   key={idx} 
-                  id={`agent-card-${a.num}`} // ID used for auto-scroll targeting
+                  id={`agent-card-${a.num}`}
                   initial={{ opacity: 0, y: 10 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-20px" }}
-                  transition={{ duration: 0.3, delay: idx * 0.05 }}
+                  transition={{ duration: 0.3, delay: idx * 0.03 }}
                   style={{ flexShrink: 0 }}
                 >
                   <Card
                     onClick={() => setSelectedAgent(isSelected ? null : idx)}
                     style={{
-                      padding: '20px',
+                      padding: '16px 20px',
                       backgroundColor: isCurrentActiveAgent ? '#0066FF' : 'var(--surface)',
                       border: isCurrentActiveAgent 
                         ? '1px solid #4D94FF' 
@@ -422,28 +419,19 @@ export const AgentShowcase: React.FC = () => {
                       cursor: 'pointer',
                       color: isCurrentActiveAgent ? '#FFFFFF' : 'var(--text-primary)',
                       boxShadow: isCurrentActiveAgent 
-                        ? '0 10px 24px rgba(0, 102, 255, 0.3), inset 0 1px 1px rgba(255,255,255,0.2)' 
-                        : (isSelected ? '0 4px 12px rgba(0, 102, 255, 0.1)' : 'var(--shadow)'),
+                        ? '0 10px 24px rgba(0, 102, 255, 0.3)' 
+                        : (isSelected ? '0 4px 12px rgba(0, 102, 255, 0.1)' : 'var(--shadow-sm)'),
                       transform: isSelected ? 'scale(1.02)' : 'scale(1)',
-                      transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                      transition: 'all 0.25s ease',
                       position: 'relative',
                       overflow: 'hidden',
                       borderRadius: '16px'
                     }}
                   >
-                    {/* Active Background Glow */}
-                    {isCurrentActiveAgent && (
-                      <motion.div 
-                        animate={{ scale: [1, 1.2], opacity: [0.2, 0] }}
-                        transition={{ repeat: Infinity, duration: 1.5, ease: "easeOut" }}
-                        style={{ position: 'absolute', top: '50%', left: '10%', transform: 'translate(-50%, -50%)', width: '80px', height: '80px', borderRadius: '50%', backgroundColor: '#FFFFFF', pointerEvents: 'none' }}
-                      />
-                    )}
-
                     {/* Agent Number Badge */}
                     <div style={{ 
-                      width: '48px', 
-                      height: '48px', 
+                      width: '42px', 
+                      height: '42px', 
                       borderRadius: '12px', 
                       backgroundColor: isCurrentActiveAgent ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)', 
                       display: 'flex', 
@@ -453,7 +441,7 @@ export const AgentShowcase: React.FC = () => {
                       border: isCurrentActiveAgent ? 'none' : '1px solid var(--border)'
                     }}>
                       <span style={{ 
-                        fontSize: '18px', 
+                        fontSize: '16px', 
                         fontWeight: 900, 
                         color: isCurrentActiveAgent ? '#FFFFFF' : '#0066FF', 
                         fontFamily: 'monospace'
@@ -470,7 +458,7 @@ export const AgentShowcase: React.FC = () => {
                         </h3>
                         {isCurrentActiveAgent && (
                           <span style={{ fontSize: '9px', fontWeight: 800, padding: '2px 8px', borderRadius: '12px', backgroundColor: '#FFFFFF', color: '#0066FF', textTransform: 'uppercase' }}>
-                            Active
+                            Active Node
                           </span>
                         )}
                       </div>
@@ -487,7 +475,6 @@ export const AgentShowcase: React.FC = () => {
       </div>
 
       <style>{`
-        /* Beautiful Custom Scrollbar for Terminal & Agent List */
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
         }
@@ -502,13 +489,11 @@ export const AgentShowcase: React.FC = () => {
           background-color: var(--text-tertiary);
         }
 
-        /* Stack layout vertically on smaller screens */
         @media (max-width: 1024px) {
           .mesh-split-grid {
             grid-template-columns: 1fr !important;
             gap: 40px !important;
           }
-          /* Cap height of agent list on mobile so it doesn't take over the entire screen */
           .agent-showcase-container .custom-scrollbar {
             max-height: 500px !important;
           }
